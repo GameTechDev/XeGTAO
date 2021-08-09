@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <StartArguments>-r -o "C:\Users\Filip\Desktop\ASSAO\EmbeddedRenderingMedia.cpp"             -if0 "%2a.%2a" -id0 "C:\Users\Filip\Desktop\ASSAO\Media\Textures" -ep0 "textures:\ "      -if1 "%2a.%2a" -id1 "C:\Users\Filip\Desktop\ASSAO\Media\Shaders" -ep1 "shaders:\ "    -if2 "ClearSans-Bold.%2a" -id2 "C:\Users\Filip\Desktop\ASSAO\Media\ClearSansTTF" -ep2 "fonts:\ "     -if3 "ClearSans-Regular.%2a" -id3 "C:\Users\Filip\Desktop\ASSAO\Media\ClearSansTTF" -ep3 "fonts:\ "</StartArguments>
+  </PropertyGroup>
+</Project>

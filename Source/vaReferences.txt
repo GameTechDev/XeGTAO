@@ -1,0 +1,172 @@
+List of essential reading books & book-like resources:
+ * The Graphics Codex : https://graphicscodex.courses.nvidia.com/app.html
+ * Physically Based Rendering : https://www.pbrt.org/
+ * Ray Tracing Gems: https://www.realtimerendering.com/raytracinggems/
+
+List of various potentially useful references/papers/etc.
+
+///////////////////////////////////////////////////////////////////////////////
+
+
+Area lights:
+ * 2016: "Real-Time Polygonal-Light Shading with Linearly Transformed Cosines" https://eheitzresearch.wordpress.com/415-2/ 
+
+Clouds, sky, atmospherics:
+ * 2020: https://sebh.github.io/publications/ (A Scalable and Production Ready Sky and Atmosphere Rendering Technique, Physically Based Sky, Atmosphere & Cloud Rendering in Frostbite) - and an implementation in shadertoy: https://www.shadertoy.com/view/slSXRW
+ * https://sebh.github.io/publications/egsr2020.pdf
+ * https://blog.uhawkvr.com/rendering/rendering-volumetric-clouds-using-signed-distance-fields/
+ * http://alexcpeterson.com/spacescape/ - "You can use Spacescape to make skyboxes for your free or commercial game, no license or royalties required!"
+
+
+Shadows:
+ * 2018: Combining Analytic Direct Illumination and Stochastic Shadows, https://eheitzresearch.wordpress.com/705-2/
+
+IBLs / GI (global illumination):
+ * 2012: valve/source engine "Image-based Lighting approaches and parallax-corrected cubemap" https://seblagarde.wordpress.com/2012/09/29/image-based-lighting-approaches-and-parallax-corrected-cubemap/
+ * Scaling Probe-Based Real-Time Dynamic Global Illumination for Production https://arxiv.org/abs/2009.10796
+
+Near field GI (global illumination):
+ * 2018: Horizon-Based Indirect Lighting (HBIL) https://github.com/Patapom/GodComplex/blob/master/Tests/TestHBIL/2018%20Mayaux%20-%20Horizon-Based%20Indirect%20Lighting%20(HBIL).pdf - https://drive.google.com/file/d/1fmceYuM5J2s8puNHZ9o4OF3YjqzIvmRR/view
+
+Lighting representation (SH, etc.):
+ * 2019: GI - Lighting Grid Hierarchy http://www.cemyuksel.com/research/lgh/real-time_rendering_with_lgh_i3d2019.pdf
+ * 2017: "Ambient Dice" https://pdfs.semanticscholar.org/a016/5b3d48fe36568706ec4387acdfdc7c6624ac.pdf
+ * 2020: Real-Time Stochastic Lightcuts - http://www.cemyuksel.com/research/stochasticlightcuts/realtime_stochastic_lightcuts.pdf
+ * Nonsingular Point Light Attenuation - http://www.cemyuksel.com/research/pointlightattenuation/
+ * 2016: Real-Time Polygonal-Light Shading with Linearly Transformed Cosines https://eheitzresearch.wordpress.com/415-2/
+
+Noise and Sampling:
+ * pbrt Chapter 7 Sampling
+ * Practical Hash-based Owen Scrambling: http://www.jcgt.org/published/0009/04/01/ 
+ * Examples in shadertoy of the above Owen Scrambling: https://www.reddit.com/r/GraphicsProgramming/comments/l1go2r/owenscrambled_sobol_02_sequences_shadertoy/
+ * Progressive Multi-Jittered Sample Sequences https://graphics.pixar.com/library/ProgressiveMultiJitteredSampling/paper.pdf
+ * Follow up with a better hash: https://psychopath.io/post/2021_01_30_building_a_better_lk_hash
+ * Siggraph 2020: From Ray to Path Tracing: Navigating through Dimensions
+ * Sequences with Low-Discrepancy Blue-Noise 2-D Projections: https://hal.archives-ouvertes.fr/hal-01717945/file/paper-RR.pdf
+ * Progressive Multi-Jittered Sample Sequences
+ * http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
+ * Andrew Kensler's permute() - A function for stateless, constant-time pseudorandom-order array iteration : https://andrew-helmer.github.io/permute/
+ * Database of blue noise (used in Vanilla), info on dithering and other applications: http://momentsingraphics.de/BlueNoise.html
+ * Dither with blue noise: https://www.gdcvault.com/play/1023002/Low-Complexity-High-Fidelity-INSIDE, page 57
+
+Path tracing:
+ * 'Microfacet Model Regularization for Robust Light Transport' - https://www2.in.tu-clausthal.de/~cgstore/publications/2019_Jendersie_brdfregularization_presentation.pdf  https://www2.in.tu-clausthal.de/~cgstore/publications/2019_Jendersie_brdfregularization.pdf supplemental: https://onlinelibrary.wiley.com/action/downloadSupplement?doi=10.1111%2Fcgf.13768&file=cgf13768-sup-0001-S1.pdf
+ * (2003) A custom designed density estimation method for light transport https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.211.7014&rep=rep1&type=pdf
+ * (2021) Fireflies removing in Monte Carlo rendering with adaptive Median of meaNs: https://hal.archives-ouvertes.fr/hal-03201630/document 
+ * (1985) (A method for calculating medians that only requires storing five values per pixel) The P^2 Algorithm for Dynamic Calculation of Quantiles and Histograms Without Storing Observations: https://www.cse.wustl.edu/~jain/papers/ftp/psqr.pdf
+ * (2006) Filter Importance Sampling - essential for anti aliasing - http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.183.3579&rep=rep1&type=pdf
+
+Importance sampling
+ * Sampling the GGX Distribution of Visible Normals: (lecture slides http://jcgt.org/published/0007/04/01/slides.pdf) paper, code: http://jcgt.org/published/0007/04/01/
+
+General:
+ * (2018) "MATERIAL ADVANCES IN CALL OF DUTY: WWII" (siggraph) http://advances.realtimerendering.com/s2018/MaterialAdvancesInWWII.pdf  https://www.activision.com/cdn/research/siggraph_2018_opt.pdf
+   (mip mapping normals and glossiness/roughness, combining detail normals, material surface occlusion, generating height map from normal map (heightmap from normalmap), cavity map from height map, ambient occlusion for direct and indirect lighting)
+ * Morten Mikkelsen 2019, Surface Gradient Based Bump Mapping Framework: https://mmikk.github.io/papers3d/sgp.pdf 
+ * ^^ above but simplified: "Normal Mapping Using the Surface Gradient" https://zero-radiance.github.io/post/surface-gradient/
+ * "Real-Time Geometric Glint Anti-Aliasing with Normal Map Filtering" http://igg.unistra.fr/People/chermain/glint_anti_aliasing/
+
+
+Terrain:
+ * Triplanar displacement for terrain rendering:  https://www.in.tum.de/fileadmin/w00bws/cg/Research/Publications/2020/TriplanarDisplacementMapping/short1020_CRC-Preprint.pdf
+ * Texture Bombing: https://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch20.html
+ * Advanced Splatting: https://www.gamedev.net/tutorials/programming/graphics/advanced-terrain-texture-splatting-r3287/
+ * Surface Gradient–Based Bump Mapping Framework: http://jcgt.org/published/0009/03/04/ ("layering and compositing of bump maps.. multiple sets of texture coordinates.. procedurally generated texture coordinates and geometry.. bump maps defined on a volume, such as decal projectors, triplanar projection, and noise-based functions.")
+ * GPU Tessellation with Compute Shaders (uses CDLOD) https://jadkhoury.github.io/files/MasterThesisFinal.pdf
+
+Meshes / general model LODding and simplification:
+ * "Appearance-Driven Automatic 3D Model Simplification" https://research.nvidia.com/publication/2021-04_Appearance-Driven-Automatic-3D  
+
+Tonemapping/display/HDR:
+ * (2019) Automatic Exposure Using a Luminance Histogram & Tone Mapping: https://bruop.github.io/exposure/, https://bruop.github.io/tonemapping/
+ * (2017) Hajime Uchimura HDR Theory and practice: https://www.slideshare.net/nikuque/hdr-theory-and-practicce-jp / https://www.desmos.com/calculator/gslcdxvipg
+ * (2016) ACES Filmic Tone Mapping Curve: https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/, https://github.com/TheRealMJP/BakingLab/blob/master/BakingLab/ACES.hlsl
+ * (2016) HDR Display – First Steps: https://knarkowicz.wordpress.com/2016/08/31/hdr-display-first-steps/
+ * (    ) Tone Mapping (including Real Camera Response Functions): https://graphics-programming.org/resources/tonemapping/index.html
+ * (2016) Optimized Reversible Tonemapper for Resolve: https://gpuopen.com/learn/optimized-reversible-tonemapper-for-resolve/
+ * better exposure from luminance http://alextardif.com/HistogramLuminance.html
+ * https://github.com/ampas/aces-dev
+ * https://www.activision.com/cdn/research/HDR_in_Call_of_Duty.pptx
+ * (2016) What every coder should know about gamma http://blog.johnnovak.net/2016/09/21/what-every-coder-should-know-about-gamma/
+
+Spherical harmonics:
+ * ELI5: https://www.reddit.com/r/GraphicsProgramming/comments/m19ith/explain_to_me_like_i_am_5_using_spherical/ :D
+
+Denoising:
+ * Nvidia's denoisers: https://developer.nvidia.com/nvidia-rt-denoiser
+ * 2017: Spatiotemporal Variance-Guided Filtering: Real-Time Reconstruction for Path-Traced Global Illumination, https://research.nvidia.com/sites/default/files/pubs/2017-07_Spatiotemporal-Variance-Guided-Filtering%3A//svgf_preprint.pdf
+ * 2019: Real Time Path-Tracing and Denoising in Quake II RTX, https://developer.nvidia.com/blog/real-time-path-tracing-and-denoising-in-quake-ii-rtx/
+ * 2020: Fast Denoising With Self Stabilizing Recurrent Blurs, https://www.gdcvault.com/play/1026701/Fast-Denoising-With-Self-Stabilizing
+
+TAA:
+ * 2016: An Excursion in Temporal Supersampling http://developer.download.nvidia.com/gameworks/events/GDC2016/msalvi_temporal_supersampling.pdf
+ * 2010: Real-time Frame Rate Up-conversion for Video Games, http://and.intercon.ru/rtfrucvg_html_slides/
+ * http://behindthepixels.io/assets/files/TemporalAA.pdf
+ * Temporally Reliable Motion Vectors for Real-time Ray Tracing https://sites.cs.ucsb.edu/~lingqi/publications/paper_trmv.pdf
+
+
+Order independent transparency:
+ * 2010: Fourier Opacity Mapping, https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.154.4016&rep=rep1&type=pdf
+ * 2011: Stochastic Transparency, https://luebke.us/publications/StochasticTransparency_I3D2010.pdf
+ * 2011: Adaptive Transparency, https://software.intel.com/content/www/us/en/develop/articles/adaptive-transparency.html
+ * 2013: Hybrid Transparency, https://dl.acm.org/doi/10.1145/2448196.2448212
+ * 2013: Weighted Blended OIT, http://jcgt.org/published/0002/02/09/paper.pdf
+ * 2014: Multi-layer alpha blending, https://software.intel.com/content/www/us/en/develop/articles/multi-layer-alpha-blending.html
+ * 2017: Phenomenological Transparency, https://research.nvidia.com/sites/default/files/pubs/2017-03_Phenomenological-Transparency/McGuire2017Transparency.pdf
+ * 2018: Moment-Based Order-Independent Transparency, https://momentsingraphics.de/I3D2018.html
+ * 2018: Moment Transparency, https://briansharpe.files.wordpress.com/2018/07/moment-transparency-av.pdf
+
+Water:
+ * Foam bubbles spray: https://youtu.be/O-52enqUSNw "Is a Realistic Water Bubble Simulation Possible?" - bunch of links/resources
+ * http://alextardif.com/Water.html
+
+Grass:
+ * https://giordi91.github.io/post/grass/
+
+Vulkan:
+ * https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/
+
+Animation:
+ * simple: https://realitymultiplied.wordpress.com/ complex: http://guillaumeblanc.github.io/ozz-animation/
+
+Physics:
+ * general & network: https://gafferongames.com/categories/game-physics/
+
+Math:
+  * Realtime Math lib (MIT) https://github.com/nfrechette/rtm
+  * A small collection of fast math for sqrt, acos, atan, etc.: https://github.com/Patapom/GodComplex/blob/master/Tests/TestHBIL/Shaders/FastMath.hlsl
+
+Algorithms:
+  * BVH - using Embree trees for raytracing: https://interplayoflight.wordpress.com/2020/07/21/using-embree-generated-bvh-trees-for-gpu-raytracing/
+  * A Survey on Bounding Volume Hierarchies for Ray Tracing https://meistdan.github.io/publications/bvh_star/paper.pdf (https://meistdan.github.io/)
+  * Parallel Locally-Ordered Clustering for Bounding Volume Hierarchy Construction (Morton codes) (find in, source included https://meistdan.github.io/)
+
+ Particles:
+  * https://www.rigzsoft.co.uk/purchase-timelinefx/
+  * Beyond Emitters: Shader and Surface Driven GPU Particle FX Techniques https://youtu.be/yG4ChOPyC-4
+
+Other:
+ * Anti-Aliased Volumetric Lines Using Shader-Based Extrusion (https://sebh.github.io/publications/)
+
+Gameplay:
+ * Rocket/Missile guidance: https://en.wikipedia.org/wiki/Proportional_navigation
+
+People
+ * Morten S. Mikkelsen (mikktspace fame): http://www.mikktspace.com/, https://github.com/mmikk/Papers-Graphics-3D
+
+Ray tracing & path tracing
+ * Visual Exploration Of Light Transport In Path Tracing (C++ visualization tool, source code provided) https://raw.githubusercontent.com/giuliom95/msc-thesis/master/martella-mscthesis.pdf
+
+ImGui
+ * DearWidgets (2D widgets based on ImDrawList): https://github.com/soufianekhiat/DearWidgets
+ * 
+
+Fluids
+ * Old school, grid based, 2011, "Simple and Fast Fluids"  https://hal.inria.fr/inria-00596050/document
+ * 
+
+Tools
+ * https://github.com/kopaka1822/ImageViewer - An image viewer for anyone related to computer graphics - dds, cubemaps, etc
+
+Effects
+ * Lens flares / bloom streaks thread: https://www.reddit.com/r/GraphicsProgramming/comments/mr2gg9/how_to_get_beautiful_bloom_streaks/

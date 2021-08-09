@@ -1,0 +1,11 @@
+## Vanilla ignores!
+
+# Visual studio
+/VisualStudio/.vs
+/VisualStudio/.intermediate
+
+# Code generation
+/Source/EmbeddedMedia.inc
+
+# Build/assets
+/Build/*.*

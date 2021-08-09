@@ -1,0 +1,623 @@
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2017, Intel Corporation
+// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
+// documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
+// the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+// permit persons to whom the Software is furnished to do so, subject to the following conditions:
+// The above copyright notice and this permission notice shall be included in all copies or substantial portions of 
+// the Software.
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+// SOFTWARE.
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Author(s):  Filip Strugar (filip.strugar@intel.com)
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// A basic Blinn-Phong shading model, extended (optionally) with better specular AA (VA_RM_ADVANCED_SPECULAR_SHADER)
+
+#include "vaRenderMesh.hlsl"
+#incluce "vaMaterialShared.hlsl"
+
+#include "vaRenderingShared.hlsl"
+
+#include "vaLighting.hlsl"
+
+//#ifdef VA_RM_ADVANCED_SPECULAR_SHADER
+//#undef VA_RM_ADVANCED_SPECULAR_SHADER
+//#endif
+
+#ifndef VA_RM_ADVANCED_SPECULAR_SHADER
+#define VA_RM_ADVANCED_SPECULAR_SHADER 0
+#endif
+
+struct SurfaceValues
+{
+    float3      GeometryNormal;         // worldspace geometry (unperturbed) normal
+    float3x3    CotangentFrame;         // worldspace (co)tangent frame - perturbed by the normalmap if available! see ComputeCotangentFrame for more info; surface normal is CotangentFrame[2]!
+    float3      Albedo;                 // a.k.a. diffuse
+    float3      Specular;
+    float3      Emissive;
+    float2      Roughness;
+#if VA_RM_ADVANCED_SPECULAR_SHADER == 0
+    float       SpecularPow;
+#endif
+    float       Opacity;                // a.k.a. alpha (can be used for alpha testing or transparency)
+    float       EnvironmentMapMul;      // if environment map enabled
+    float       RefractionIndex;
+    bool        IsFrontFace;
+    float       Noise;
+    float       NoiseAttenuation;       // noise function is not that great at handling anisotropy / glancing angles so it provides this value to attenuate anything using it if needed
+    float       SubsurfaceScatterHack;  // very crude approximation added to allow light from all sources even if normals point the other direction; compiled out if not used
+};
+
+float3x3 BasicMaterialGetCotangentFrame( const GeometryInterpolants vertex, const float3 geometryNormal, const RenderMaterialInputs materialInputs )
+{
+    float3 worldspaceNormal = geometryNormal;
+
+// #ifndef VA_MATERIAL_BASIC_DISABLE_NEAR_PERPENDICULAR_TO_EYE_NORMAL_FILTERING
+//     // near-perpendicular-to-eye normal filtering (see vertex shader for details)
+//     float normalAway    = (isFrontFace)?(vertex.ViewspaceNormal.w):(vertex.ViewspacePos.w);
+//     viewspaceNormal     = normalize( viewspaceNormal - normalAway * viewDir );
+// #endif
+
+    // compute (co)tangent frame (since we don't have a good path for vertex cotangent space)
+    float3x3 cotangentFrame = ComputeCotangentFrame( worldspaceNormal, vertex.WorldspacePos.xyz, vertex.Texcoord01.xy );
+
+#if defined(VA_RM_HAS_INPUT_Normalmap)
+    {
+        // load and unpack/decode normalmap from the texture
+        float3 normal = materialInputs.Normalmap.xyz;
+
+        // // we can re-orthogonalize the frame for bad UV cases but... expensive
+        // ReOrthogonalizeFrame( cotangentFrame, true );
+
+        // perturb normal
+        worldspaceNormal = normalize( mul( normal, cotangentFrame ) );
+
+        // update (co)tangent frame
+        cotangentFrame[2] = worldspaceNormal;
+    }
+#endif
+    // re-orthogonalize; when called with 'false', this can mess up handedness which is only important if you rely on being in sync with input UVs, like perturb with another (for ex detail) normalmap
+    ReOrthogonalizeFrame( cotangentFrame, false );  
+
+    return cotangentFrame;
+}
+
+// TODO: go through https://developer.download.nvidia.com/assets/gameworks/downloads/regular/GDC17/RealTimeRenderingAdvances_HashedAlphaTesting_GDC2017_FINAL.pdf - looks better than this
+// TODO: look at https://developer.amd.com/wordpress/media/2012/10/03_Clever_Shader_Tricks.pdf - Shader LOD branching - might have a better LOD compute
+// Pretty heavy noise function based on world position with 'procedural mip layers' (computed from the worldspace pos).
+// I'm sure there's a better procedural noise somewhere but I couldn't find one that is stable in world space, doesn't flicker too much, doesn't use textures
+float ComputeNoise( const in GeometryInterpolants interpolants )
+{
+    float3 worldPos = interpolants.WorldspacePos.xyz;
+    float wpsx = length( ddx( worldPos ) ) ;
+    float wpsy = length( ddy( worldPos ) ) ;
+    float worldPixelSize = (8.0 * min( wpsx, wpsy ) + wpsx + wpsy) / 10.0;
+    float noiseSuppress = saturate( 0.75 - abs( dot( normalize( g_globals.CameraWorldPosition.xyz - interpolants.WorldspacePos.xyz ), interpolants.WorldspaceNormal.xyz ) ) );
+    float noiseMip = log( worldPixelSize ); // + pow(1.0 - abs(interpolants.ViewspaceNormal.z), 2) * 2;
+    noiseMip *= 1.4; // offset
+    float noiseSizeHi0 = pow( 2.0, floor(noiseMip)              );
+    float noiseSizeHi1 = pow( 2.0, floor(noiseMip) + 1.0        );
+    float noiseSizeLo0 = pow( 2.0, floor(noiseMip+0.5)          );
+    float noiseSizeLo1 = pow( 2.0, floor(noiseMip+0.5) + 1.0    );
+    float3 subpixelOffsetAdd = float3 ( g_globals.CameraSubpixelOffset.xy, g_globals.CameraSubpixelOffset.x+g_globals.CameraSubpixelOffset.y ); subpixelOffsetAdd *= 10.0;
+    float noiseHi0 = Hash3D( floor( worldPos.xyz / noiseSizeHi0 + subpixelOffsetAdd ) );
+    float noiseHi1 = Hash3D( floor( worldPos.xyz / noiseSizeHi1 + subpixelOffsetAdd ) );
+    float noiseLo0 = Hash3D( floor( worldPos.xyz / noiseSizeLo0 + subpixelOffsetAdd ) );
+    float noiseLo1 = Hash3D( floor( worldPos.xyz / noiseSizeLo1 + subpixelOffsetAdd ) );
+    float noise = 0.5 * ( lerp( noiseHi0, noiseHi1, noiseMip - floor(noiseMip) ) + lerp( noiseLo0, noiseLo1, noiseMip+0.5 - floor(noiseMip+0.5) ) );
+    return saturate( lerp( noise, 0.5, noiseSuppress ) );
+}
+
+// Also early out on alpha test
+SurfaceValues FillBasicMaterialValues( in ShaderInstanceConstants instance, const in GeometryInterpolants vertex, const bool isFrontFace, uniform bool alphaTest )
+{
+    const ShaderMaterialConstants materialConstants = g_materialConstants[instance.MaterialConstantsIndex];
+    const RenderMaterialInputs materialInputs = LoadRenderMaterialInputs( vertex, materialConstants );
+
+    SurfaceValues ret;
+
+    // flip for backfacing polys
+    ret.GeometryNormal  = (isFrontFace)?(vertex.WorldspaceNormal.xyz):(-vertex.WorldspaceNormal.xyz);
+    ret.GeometryNormal  = normalize( ret.GeometryNormal );
+
+    ret.IsFrontFace     = isFrontFace;
+    ret.Albedo          = vertex.Color.rgb;
+    ret.Opacity         = vertex.Color.a;
+
+    ret.CotangentFrame  = BasicMaterialGetCotangentFrame( vertex, ret.GeometryNormal, materialInputs );
+
+#ifdef VA_RM_HAS_INPUT_Albedo
+    float4 albedo       = materialInputs.Albedo;
+#else
+    float4 albedo       = float4( 1, 1, 1, 1 );
+#endif
+
+    // *= ?
+    ret.Albedo          *= albedo.rgb;
+    ret.Opacity         *= albedo.a;
+
+//    // debugging: all textures to gray
+//    ret.Albedo          = float3( 1.0, 1.0, 1.0 );
+
+    // Do we combine opacity with .a from albedo or ignore .a? Combining means forcing sampling both so let's just overwrite.
+#if defined( VA_RM_HAS_INPUT_Opacity )
+    ret.Opacity         = materialInputs.Opacity;
+#endif
+
+#ifdef VA_RM_HAS_INPUT_SubsurfaceScatterHack
+    ret.SubsurfaceScatterHack = materialInputs.SubsurfaceScatterHack;
+#elif defined( VA_RM_HAS_INPUT_Opacity )
+    ret.SubsurfaceScatterHack = 0.0;
+#endif
+
+    if( alphaTest )
+    {
+        if( (ret.Opacity+g_globals.WireframePass) < VA_RM_ALPHATEST_THRESHOLD ) // g_RenderMeshMaterialGlobal.AlphaCutoff
+            discard;
+    }
+
+#ifdef VA_RM_HAS_INPUT_Emissive
+    ret.Emissive            = materialInputs.Emissive.rgb;
+#else
+    ret.Emissive            = float3( 0.0, 0.0, 0.0 );
+#endif
+
+    // not sure what this was for before :|
+//    ret.Emissive            *= ret.Albedo;
+
+#ifdef VA_RM_HAS_INPUT_EmissiveMul
+    ret.Emissive            *= materialInputs.EmissiveMul.xxx;
+#endif
+
+#ifdef VA_RM_HAS_INPUT_Specular
+    float4 specTex = materialInputs.Specular;
+#else
+    float4 specTex = float4( 0, 0, 0, 0 );
+#endif
+
+#ifdef VA_RM_HAS_INPUT_SpecularMul
+    ret.Specular            = specTex.rgb * materialInputs.SpecularMul;
+#else
+    ret.Specular            = specTex.rgb;
+#endif
+
+#ifdef VA_RM_HAS_INPUT_SpecularPow
+    float specPow           = clamp( specTex.a * materialInputs.SpecularPow, 1.0, 2048.0 );
+#else
+    float specPow           = 16;
+#endif
+#if VA_RM_ADVANCED_SPECULAR_SHADER == 0
+    ret.SpecularPow         = specPow;
+#endif
+    // completely arbitrary roughness from specular power conversion
+    // ret.Roughness           = saturate( 1.0 - (log2( specTex.a * materialInputs.SpecularPow ) - 1.0f) / 8.0 );
+    ret.Roughness           = SpecPowerToRoughness( specPow ).xx;
+
+    // convert roughness from UI representation 
+    ret.Roughness           = clamp( ret.Roughness * ret.Roughness, 0.0025, 1.0 );
+
+#ifdef VA_RM_HAS_INPUT_EnvironmentMapMul
+    ret.EnvironmentMapMul   = materialInputs.EnvironmentMapMul.x;
+#else
+    ret.EnvironmentMapMul   = 0;
+#endif
+
+#ifdef VA_RM_HAS_INPUT_RefractionIndex
+    ret.RefractionIndex     = materialInputs.RefractionIndex.x;
+#else
+    ret.RefractionIndex     = 0.2;
+#endif
+
+
+#if VA_RM_ADVANCED_SPECULAR_SHADER
+    FilterRoughnessDeferred( vertex.Position.xy, ret.CotangentFrame, g_globals.GlobalPixelScale, ret.Roughness );
+
+#endif                                                                     
+
+#if 0 // specular dampening for VRS
+    float2 shadingRate  = float2( ddx( vertex.Position.x ), ddy( vertex.Position.y ) );
+    float VRSScale      = sqrt( ( shadingRate.x + shadingRate.y ) * 0.5 );  // is 1 for VRS 1x1
+    ret.Roughness       = pow( ret.Roughness, 3.0 / ( VRSScale + 2.0 ) );   // no change for VRS 1x1
+    ret.Specular        = ret.Specular / (VRSScale * 0.2 + 0.8);            // no change for VRS 1x1
+#endif
+
+    //ret.Noise           = ComputeNoise( vertex );
+    Noise3D( vertex.WorldspacePos.xyz, ret.Noise, ret.NoiseAttenuation );
+
+    return ret;
+}
+
+void BasicMaterialAccumulateLights( float3 worldspacePos, SurfaceValues material, inout float3 diffuseAccum, inout float3 reflectedAccum )
+{
+    const float3 viewDir        = -normalize( g_globals.CameraWorldPosition.xyz - worldspacePos ); // normalized vector from the pixel to the eye (actually from eye to the pixel but this code is going to get cleaned anyway so ignore it)
+    const float3 materialNormal = material.CotangentFrame[2];
+
+    // Only apply lights above this brightness - TODO: should be based on current exposure/tonemapping settings!
+    const float minViableLightThreshold = 1e-3f;
+
+    uint i;
+    float diffTerm, specTerm;
+
+#if VA_RM_ACCEPTSHADOWS
+    CubeShadowsParams cubeShadowParams = ComputeCubeShadowsParams( material.Noise, material.NoiseAttenuation, worldspacePos );
+#endif
+
+    // directional lights
+    [loop]
+    for( i = 0; i < g_lighting.LightCountDirectional; i++ )
+    {
+        ShaderLightDirectional light = g_lighting.LightsDirectional[i];
+
+        diffTerm = saturate( dot( materialNormal, -light.Direction ) );
+
+//make absolutely sure this isn't used unless SubsurfaceScatterHack is defined, 'cause it's a bit horrible (it also prevent's the early-out branching below)
+#ifdef VA_RM_HAS_INPUT_SubsurfaceScatterHack
+        diffTerm = lerp( max( diffTerm, 0 ), 1, material.SubsurfaceScatterHack );
+#endif
+
+        [branch]    // early out, facing away from the light - both optimization and correctness but there should be a smoother transition to reduce aliasing
+        if( diffTerm > 0 )
+        {
+#if VA_RM_ADVANCED_SPECULAR_SHADER
+            ComputeGGXSpecularBRDF( viewDir, material.CotangentFrame, -light.Direction, material.Roughness, specTerm );
+#else
+            ComputePhongSpecularBRDF( viewDir, materialNormal, -light.Direction, material.SpecularPow, specTerm );
+#endif
+            specTerm = max( 0, specTerm );
+            diffuseAccum    += diffTerm * (light.Intensity * light.Color);
+            reflectedAccum  += specTerm * (light.Intensity * light.Color);
+        }
+    }
+
+    // point & spot lights combined
+    [loop]
+    for( i = 0; i < g_lighting.LightCountSpotAndPoint; i++ )
+    {
+        ShaderLightPoint light = g_lighting.LightsSpotAndPoint[i];
+
+        float3 pixelToLight = light.Position - worldspacePos;
+        float pixelToLightLength = length( pixelToLight );
+
+        if( pixelToLightLength > light.Range )
+            continue;
+
+        pixelToLight /= pixelToLightLength;
+
+        diffTerm = saturate( dot( materialNormal, pixelToLight ) );
+
+//make absolutely sure this isn't used unless SubsurfaceScatterHack is defined, 'cause it's a bit horrible (it also prevent's the early-out branching below)
+#ifdef VA_RM_HAS_INPUT_SubsurfaceScatterHack
+        diffTerm = lerp( max( diffTerm, 0 ), 1, material.SubsurfaceScatterHack );
+#endif
+
+#if VA_RM_SPECIAL_EMISSIVE_LIGHT
+        // only add emissive within light sphere, and then scale with light itself; this is to allow emissive materials to be 'controlled' by
+        // the light - useful for models that represent light emitters (lamps, etc.)
+        if( pixelToLightLength < light.Size )
+            diffuseAccum  += material.Emissive.rgb * (g_globals.GlobalSpecialEmissiveScale * light.Intensity * light.Color);
+#endif
+
+        // // debugging shadows
+        // if( light.CubeShadowIndex >= 0 )
+        // {
+        //     // do shadow map stuff
+        //     float3 cubeShadowDir = -normalize( mul( (float3x3)g_globals.ViewInv, pixelToLight ) );
+        //     float value = g_CubeShadowmapArray.Sample( g_samplerPointClamp, float4( cubeShadowDir, light.CubeShadowIndex ) ).x;
+        //     // return float4( GradientHeatMap( frac(length(viewspacePos)) ), 1.0 );
+        //     // return float4( GradientHeatMap( frac(pixelToLightLength) ), 1.0 );
+        //     return float4( GradientHeatMap( frac(value) ), 1.0 );
+        // }
+
+        [branch]    // early out, facing away from the light
+        if( diffTerm > 0 )
+        {
+            //const float earlyOutAttenuationThreshold = minViableLightThreshold / light.Intensity;
+
+            float attenuationSqrt = max( light.Size, pixelToLightLength );
+            float attenuation = 1.0 / (attenuationSqrt*attenuationSqrt);
+
+            float angle = acos( dot( light.Direction, -pixelToLight ) );
+            float spotAttenuation = saturate( (light.SpotOuterAngle - angle) / (light.SpotOuterAngle - light.SpotInnerAngle) );
+        
+            // squaring of spot attenuation is just for a softer outer->inner curve that I like more visually
+            attenuation *= spotAttenuation*spotAttenuation;
+            
+#if VA_RM_ACCEPTSHADOWS
+            [branch]
+            if( light.CubeShadowIndex >= 0 )
+                attenuation *= ComputeCubeShadow( cubeShadowParams, material.GeometryNormal, light.CubeShadowIndex, pixelToLight, pixelToLightLength, light.Size, light.Range );
+#endif
+
+            //[branch]
+            //if( attenuation > earlyOutAttenuationThreshold )
+            {
+
+#if VA_RM_ADVANCED_SPECULAR_SHADER
+                ComputeGGXSpecularBRDF( viewDir, material.CotangentFrame, pixelToLight, material.Roughness, specTerm );
+#else
+                ComputePhongSpecularBRDF( viewDir, materialNormal, pixelToLight, material.SpecularPow, specTerm );
+#endif
+                specTerm = max( 0, specTerm );
+                diffuseAccum    += (attenuation * diffTerm) * (light.Intensity * light.Color);
+                reflectedAccum  += (attenuation * specTerm) * (light.Intensity * light.Color);
+            }
+        }
+    }
+
+#if VA_RM_ADVANCED_SPECULAR_SHADER
+    reflectedAccum *= 0.05;   // ugly hack to make 'advanced specular' roughly match Phong in intensity
+    //return float4( frac( material.Roughness ).xxx, 1 );
+#endif
+}
+
+void BasicMaterialAccumulateReflections( float3 worldspacePos, SurfaceValues material, inout float3 reflectedAccum )
+{
+    const float3 viewDir        = -normalize( g_globals.CameraWorldPosition.xyz - worldspacePos ); // normalized vector from the pixel to the eye (actually from eye to the pixel but this code is going to get cleaned anyway so ignore it)
+    //const float3 viewDir        = normalize( viewspacePos );
+    const float3 materialNormal = material.CotangentFrame[2];
+
+    // for future reference: https://placeholderart.wordpress.com/2015/07/28/implementation-notes-runtime-environment-map-filtering-for-image-based-lighting/
+    float envMul = g_lighting.EnvmapMultiplier * material.EnvironmentMapMul * g_globals.PreExposureMultiplier;
+    
+#if 0
+    [branch]
+    if( g_lighting.EnvmapEnabled && ( envMul > 0.0 ) )
+    {
+        // viewDir is incidence dir - computing this in worldspace
+        float3 reflectionVec = reflect( viewDir, materialNormal );
+
+        // convert to world (or cubemap) space
+        // OPT: normalize not needed probably (shouldn't be needed)
+        reflectionVec = normalize( mul( (float3x3)g_lighting.EnvmapRotation, reflectionVec ) );
+
+        // how many mips do we have?
+        uint cubeWidth, cubeHeight, cubeNumberOfLevels;
+        g_EnvironmentMap.GetDimensions( 0, cubeWidth, cubeHeight, cubeNumberOfLevels );
+
+        float3 envSample = g_EnvironmentMap.SampleBias( g_samplerAnisotropicWrap, reflectionVec, (material.Roughness.x+material.Roughness.y) * 0.5 * 8.0 ).xyz;
+
+        envSample = max( envSample, 0 );
+
+        reflectedAccum += envMul * envSample;
+    }
+#endif
+}
+
+float3 BasicMaterialFinalizeLight( float3 worldspacePos, SurfaceValues material, float3 diffuseAccum, float3 reflectedAccum, uniform bool transparent )
+{
+    const float3 viewDir        = -normalize( g_globals.CameraWorldPosition.xyz - worldspacePos ); // normalized vector from the pixel to the eye (actually from eye to the pixel but this code is going to get cleaned anyway so ignore it)
+    const float3 materialNormal = material.CotangentFrame[2];
+
+    // Schlick Approximation for Fresnel term
+    const float Rzero = material.RefractionIndex;       // reflection coefficient
+    float fresnel = saturate( Rzero + ( 1.0f - Rzero ) * pow( abs( 1.0f - dot( -viewDir, materialNormal ) ), 5.0 ) );
+
+    // (this is not a PBR-based model - PBR is on the todo list :) )
+
+    // add albedo color to diffusely reflected light
+    diffuseAccum = diffuseAccum * material.Albedo;
+
+    // add specular color and scale by fresnel to directly reflected light
+    reflectedAccum = reflectedAccum * fresnel * material.Specular;
+
+    // start calculating final colour
+    float3 lightAccum       = 0;
+
+    // for debugging
+    // material.Opacity = 1;
+
+    lightAccum  += material.Albedo.rgb * g_lighting.AmbientLightIntensity.rgb;
+
+    // for debugging AO and similar - lights everything with white ambient and takes out most of the other lighting
+    // lightAccum = 50.0;
+
+    lightAccum  += diffuseAccum;
+
+    // these are not diminished by alpha so "un-alpha" them here (should probably use premult alpha blending mode and multiply above by alpha instead)
+    float reflectedFactor = 1.0;
+    if( transparent )
+        reflectedFactor /= max( 0.001, material.Opacity );
+    lightAccum  += material.Emissive.rgb * reflectedFactor * g_globals.PreExposureMultiplier;
+    lightAccum  += reflectedAccum * reflectedFactor;
+
+    lightAccum  = max( 0, lightAccum );
+
+    return lightAccum;
+}
+
+float4 MeshColor( const GeometryInterpolants interpolants, SurfaceValues material )
+{
+    float3 diffuseAccum     = 0.0f;
+    float3 reflectedAccum   = 0.0f;
+
+    BasicMaterialAccumulateLights( interpolants.WorldspacePos.xyz, material, diffuseAccum, reflectedAccum );
+
+    BasicMaterialAccumulateReflections( interpolants.WorldspacePos.xyz, material, reflectedAccum );
+
+#if VA_RM_SPECIAL_EMISSIVE_LIGHT
+    material.Emissive.rgb = 0;
+#endif
+
+#if VA_RM_TRANSPARENT
+    float3 lightAccum = BasicMaterialFinalizeLight( interpolants.WorldspacePos.xyz, material, diffuseAccum, reflectedAccum, true );
+#else
+    float3 lightAccum = BasicMaterialFinalizeLight( interpolants.WorldspacePos.xyz, material, diffuseAccum, reflectedAccum, false );
+#endif
+
+    lightAccum  = LightingApplyFog( interpolants.WorldspacePos.xyz, lightAccum );
+
+#if 0 // debug display normals, etc
+    const float3 materialNormal = material.CotangentFrame[2];
+    return float4( DisplayNormalSRGB( materialNormal ), 1.0 );
+#elif 0
+    return float4( DisplayNormalSRGB( material.CotangentFrame[0] ), 1.0 );
+#elif 0
+    return float4( frac( interpolants.Texcoord01.xy ), 0, 1 );
+#endif
+
+
+    //return float4( abs( 1.0 - abs(noiseMip - floor(noiseMip)), abs( 0.5 - abs(noiseMip - floor(noiseMip)), abs( 0.0 - abs(noiseMip - floor(noiseMip)) ), 1.0 );
+    //return float4( material.Noise.xxx, 1 );
+    //return float4( 1, 1, 1, 1 );
+
+#if !VA_RM_TRANSPARENT
+    lightAccum *= SampleAO( interpolants.Position.xy ).xxx;
+#endif
+
+    return float4( lightAccum, material.Opacity );
+}
+
+// depth test or a simple shadow map
+void PS_DepthOnly( const in GeometryInterpolants interpolants, const bool isFrontFace : SV_IsFrontFace )// : SV_Target
+{
+#if VA_RM_ALPHATEST
+    FillBasicMaterialValues( GetInstanceConstants(), interpolants, isFrontFace, true );
+#endif
+    // // if transparent, depth test
+    // return float4( 0.0, 1.0, 0.0, 1.0 );
+}
+
+// pixel shader outputs custom shadow value(s)
+float4 PS_CustomShadow( const in GeometryInterpolants interpolants, const bool isFrontFace : SV_IsFrontFace ) : SV_Target
+{
+#if VA_RM_ALPHATEST
+    FillBasicMaterialValues( GetInstanceConstants(), interpolants, isFrontFace, true );
+#endif
+
+//    if( g_globals.CustomShadowmapShaderType == 1 )
+//    {
+//        const float3 pixelToLight        = g_globals.CameraWorldPosition.xyz - interpolants.WorldspacePos.xyz; // normalized vector from the pixel to the eye 
+//
+//        // offsets added in the vertex shader - look for ViewspaceDepthOffsetFlatAdd etc
+//        float viewspaceLength = length( pixelToLight );
+//
+//        // use sqrt of length for more nearby precision in R16_UNORM (not ideal but works better than linear)
+//        // note, g_globals.CameraNearFar.y is same as light->Range
+//        return float4( sqrt(viewspaceLength / g_globals.CameraNearFar.y), 0.0, 0.0, 0.0 );
+//        //return float4( viewspaceLength, 0.0, 0.0, 0.0 );
+//    }
+//    else
+//    {
+        return float4( 0.0, 0.0, 0.0, 0.0 );
+//    }
+    // // if transparent, depth test
+    // return float4( 0.0, 1.0, 0.0, 1.0 );
+}
+
+[earlydepthstencil]
+float4 PS_Forward( const in GeometryInterpolants vertex, const bool isFrontFace : SV_IsFrontFace ) : SV_Target
+{
+#if VA_RM_ALPHATEST && !defined(VA_NO_ALPHA_TEST_IN_MAIN_DRAW)
+    const bool alphaTest = true;
+#else
+    const bool alphaTest = false;
+#endif
+
+    const ShaderInstanceConstants instance = GetInstanceConstants();
+    SurfaceValues material = FillBasicMaterialValues( instance, vertex, isFrontFace, alphaTest );
+
+    // after alpha-test
+    ReportCursorInfo( vertex.Position );
+
+    float4 finalColor = MeshColor( vertex, material );
+
+
+    // this adds UI highlights and other similar stuff
+    float4 emissiveAdd = Unpack_R10G10B10FLOAT_A2_UNORM( instance.EmissiveAddPacked );
+    finalColor.rgb = finalColor.rgb * emissiveAdd.a + emissiveAdd.rgb;
+
+    //return float4( lerp( material.Noise, 0.5, material.NoiseAttenuation ).xxx, 1.0 );
+
+    return finalColor;
+}
+
+// pixel shader outputs custom shadow value(s)
+float4 PS_UnlitCustomShadow( const in GeometryInterpolants interpolants, const bool isFrontFace : SV_IsFrontFace ) : SV_Target
+{
+#if VA_RM_ALPHATEST
+#ifdef VA_RM_HAS_INPUT_Color
+    const ShaderInstanceConstants instance = GetInstanceConstants();
+    const ShaderMaterialConstants materialConstants = g_materialConstants[ instance.MaterialConstantsIndex ];
+    const RenderMaterialInputs materialInputs = LoadRenderMaterialInputs( instance, interpolants, materialConstants );
+    float4 textureInput = materialInputs.Color;
+#else
+    float4 textureInput = float4( 1, 1, 1, 1 );
+#endif
+    float opacity       = textureInput.a * interpolants.Color.a;
+
+    if( (opacity+g_globals.WireframePass) < VA_RM_ALPHATEST_THRESHOLD ) // g_RenderMeshMaterialGlobal.AlphaCutoff
+        discard;
+#endif
+
+//    if( g_globals.CustomShadowmapShaderType == 1 )
+//    {
+//        const float3 viewDir        = normalize( g_globals.CameraWorldPosition.xyz - interpolants.WorldspacePos.xyz ); // normalized vector from the pixel to the eye 
+//
+//        // offsets added in the vertex shader - look for ViewspaceDepthOffsetFlatAdd etc
+//        float viewspaceLength = length( viewDir );
+//
+//        // use sqrt of length for more nearby precision in R16_UNORM (not ideal but works better than linear)
+//        // note, g_globals.CameraNearFar.y is same as light->Range
+//        return float4( sqrt(viewspaceLength / g_globals.CameraNearFar.y), 0.0, 0.0, 0.0 );
+//        //return float4( viewspaceLength, 0.0, 0.0, 0.0 );
+//    }
+//    else
+//    {
+        return float4( 0.0, 0.0, 0.0, 0.0 );
+//    }
+    // // if transparent, depth test
+    // return float4( 0.0, 1.0, 0.0, 1.0 );
+}
+
+void PS_UnlitDepthOnly( const in GeometryInterpolants interpolants, const bool isFrontFace : SV_IsFrontFace )// : SV_Target
+{
+#if VA_RM_ALPHATEST
+#ifdef VA_RM_HAS_INPUT_Color
+    const ShaderInstanceConstants instance = GetInstanceConstants();
+    const ShaderMaterialConstants materialConstants = g_materialConstants[ instance.MaterialConstantsIndex ];
+    const RenderMaterialInputs materialInputs = LoadRenderMaterialInputs( instance, interpolants, materialConstants );
+    float4 textureInput = materialInputs.Color;
+#else
+    float4 textureInput = float4( 1, 1, 1, 1 );
+#endif
+    float opacity       = textureInput.a * interpolants.Color.a;
+
+    if( (opacity+g_globals.WireframePass) < VA_RM_ALPHATEST_THRESHOLD ) // g_RenderMeshMaterialGlobal.AlphaCutoff
+        discard;
+#endif
+}
+
+float4 PS_UnlitForward( const in GeometryInterpolants interpolants, const bool isFrontFace : SV_IsFrontFace ) : SV_Target
+{
+    float3 color        = interpolants.Color.rgb;
+    float opacity       = interpolants.Color.a;
+
+#ifndef VA_RM_TEXTURE_DECLARATIONS
+#error Not compiled with vaRenderMaterial input definitions? this will not work!
+#endif
+
+#ifdef VA_RM_HAS_INPUT_Color
+    const ShaderInstanceConstants instance = GetInstanceConstants();
+    const ShaderMaterialConstants materialConstants = g_materialConstants[ instance.MaterialConstantsIndex ];
+    const RenderMaterialInputs materialInputs = LoadRenderMaterialInputs( instance, interpolants, materialConstants );
+    float4 textureInput = materialInputs.Color;
+#else
+    float4 textureInput = float4( 1, 1, 1, 1 );
+#endif
+
+    color               *= textureInput.rgb;
+    opacity             *= textureInput.a;
+
+#if VA_RM_ALPHATEST && !defined(VA_NO_ALPHA_TEST_IN_MAIN_DRAW)
+    if( (opacity+g_globals.WireframePass) < VA_RM_ALPHATEST_THRESHOLD ) // g_RenderMeshMaterialGlobal.AlphaCutoff
+        discard;
+#endif
+
+    return float4( color, opacity );
+}

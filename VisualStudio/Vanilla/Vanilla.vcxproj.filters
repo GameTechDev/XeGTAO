@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Media">
+      <UniqueIdentifier>{e308ebc0-8ee7-4028-bebe-3cf34ce38451}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Media\Textures">
+      <UniqueIdentifier>{fcdaf0fc-face-45ab-9722-e40cba5c52ce}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\Source\Project\Vanilla.cpp" />
+    <ClCompile Include="..\..\Source\Project\Samples.cpp" />
+    <ClCompile Include="..\..\Source\Project\Workspaces.cpp" />
+    <ClCompile Include="..\..\Source\Project\Asteroids.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Project\Vanilla.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\README.md" />
+    <None Include="..\..\CONTRIBUTING.md" />
+    <None Include="..\..\INTEGRATION.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="..\..\Source\Project\default.camerastate" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,4 @@
+Blue noise textures are from http://momentsingraphics.de/BlueNoise.html by Christoph Peters. Many thanks for providing such an excellent resource.
+
+Quote:
+"Of course, nobody likes to get the code of others running. And you do not have to. I kept my notebook busy for a few days to generate blue noise textures that should cover most needs. This way, you only have to download the textures, load them into your engine and write a few lines of shader code. I have placed them in the public domain through CC0-licensing."

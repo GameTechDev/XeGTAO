@@ -1,0 +1,2294 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="IntegratedExternals">
+      <UniqueIdentifier>{40d3a7b4-0b26-4de4-bae6-5a137d822caa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\imgui">
+      <UniqueIdentifier>{d2c631ad-6609-49b8-9940-c7fc490b5c93}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\bullet">
+      <UniqueIdentifier>{e97a7498-e80b-4566-97bd-9d070fc057c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\tinyxml2">
+      <UniqueIdentifier>{f2185e0b-a2fe-45c6-b71e-9af171292637}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\zlib">
+      <UniqueIdentifier>{768cd35f-e639-4f26-88c3-b59b1c0d2cc3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\assimp">
+      <UniqueIdentifier>{f57ae276-d3a0-4f95-8975-14264e34ec2d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\assimp\cpp">
+      <UniqueIdentifier>{417584ca-60b4-4abf-89a7-fd6d1f9f21cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\assimp\h">
+      <UniqueIdentifier>{41bb95de-571a-4f2b-8c91-db629241a572}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\zlib\c">
+      <UniqueIdentifier>{de98d652-65df-4d6c-9936-ff6be60fdbcc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\zlib\h">
+      <UniqueIdentifier>{4f7b143a-04e3-496d-a512-36452c2ea624}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\DirectXTex">
+      <UniqueIdentifier>{5b684759-4761-40bd-9b27-37230146af12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\DirectXTex\cpp">
+      <UniqueIdentifier>{a3933376-4cf9-47d7-be59-d02ea0b874ef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\DirectXTex\h">
+      <UniqueIdentifier>{af43fd85-99d6-49c0-958b-90ea9367193f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\assimp\include">
+      <UniqueIdentifier>{9cca291e-bdeb-47fb-a8f2-282d9f1891ef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\taskflow">
+      <UniqueIdentifier>{e43c3131-c184-470e-8292-b01fdecf0110}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\assimp\include\Compiler">
+      <UniqueIdentifier>{f39d8d10-88e4-4302-8150-1e202221448d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\dxc">
+      <UniqueIdentifier>{7d01d779-f212-4633-a293-a77649a97040}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\entt">
+      <UniqueIdentifier>{09635c59-3c97-450c-b8ce-2af45cca29ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\entt\config">
+      <UniqueIdentifier>{1b9bc4c7-c57b-4ec9-b4fc-2f2d3b9fb45e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\entt\core">
+      <UniqueIdentifier>{6c5fe41f-6df2-4a67-a98e-d4037cddfa52}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\entt\entity">
+      <UniqueIdentifier>{318062ef-4c9f-4bcf-8aa4-105c3cc7aa96}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\entt\locator">
+      <UniqueIdentifier>{63a5dc8a-3133-4b83-a90f-31a19b945b54}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\entt\meta">
+      <UniqueIdentifier>{691d5bd4-d290-406f-8700-55064511c6e8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\entt\process">
+      <UniqueIdentifier>{786fbc43-cad8-472f-b535-0a7c87c118df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\entt\resource">
+      <UniqueIdentifier>{a488c012-bf2f-4ad6-9859-413b64110ea0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\entt\signal">
+      <UniqueIdentifier>{90902e30-294a-4fca-9107-2877b8737707}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\imgui\ImGuizmo">
+      <UniqueIdentifier>{6a941dcd-48c2-42e5-a6be-78d3644935d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\WinPixEventRuntime">
+      <UniqueIdentifier>{b3258bf2-75c9-4fc1-8d0c-890baa73fdd2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\meshoptimizer">
+      <UniqueIdentifier>{58d9ab98-8ea6-4a9f-b8ce-291b5fa02ff3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\nlohmann-json">
+      <UniqueIdentifier>{6ec427f3-a088-4f29-97a4-721f93119099}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\half">
+      <UniqueIdentifier>{32bddab0-f91b-4f97-b920-6182c248987d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\imgui\backends">
+      <UniqueIdentifier>{0c54cd0d-b914-4f4a-bb8c-7ce0689f2194}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IntegratedExternals\entt\Poly">
+      <UniqueIdentifier>{4beb00f7-fd8c-4b05-bd0b-8c903d9d2cb8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\imgui.cpp">
+      <Filter>IntegratedExternals\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\imgui_demo.cpp">
+      <Filter>IntegratedExternals\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\imgui_draw.cpp">
+      <Filter>IntegratedExternals\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\tinyxml2\tinyxml2.cpp">
+      <Filter>IntegratedExternals\tinyxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\vaImguiIntegration.cpp">
+      <Filter>IntegratedExternals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\adler32.c">
+      <Filter>IntegratedExternals\zlib\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\compress.c">
+      <Filter>IntegratedExternals\zlib\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\crc32.c">
+      <Filter>IntegratedExternals\zlib\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\deflate.c">
+      <Filter>IntegratedExternals\zlib\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\gzclose.c">
+      <Filter>IntegratedExternals\zlib\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\gzlib.c">
+      <Filter>IntegratedExternals\zlib\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\gzread.c">
+      <Filter>IntegratedExternals\zlib\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\gzwrite.c">
+      <Filter>IntegratedExternals\zlib\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\infback.c">
+      <Filter>IntegratedExternals\zlib\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\inffast.c">
+      <Filter>IntegratedExternals\zlib\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\inflate.c">
+      <Filter>IntegratedExternals\zlib\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\inftrees.c">
+      <Filter>IntegratedExternals\zlib\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\trees.c">
+      <Filter>IntegratedExternals\zlib\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\uncompr.c">
+      <Filter>IntegratedExternals\zlib\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\zutil.c">
+      <Filter>IntegratedExternals\zlib\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\BC.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\BC4BC5.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\BC6HBC7.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\BCDirectCompute.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DDSTextureLoader\DDSTextureLoader.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DDSTextureLoader\DDSTextureLoader12.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexCompress.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexCompressGPU.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexConvert.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexD3D11.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexD3D12.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexDDS.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexFlipRotate.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexHDR.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexImage.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexMipmaps.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexMisc.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexNormalMaps.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexPMAlpha.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexResize.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexTGA.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexUtil.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexWIC.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\ScreenGrab\ScreenGrab.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\ScreenGrab\ScreenGrab12.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\WICTextureLoader\WICTextureLoader.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\WICTextureLoader\WICTextureLoader12.cpp">
+      <Filter>IntegratedExternals\DirectXTex\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\imgui_widgets.cpp">
+      <Filter>IntegratedExternals\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\vaGTSIntegration.cpp">
+      <Filter>IntegratedExternals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\vaTaskflowIntegration.cpp">
+      <Filter>IntegratedExternals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderBMesh.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderCustomData.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderDNA.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderModifier.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderScene.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderTessellator.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\BVH\BVHLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\C4D\C4DImporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\CApi\CInterfaceIOWrapper.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\COB\COBLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\AC\ACLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\AMF\AMFImporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\AMF\AMFImporter_Geometry.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\AMF\AMFImporter_Material.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\AMF\AMFImporter_Postprocess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\ASE\ASELoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\ASE\ASEParser.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Assbin\AssbinExporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Assbin\AssbinLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Assxml\AssxmlExporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Assjson\cencode.c">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\3MF\D3MFImporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\3MF\D3MFOpcPackage.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Assjson\json_exporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Assjson\mesh_splitter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\3DS\3DSConverter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\3DS\3DSExporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\3DS\3DSLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\3MF\D3MFExporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\glTF2\glTF2Exporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\glTF2\glTF2Importer.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\glTF\glTFExporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\glTF\glTFImporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\FIReader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DExporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Geometry2D.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Geometry3D.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Group.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Light.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Metadata.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Networking.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Postprocess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Rendering.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Shape.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Texturing.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DVocabulary.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X\XFileImporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X\XFileParser.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\XGL\XGLLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Q3BSP\Q3BSPFileImporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Q3BSP\Q3BSPFileParser.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Q3D\Q3DLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Raw\RawLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\SIB\SIBImporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\SMD\SMDLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\SortByPTypeProcess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\SplitLargeMeshes.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Step\StepExporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\STL\STLExporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\STL\STLLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Terragen\TerragenLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\TextureTransform.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\TriangulateProcess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Unreal\UnrealLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ValidateDataStructure.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X\XFileExporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\EmbedTexturesProcess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\FindDegenerates.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\FindInstancesProcess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\FindInvalidDataProcess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\FixNormalsStep.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\GenBoundingBoxesProcess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\GenFaceNormalsProcess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\GenVertexNormalsProcess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ImproveCacheLocality.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\JoinVerticesProcess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\LimitBoneWeightsProcess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\MakeVerboseFormat.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\OptimizeGraph.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\OptimizeMeshes.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\PretransformVertices.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ProcessHelper.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\RemoveRedundantMaterials.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\RemoveVCProcess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ScaleProcess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\CalcTangentsProcess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ComputeUVMappingProcess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ConvertToLHProcess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\DeboneProcess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\DropFaceNormalsProcess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjFileImporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjFileMtlImporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjFileParser.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreBinarySerializer.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreImporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreMaterial.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreStructs.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreXmlSerializer.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\OpenGEX\OpenGEXExporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\OpenGEX\OpenGEXImporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Ply\PlyExporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Ply\PlyLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Ply\PlyParser.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Material\MaterialSystem.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MD5\MD5Loader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MD5\MD5Parser.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MDC\MDCLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MDL\MDLLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MDL\MDLMaterialLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MMD\MMDImporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MMD\MMDPmxParser.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MS3D\MS3DLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\NDO\NDOLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\NFF\NFFLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjExporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\OFF\OFFLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Irr\IRRLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Irr\IRRMeshLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Irr\IRRShared.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\LWO\LWOAnimation.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\LWO\LWOBLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\LWO\LWOLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\LWO\LWOMaterial.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\LWS\LWSLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MD2\MD2Loader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MD3\MD3Loader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\HMP\HMPLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXConverter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXDeformer.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXDocument.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXDocumentUtil.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXExporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXExportNode.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXExportProperty.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXImporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXMaterial.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXMeshGeometry.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXModel.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXNodeAttribute.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXParser.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXProperties.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXTokenizer.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXUtil.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\DXF\DXFLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXAnimation.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXBinaryTokenizer.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\PostStepRegistry.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\RemoveComments.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\scene.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\SceneCombiner.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\ScenePreprocessor.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\SGSpatialSort.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\simd.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\SkeletonMeshBuilder.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\SpatialSort.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\SplitByBoneCountProcess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\StandardShapes.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\Subdivision.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\TargetAnimation.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\Version.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\VertexTriangleAdjacency.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\ZipArchiveIOSystem.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\Assimp.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\BaseImporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\BaseProcess.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\Bitmap.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Collada\ColladaExporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Collada\ColladaLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Collada\ColladaParser.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\CreateAnimMesh.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\CSM\CSMLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\DefaultIOStream.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\DefaultIOSystem.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\DefaultLogger.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\Exporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\Importer.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\ImporterRegistry.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\CApi\AssimpCExport.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\B3D\B3DImporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\STEPParser\STEPFileReader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\STEPParser\STEPFileEncoding.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\StepFile\StepFileImporter.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\StepFile\StepFileGen3.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\StepFile\StepFileGen2.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\StepFile\StepFileGen1.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCUtil.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCReaderGen_4.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCReaderGen2_2x3.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCReaderGen1_2x3.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCProfile.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCOpenings.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCMaterial.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCLoader.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCGeometry.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCCurve.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCBoolean.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\contrib\irrXML\irrXML.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\contrib\Open3DGC\o3dgcDynamicVectorDecoder.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\contrib\Open3DGC\o3dgcDynamicVectorEncoder.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\contrib\Open3DGC\o3dgcTools.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\contrib\Open3DGC\o3dgcTriangleFans.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\contrib\Open3DGC\o3dgcArithmeticCodec.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\glTF\glTFCommon.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ArmaturePopulate.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Collada\ColladaHelper.cpp">
+      <Filter>IntegratedExternals\assimp\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\ImGuizmo\ImCurveEdit.cpp">
+      <Filter>IntegratedExternals\imgui\ImGuizmo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\ImGuizmo\ImGradient.cpp">
+      <Filter>IntegratedExternals\imgui\ImGuizmo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\ImGuizmo\ImGuizmo.cpp">
+      <Filter>IntegratedExternals\imgui\ImGuizmo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\ImGuizmo\ImSequencer.cpp">
+      <Filter>IntegratedExternals\imgui\ImGuizmo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\misc\cpp\imgui_stdlib.cpp">
+      <Filter>IntegratedExternals\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\allocator.cpp">
+      <Filter>IntegratedExternals\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\clusterizer.cpp">
+      <Filter>IntegratedExternals\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\indexcodec.cpp">
+      <Filter>IntegratedExternals\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\indexgenerator.cpp">
+      <Filter>IntegratedExternals\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\overdrawanalyzer.cpp">
+      <Filter>IntegratedExternals\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\overdrawoptimizer.cpp">
+      <Filter>IntegratedExternals\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\simplifier.cpp">
+      <Filter>IntegratedExternals\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\spatialorder.cpp">
+      <Filter>IntegratedExternals\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\stripifier.cpp">
+      <Filter>IntegratedExternals\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\vcacheanalyzer.cpp">
+      <Filter>IntegratedExternals\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\vcacheoptimizer.cpp">
+      <Filter>IntegratedExternals\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\vertexcodec.cpp">
+      <Filter>IntegratedExternals\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\vertexfilter.cpp">
+      <Filter>IntegratedExternals\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\vfetchanalyzer.cpp">
+      <Filter>IntegratedExternals\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\vfetchoptimizer.cpp">
+      <Filter>IntegratedExternals\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\backends\imgui_impl_dx12.cpp">
+      <Filter>IntegratedExternals\imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\backends\imgui_impl_win32.cpp">
+      <Filter>IntegratedExternals\imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\imgui_tables.cpp">
+      <Filter>IntegratedExternals\imgui</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\imconfig.h">
+      <Filter>IntegratedExternals\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\imgui.h">
+      <Filter>IntegratedExternals\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\imgui_internal.h">
+      <Filter>IntegratedExternals\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\stb_rect_pack.h">
+      <Filter>IntegratedExternals\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\stb_textedit.h">
+      <Filter>IntegratedExternals\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\stb_truetype.h">
+      <Filter>IntegratedExternals\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaBulletPhysicsIntegration.h">
+      <Filter>IntegratedExternals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaImguiIntegration.h">
+      <Filter>IntegratedExternals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\tinyxml2\tinyxml2.h">
+      <Filter>IntegratedExternals\tinyxml2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaTinyxml2Integration.h">
+      <Filter>IntegratedExternals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaAssimpIntegration.h">
+      <Filter>IntegratedExternals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\bullet\vaBulletIntegrationSpecifics.h">
+      <Filter>IntegratedExternals\bullet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h">
+      <Filter>IntegratedExternals\assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\vaZLIBIntegrationSpecifics.h">
+      <Filter>IntegratedExternals\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaZlibIntegration.h">
+      <Filter>IntegratedExternals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\crc32.h">
+      <Filter>IntegratedExternals\zlib\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\deflate.h">
+      <Filter>IntegratedExternals\zlib\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\gzguts.h">
+      <Filter>IntegratedExternals\zlib\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\inffast.h">
+      <Filter>IntegratedExternals\zlib\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\inffixed.h">
+      <Filter>IntegratedExternals\zlib\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\inflate.h">
+      <Filter>IntegratedExternals\zlib\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\inftrees.h">
+      <Filter>IntegratedExternals\zlib\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\trees.h">
+      <Filter>IntegratedExternals\zlib\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\zconf.h">
+      <Filter>IntegratedExternals\zlib\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\zlib.h">
+      <Filter>IntegratedExternals\zlib\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\zutil.h">
+      <Filter>IntegratedExternals\zlib\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\BC.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\BCDirectCompute.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DDS.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSTextureLoader\DDSTextureLoader.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSTextureLoader\DDSTextureLoader12.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTex.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexP.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\scoped.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\Filters.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSView\shaders\ps1D.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSView\shaders\ps1Darray.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSView\shaders\ps2D.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSView\shaders\ps2Darray.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSView\shaders\ps3D.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSView\shaders\psCube.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\WICTextureLoader\WICTextureLoader12.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\WICTextureLoader\WICTextureLoader.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSView\shaders\vs.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\ScreenGrab\ScreenGrab12.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\ScreenGrab\ScreenGrab.h">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\imstb_textedit.h">
+      <Filter>IntegratedExternals\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\imstb_truetype.h">
+      <Filter>IntegratedExternals\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\imstb_rectpack.h">
+      <Filter>IntegratedExternals\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaGTSIntegration.h">
+      <Filter>IntegratedExternals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaTaskflowIntegration.h">
+      <Filter>IntegratedExternals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\glTF2\glTF2Asset.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\glTF2\glTF2AssetWriter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\glTF2\glTF2Exporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\glTF2\glTF2Importer.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\glTF\glTFExporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\glTF\glTFImporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\res\resource.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\X3D\FIReader.hpp">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\glTF\glTFAsset.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\glTF\glTFAssetWriter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DExporter.hpp">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter.hpp">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Macro.hpp">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Node.hpp">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\X\XFileImporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\X\XFileParser.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\XGL\XGLLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Q3BSP\Q3BSPFileData.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Q3BSP\Q3BSPFileImporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Q3BSP\Q3BSPFileParser.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Q3D\Q3DLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Raw\RawLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\SIB\SIBImporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\SMD\SMDLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\SortByPTypeProcess.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\SplitLargeMeshes.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Step\StepExporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Step\STEPFile.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\STL\STLExporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\STL\STLLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Terragen\TerragenLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\TextureTransform.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\TriangulateProcess.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Unreal\UnrealLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ValidateDataStructure.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\X\XFileExporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\X\XFileHelper.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\DropFaceNormalsProcess.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\EmbedTexturesProcess.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\FindDegenerates.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\FindInstancesProcess.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\FindInvalidDataProcess.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\FixNormalsStep.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\GenBoundingBoxesProcess.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\GenFaceNormalsProcess.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\GenVertexNormalsProcess.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ImproveCacheLocality.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\JoinVerticesProcess.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\LimitBoneWeightsProcess.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\MakeVerboseFormat.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\OptimizeGraph.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\OptimizeMeshes.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\PretransformVertices.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ProcessHelper.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\RemoveRedundantMaterials.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\RemoveVCProcess.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ScaleProcess.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\CalcTangentsProcess.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ComputeUVMappingProcess.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ConvertToLHProcess.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\DeboneProcess.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjFileImporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjFileMtlImporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjFileParser.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjTools.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreBinarySerializer.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreImporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreParsingUtils.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreStructs.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreXmlSerializer.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\OpenGEX\OpenGEXExporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\OpenGEX\OpenGEXImporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\OpenGEX\OpenGEXStructs.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Ply\PlyExporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Ply\PlyLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Ply\PlyParser.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Material\MaterialSystem.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MD4\MD4FileData.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MD5\MD5Loader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MD5\MD5Parser.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MDC\MDCFileData.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MDC\MDCLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MDC\MDCNormalTable.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MDL\MDLDefaultColorMap.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MDL\MDLFileData.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MDL\MDLLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MMD\MMDCpp14.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MMD\MMDImporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MMD\MMDPmdParser.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MMD\MMDPmxParser.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MMD\MMDVmdParser.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MS3D\MS3DLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\NDO\NDOLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\NFF\NFFLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjExporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjFileData.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\OFF\OFFLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Irr\IRRLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Irr\IRRMeshLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Irr\IRRShared.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\LWO\LWOAnimation.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\LWO\LWOFileData.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\LWO\LWOLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\LWS\LWSLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MD2\MD2FileData.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MD2\MD2Loader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MD2\MD2NormalTable.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MD3\MD3FileData.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MD3\MD3Loader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\HMP\HalfLifeFileData.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\HMP\HMPLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXConverter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXDocument.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXDocumentUtil.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXExporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXExportNode.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXExportProperty.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXImporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXImportSettings.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXMeshGeometry.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXParser.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXProperties.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXTokenizer.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXUtil.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\HMP\HMPFileData.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\assbin_chunks.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\DXF\DXFHelper.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\DXF\DXFLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXCommon.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXCompileConfig.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\ScenePreprocessor.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\ScenePrivate.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\simd.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\SplitByBoneCountProcess.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\StdOStreamLogStream.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\TargetAnimation.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\VertexTriangleAdjacency.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\Win32DebugLogStream.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\BaseProcess.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\COB\COBScene.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Collada\ColladaExporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Collada\ColladaHelper.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Collada\ColladaLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Collada\ColladaParser.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\CSM\CSMLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\DefaultProgressHandler.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\FileLogStream.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\FileSystemFilter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\IFF.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\Importer.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\PolyTools.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\B3D\B3DImporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderBMesh.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderCustomData.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderDNA.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderIntermediate.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderModifier.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderScene.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderSceneGen.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderTessellator.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\BVH\BVHLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\C4D\C4DImporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\CApi\CInterfaceIOWrapper.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\COB\COBLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\AC\ACLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\AMF\AMFImporter.hpp">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\AMF\AMFImporter_Macro.hpp">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\AMF\AMFImporter_Node.hpp">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\ASE\ASELoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\ASE\ASEParser.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Assbin\AssbinExporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Assbin\AssbinLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Assxml\AssxmlExporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Assjson\cencode.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\3MF\D3MFImporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\3MF\D3MFOpcPackage.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Assjson\mesh_splitter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\3DS\3DSExporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\3DS\3DSHelper.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\3DS\3DSLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\3MF\3MFXmlTags.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\3MF\D3MFExporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Compiler\poppack1.h">
+      <Filter>IntegratedExternals\assimp\include\Compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Compiler\pstdint.h">
+      <Filter>IntegratedExternals\assimp\include\Compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Compiler\pushpack1.h">
+      <Filter>IntegratedExternals\assimp\include\Compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\aabb.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\ai_assert.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\anim.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\BaseImporter.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Bitmap.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\BlobIOSystem.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\ByteSwapper.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\camera.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\cexport.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\cfileio.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\cimport.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\color4.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\config.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\CreateAnimMesh.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\DefaultIOStream.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\DefaultIOSystem.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\DefaultLogger.hpp">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Defines.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\defs.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Exceptional.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Exporter.hpp">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\fast_atof.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\GenericProperty.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Hash.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Importer.hpp">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\importerdesc.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\IOStream.hpp">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\IOStreamBuffer.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\IOSystem.hpp">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\irrXMLWrapper.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\light.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\LineSplitter.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\LogAux.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Logger.hpp">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\LogStream.hpp">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\material.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\MathFunctions.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\matrix3x3.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\matrix4x4.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\MemoryIOWrapper.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\mesh.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\metadata.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\NullLogger.hpp">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\ParsingUtils.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\pbrmaterial.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\postprocess.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Profiler.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\ProgressHandler.hpp">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\qnan.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\quaternion.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\RemoveComments.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\scene.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\SceneCombiner.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\SGSpatialSort.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\SkeletonMeshBuilder.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\SmoothingGroups.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\SpatialSort.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\StandardShapes.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\StreamReader.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\StreamWriter.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\StringComparison.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\StringUtils.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Subdivision.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\texture.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\TinyFormatter.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\types.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\vector2.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\vector3.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\version.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Vertex.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\XMLTools.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\ZipArchiveIOSystem.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Importer\STEPParser\STEPFileReader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Importer\STEPParser\STEPFileEncoding.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Importer\StepFile\StepReaderGen.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Importer\StepFile\StepFileImporter.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCUtil.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCReaderGen_4.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCReaderGen_2x3.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCLoader.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\glTF\glTFCommon.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\dxc\dxcapi.h">
+      <Filter>IntegratedExternals\dxc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\dxc\dxcapi.use.h">
+      <Filter>IntegratedExternals\dxc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\dxc\addref.h">
+      <Filter>IntegratedExternals\dxc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ArmaturePopulate.h">
+      <Filter>IntegratedExternals\assimp\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaEnTTIntegration.h">
+      <Filter>IntegratedExternals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\config\config.h">
+      <Filter>IntegratedExternals\entt\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\config\version.h">
+      <Filter>IntegratedExternals\entt\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\algorithm.hpp">
+      <Filter>IntegratedExternals\entt\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\family.hpp">
+      <Filter>IntegratedExternals\entt\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\hashed_string.hpp">
+      <Filter>IntegratedExternals\entt\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\ident.hpp">
+      <Filter>IntegratedExternals\entt\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\monostate.hpp">
+      <Filter>IntegratedExternals\entt\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\type_traits.hpp">
+      <Filter>IntegratedExternals\entt\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\utility.hpp">
+      <Filter>IntegratedExternals\entt\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\runtime_view.hpp">
+      <Filter>IntegratedExternals\entt\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\snapshot.hpp">
+      <Filter>IntegratedExternals\entt\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\sparse_set.hpp">
+      <Filter>IntegratedExternals\entt\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\storage.hpp">
+      <Filter>IntegratedExternals\entt\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\view.hpp">
+      <Filter>IntegratedExternals\entt\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\actor.hpp">
+      <Filter>IntegratedExternals\entt\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\entity.hpp">
+      <Filter>IntegratedExternals\entt\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\fwd.hpp">
+      <Filter>IntegratedExternals\entt\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\group.hpp">
+      <Filter>IntegratedExternals\entt\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\helper.hpp">
+      <Filter>IntegratedExternals\entt\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\observer.hpp">
+      <Filter>IntegratedExternals\entt\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\registry.hpp">
+      <Filter>IntegratedExternals\entt\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\locator\locator.hpp">
+      <Filter>IntegratedExternals\entt\locator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\factory.hpp">
+      <Filter>IntegratedExternals\entt\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\meta.hpp">
+      <Filter>IntegratedExternals\entt\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\policy.hpp">
+      <Filter>IntegratedExternals\entt\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\process\process.hpp">
+      <Filter>IntegratedExternals\entt\process</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\process\scheduler.hpp">
+      <Filter>IntegratedExternals\entt\process</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\resource\cache.hpp">
+      <Filter>IntegratedExternals\entt\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\resource\fwd.hpp">
+      <Filter>IntegratedExternals\entt\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\resource\handle.hpp">
+      <Filter>IntegratedExternals\entt\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\resource\loader.hpp">
+      <Filter>IntegratedExternals\entt\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\signal\delegate.hpp">
+      <Filter>IntegratedExternals\entt\signal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\signal\dispatcher.hpp">
+      <Filter>IntegratedExternals\entt\signal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\signal\emitter.hpp">
+      <Filter>IntegratedExternals\entt\signal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\signal\fwd.hpp">
+      <Filter>IntegratedExternals\entt\signal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\signal\sigh.hpp">
+      <Filter>IntegratedExternals\entt\signal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entt.hpp">
+      <Filter>IntegratedExternals\entt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\fwd.hpp">
+      <Filter>IntegratedExternals\entt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\commonMetaData.h">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\ImGuizmo\ImCurveEdit.h">
+      <Filter>IntegratedExternals\imgui\ImGuizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\ImGuizmo\ImGradient.h">
+      <Filter>IntegratedExternals\imgui\ImGuizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\ImGuizmo\ImGuizmo.h">
+      <Filter>IntegratedExternals\imgui\ImGuizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\ImGuizmo\ImSequencer.h">
+      <Filter>IntegratedExternals\imgui\ImGuizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\attribute.h">
+      <Filter>IntegratedExternals\entt\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\type_info.hpp">
+      <Filter>IntegratedExternals\entt\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\misc\cpp\imgui_stdlib.h">
+      <Filter>IntegratedExternals\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\error.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\executor.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\flow_builder.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\graph.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\notifier.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\observer.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\task.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\taskflow.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\topology.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\tsq.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\cuda\cuda_device.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\cuda\cuda_error.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\cuda\cuda_flow.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\cuda\cuda_graph.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\cuda\cuda_task.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\nstd\any.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\nstd\optional.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\nstd\variant.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\object_pool.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\os.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\passive_vector.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\singleton.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\stringify.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\traits.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\uuid.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\declarations.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\taskflow.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaMeshoptimizerIntegration.h">
+      <Filter>IntegratedExternals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\meshoptimizer\meshoptimizer.h">
+      <Filter>IntegratedExternals\meshoptimizer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\algorithm\for_each.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\nlohmann-json\json.hpp">
+      <Filter>IntegratedExternals\nlohmann-json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaNLJsonIntegration.h">
+      <Filter>IntegratedExternals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaHalfIntegration.h">
+      <Filter>IntegratedExternals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\half\half.hpp">
+      <Filter>IntegratedExternals\half</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\backends\imgui_impl_win32.h">
+      <Filter>IntegratedExternals\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\backends\imgui_impl_dx12.h">
+      <Filter>IntegratedExternals\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\any.hpp">
+      <Filter>IntegratedExternals\entt\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\component.hpp">
+      <Filter>IntegratedExternals\entt\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\handle.hpp">
+      <Filter>IntegratedExternals\entt\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\organizer.hpp">
+      <Filter>IntegratedExternals\entt\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\poly_storage.hpp">
+      <Filter>IntegratedExternals\entt\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\adl_pointer.hpp">
+      <Filter>IntegratedExternals\entt\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\container.hpp">
+      <Filter>IntegratedExternals\entt\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\ctx.hpp">
+      <Filter>IntegratedExternals\entt\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\node.hpp">
+      <Filter>IntegratedExternals\entt\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\pointer.hpp">
+      <Filter>IntegratedExternals\entt\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\range.hpp">
+      <Filter>IntegratedExternals\entt\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\template.hpp">
+      <Filter>IntegratedExternals\entt\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\type_traits.hpp">
+      <Filter>IntegratedExternals\entt\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\utility.hpp">
+      <Filter>IntegratedExternals\entt\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\poly\fwd.hpp">
+      <Filter>IntegratedExternals\entt\Poly</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\poly\poly.hpp">
+      <Filter>IntegratedExternals\entt\Poly</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Source\IntegratedExternals\imgui\LICENSE">
+      <Filter>IntegratedExternals\imgui</Filter>
+    </None>
+    <None Include="..\..\Source\IntegratedExternals\imgui\README.md">
+      <Filter>IntegratedExternals\imgui</Filter>
+    </None>
+    <None Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\Shaders\Compiled\BC6HEncode_EncodeBlockCS.inc">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </None>
+    <None Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\Shaders\Compiled\BC6HEncode_TryModeG10CS.inc">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </None>
+    <None Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\Shaders\Compiled\BC6HEncode_TryModeLE10CS.inc">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </None>
+    <None Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\Shaders\Compiled\BC7Encode_EncodeBlockCS.inc">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </None>
+    <None Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\Shaders\Compiled\BC7Encode_TryMode02CS.inc">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </None>
+    <None Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\Shaders\Compiled\BC7Encode_TryMode137CS.inc">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </None>
+    <None Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\Shaders\Compiled\BC7Encode_TryMode456CS.inc">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </None>
+    <None Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTex.inl">
+      <Filter>IntegratedExternals\DirectXTex\h</Filter>
+    </None>
+    <None Include="..\..\Source\IntegratedExternals\assimp\include\assimp\color4.inl">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </None>
+    <None Include="..\..\Source\IntegratedExternals\assimp\include\assimp\config.h.in">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </None>
+    <None Include="..\..\Source\IntegratedExternals\assimp\include\assimp\material.inl">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </None>
+    <None Include="..\..\Source\IntegratedExternals\assimp\include\assimp\matrix3x3.inl">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </None>
+    <None Include="..\..\Source\IntegratedExternals\assimp\include\assimp\matrix4x4.inl">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </None>
+    <None Include="..\..\Source\IntegratedExternals\assimp\include\assimp\quaternion.inl">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </None>
+    <None Include="..\..\Source\IntegratedExternals\assimp\include\assimp\SmoothingGroups.inl">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </None>
+    <None Include="..\..\Source\IntegratedExternals\assimp\include\assimp\vector2.inl">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </None>
+    <None Include="..\..\Source\IntegratedExternals\assimp\include\assimp\vector3.inl">
+      <Filter>IntegratedExternals\assimp\include</Filter>
+    </None>
+    <None Include="..\..\Source\IntegratedExternals\dxc\dxc.exe">
+      <Filter>IntegratedExternals\dxc</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\Source\IntegratedExternals\dxc\dxcompiler.lib">
+      <Filter>IntegratedExternals\dxc</Filter>
+    </Library>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\..\Source\IntegratedExternals\dxc\info.txt">
+      <Filter>IntegratedExternals\dxc</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="..\..\Source\IntegratedExternals\dxc\dxil.dll">
+      <Filter>IntegratedExternals\dxc</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\..\Source\IntegratedExternals\dxc\dxcompiler.dll">
+      <Filter>IntegratedExternals\dxc</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\..\Source\IntegratedExternals\WinPixEventRuntime\bin\x64\WinPixEventRuntime.dll">
+      <Filter>IntegratedExternals\WinPixEventRuntime</Filter>
+    </CopyFileToFolders>
+  </ItemGroup>
+</Project>

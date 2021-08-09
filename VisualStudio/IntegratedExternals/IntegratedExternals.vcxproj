@@ -1,0 +1,1814 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\3DS\3DSConverter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\3DS\3DSExporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\3DS\3DSLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\3MF\D3MFExporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\3MF\D3MFImporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\3MF\D3MFOpcPackage.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\AC\ACLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\AMF\AMFImporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\AMF\AMFImporter_Geometry.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\AMF\AMFImporter_Material.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\AMF\AMFImporter_Postprocess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\ASE\ASELoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\ASE\ASEParser.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Assbin\AssbinExporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Assbin\AssbinLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Assjson\cencode.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Assjson\json_exporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Assjson\mesh_splitter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Assxml\AssxmlExporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\B3D\B3DImporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderBMesh.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderCustomData.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderDNA.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderModifier.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderScene.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderTessellator.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\BVH\BVHLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\C4D\C4DImporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\CApi\AssimpCExport.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\CApi\CInterfaceIOWrapper.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\COB\COBLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Collada\ColladaExporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Collada\ColladaHelper.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Collada\ColladaLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Collada\ColladaParser.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\Assimp.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\BaseImporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\BaseProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\Bitmap.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\CreateAnimMesh.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\DefaultIOStream.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\DefaultIOSystem.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\DefaultLogger.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\Exporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\Importer.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\ImporterRegistry.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\PostStepRegistry.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\RemoveComments.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\scene.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\SceneCombiner.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\ScenePreprocessor.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\SGSpatialSort.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\simd.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\SkeletonMeshBuilder.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\SpatialSort.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\SplitByBoneCountProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\StandardShapes.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\Subdivision.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\TargetAnimation.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\Version.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\VertexTriangleAdjacency.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Common\ZipArchiveIOSystem.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\CSM\CSMLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\DXF\DXFLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXAnimation.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXBinaryTokenizer.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXConverter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXDeformer.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXDocument.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXDocumentUtil.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXExporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXExportNode.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXExportProperty.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXImporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXMaterial.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXMeshGeometry.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXModel.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXNodeAttribute.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXParser.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXProperties.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXTokenizer.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXUtil.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\glTF2\glTF2Exporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\glTF2\glTF2Importer.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\glTF\glTFCommon.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\glTF\glTFExporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\glTF\glTFImporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\HMP\HMPLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCBoolean.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCCurve.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCGeometry.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCMaterial.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCOpenings.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCProfile.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCReaderGen1_2x3.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCReaderGen2_2x3.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCReaderGen_4.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCUtil.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\StepFile\StepFileGen1.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/bigobj %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\StepFile\StepFileGen2.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\StepFile\StepFileGen3.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\StepFile\StepFileImporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\STEPParser\STEPFileEncoding.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Importer\STEPParser\STEPFileReader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Irr\IRRLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Irr\IRRMeshLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Irr\IRRShared.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\LWO\LWOAnimation.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\LWO\LWOBLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\LWO\LWOLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\LWO\LWOMaterial.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\LWS\LWSLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Material\MaterialSystem.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MD2\MD2Loader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MD3\MD3Loader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MD5\MD5Loader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MD5\MD5Parser.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MDC\MDCLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MDL\MDLLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MDL\MDLMaterialLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MMD\MMDImporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MMD\MMDPmxParser.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\MS3D\MS3DLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\NDO\NDOLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\NFF\NFFLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjExporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjFileImporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjFileMtlImporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjFileParser.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\OFF\OFFLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreBinarySerializer.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreImporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreMaterial.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreStructs.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreXmlSerializer.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\OpenGEX\OpenGEXExporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\OpenGEX\OpenGEXImporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Ply\PlyExporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Ply\PlyLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Ply\PlyParser.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ArmaturePopulate.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\CalcTangentsProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ComputeUVMappingProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ConvertToLHProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\DeboneProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\DropFaceNormalsProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\EmbedTexturesProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\FindDegenerates.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\FindInstancesProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\FindInvalidDataProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\FixNormalsStep.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\GenBoundingBoxesProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\GenFaceNormalsProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\GenVertexNormalsProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ImproveCacheLocality.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\JoinVerticesProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\LimitBoneWeightsProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\MakeVerboseFormat.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\OptimizeGraph.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\OptimizeMeshes.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\PretransformVertices.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ProcessHelper.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\RemoveRedundantMaterials.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\RemoveVCProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ScaleProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\SortByPTypeProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\SplitLargeMeshes.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\TextureTransform.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\TriangulateProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ValidateDataStructure.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Q3BSP\Q3BSPFileImporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Q3BSP\Q3BSPFileParser.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Q3D\Q3DLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Raw\RawLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\SIB\SIBImporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\SMD\SMDLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Step\StepExporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\STL\STLExporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\STL\STLLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Terragen\TerragenLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\Unreal\UnrealLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\FIReader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DExporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Geometry2D.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Geometry3D.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Group.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Light.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Metadata.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Networking.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Postprocess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Rendering.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Shape.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Texturing.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DVocabulary.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\XGL\XGLLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X\XFileExporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X\XFileImporter.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\code\X\XFileParser.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\contrib\irrXML\irrXML.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\contrib\Open3DGC\o3dgcArithmeticCodec.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\contrib\Open3DGC\o3dgcDynamicVectorDecoder.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\contrib\Open3DGC\o3dgcDynamicVectorEncoder.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\contrib\Open3DGC\o3dgcTools.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\assimp\contrib\Open3DGC\o3dgcTriangleFans.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DDSTextureLoader\DDSTextureLoader.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DDSTextureLoader\DDSTextureLoader12.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\BC.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\BC4BC5.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\BC6HBC7.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\BCDirectCompute.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexCompress.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexCompressGPU.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexConvert.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexD3D11.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexD3D12.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexDDS.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexFlipRotate.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexHDR.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexImage.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexMipmaps.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexMisc.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexNormalMaps.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexPMAlpha.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexResize.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexTGA.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexUtil.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexWIC.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\ScreenGrab\ScreenGrab.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\ScreenGrab\ScreenGrab12.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\WICTextureLoader\WICTextureLoader.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\DirectXTex\WICTextureLoader\WICTextureLoader12.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\backends\imgui_impl_dx12.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\backends\imgui_impl_win32.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\imgui.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\ImGuizmo\ImCurveEdit.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\ImGuizmo\ImGradient.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\ImGuizmo\ImGuizmo.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\ImGuizmo\ImSequencer.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\imgui_demo.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\imgui_tables.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\imgui\misc\cpp\imgui_stdlib.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\allocator.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\clusterizer.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\indexcodec.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\indexgenerator.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\overdrawanalyzer.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\overdrawoptimizer.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\simplifier.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\spatialorder.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\stripifier.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\vcacheanalyzer.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\vcacheoptimizer.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\vertexcodec.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\vertexfilter.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\vfetchanalyzer.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\meshoptimizer\vfetchoptimizer.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\tinyxml2\tinyxml2.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\vaGTSIntegration.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\vaImguiIntegration.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\vaTaskflowIntegration.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\adler32.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\compress.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\crc32.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\deflate.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\gzclose.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\gzlib.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\gzread.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\gzwrite.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\infback.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\inffast.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\inflate.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\inftrees.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\trees.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\uncompr.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\zlib\zutil.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\3DS\3DSExporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\3DS\3DSHelper.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\3DS\3DSLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\3MF\3MFXmlTags.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\3MF\D3MFExporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\3MF\D3MFImporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\3MF\D3MFOpcPackage.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\AC\ACLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\AMF\AMFImporter.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\AMF\AMFImporter_Macro.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\AMF\AMFImporter_Node.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\ASE\ASELoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\ASE\ASEParser.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Assbin\AssbinExporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Assbin\AssbinLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Assjson\cencode.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Assjson\mesh_splitter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Assxml\AssxmlExporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\B3D\B3DImporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderBMesh.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderCustomData.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderDNA.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderIntermediate.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderModifier.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderScene.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderSceneGen.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Blender\BlenderTessellator.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\BVH\BVHLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\C4D\C4DImporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\CApi\CInterfaceIOWrapper.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\COB\COBLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\COB\COBScene.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Collada\ColladaExporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Collada\ColladaHelper.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Collada\ColladaLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Collada\ColladaParser.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\assbin_chunks.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\BaseProcess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\DefaultProgressHandler.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\FileLogStream.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\FileSystemFilter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\IFF.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\Importer.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\PolyTools.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\ScenePreprocessor.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\ScenePrivate.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\simd.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\SplitByBoneCountProcess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\StdOStreamLogStream.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\TargetAnimation.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\VertexTriangleAdjacency.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Common\Win32DebugLogStream.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\CSM\CSMLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\DXF\DXFHelper.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\DXF\DXFLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXCommon.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXCompileConfig.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXConverter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXDocument.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXDocumentUtil.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXExporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXExportNode.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXExportProperty.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXImporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXImportSettings.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXMeshGeometry.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXParser.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXProperties.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXTokenizer.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\FBX\FBXUtil.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\glTF2\glTF2Asset.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\glTF2\glTF2AssetWriter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\glTF2\glTF2Exporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\glTF2\glTF2Importer.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\glTF\glTFAsset.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\glTF\glTFAssetWriter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\glTF\glTFCommon.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\glTF\glTFExporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\glTF\glTFImporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\HMP\HalfLifeFileData.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\HMP\HMPFileData.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\HMP\HMPLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCReaderGen_2x3.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCReaderGen_4.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Importer\IFC\IFCUtil.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Importer\StepFile\StepFileImporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Importer\StepFile\StepReaderGen.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Importer\STEPParser\STEPFileEncoding.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Importer\STEPParser\STEPFileReader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Irr\IRRLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Irr\IRRMeshLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Irr\IRRShared.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\LWO\LWOAnimation.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\LWO\LWOFileData.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\LWO\LWOLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\LWS\LWSLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Material\MaterialSystem.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MD2\MD2FileData.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MD2\MD2Loader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MD2\MD2NormalTable.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MD3\MD3FileData.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MD3\MD3Loader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MD4\MD4FileData.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MD5\MD5Loader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MD5\MD5Parser.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MDC\MDCFileData.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MDC\MDCLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MDC\MDCNormalTable.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MDL\MDLDefaultColorMap.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MDL\MDLFileData.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MDL\MDLLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MMD\MMDCpp14.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MMD\MMDImporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MMD\MMDPmdParser.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MMD\MMDPmxParser.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MMD\MMDVmdParser.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\MS3D\MS3DLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\NDO\NDOLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\NFF\NFFLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjExporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjFileData.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjFileImporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjFileMtlImporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjFileParser.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Obj\ObjTools.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\OFF\OFFLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreBinarySerializer.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreImporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreParsingUtils.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreStructs.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Ogre\OgreXmlSerializer.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\OpenGEX\OpenGEXExporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\OpenGEX\OpenGEXImporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\OpenGEX\OpenGEXStructs.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Ply\PlyExporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Ply\PlyLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Ply\PlyParser.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ArmaturePopulate.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\CalcTangentsProcess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ComputeUVMappingProcess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ConvertToLHProcess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\DeboneProcess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\DropFaceNormalsProcess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\EmbedTexturesProcess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\FindDegenerates.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\FindInstancesProcess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\FindInvalidDataProcess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\FixNormalsStep.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\GenBoundingBoxesProcess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\GenFaceNormalsProcess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\GenVertexNormalsProcess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ImproveCacheLocality.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\JoinVerticesProcess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\LimitBoneWeightsProcess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\MakeVerboseFormat.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\OptimizeGraph.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\OptimizeMeshes.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\PretransformVertices.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ProcessHelper.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\RemoveRedundantMaterials.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\RemoveVCProcess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ScaleProcess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\SortByPTypeProcess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\SplitLargeMeshes.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\TextureTransform.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\TriangulateProcess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\PostProcessing\ValidateDataStructure.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Q3BSP\Q3BSPFileData.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Q3BSP\Q3BSPFileImporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Q3BSP\Q3BSPFileParser.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Q3D\Q3DLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Raw\RawLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\res\resource.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\SIB\SIBImporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\SMD\SMDLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Step\StepExporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Step\STEPFile.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\STL\STLExporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\STL\STLLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Terragen\TerragenLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\Unreal\UnrealLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\X3D\FIReader.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DExporter.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Macro.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\X3D\X3DImporter_Node.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\XGL\XGLLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\X\XFileExporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\X\XFileHelper.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\X\XFileImporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\code\X\XFileParser.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\aabb.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\ai_assert.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\anim.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\BaseImporter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Bitmap.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\BlobIOSystem.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\ByteSwapper.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\camera.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\cexport.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\cfileio.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\cimport.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\color4.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\commonMetaData.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Compiler\poppack1.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Compiler\pstdint.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Compiler\pushpack1.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\config.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\CreateAnimMesh.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\DefaultIOStream.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\DefaultIOSystem.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\DefaultLogger.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Defines.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\defs.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Exceptional.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Exporter.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\fast_atof.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\GenericProperty.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Hash.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Importer.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\importerdesc.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\IOStream.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\IOStreamBuffer.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\IOSystem.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\irrXMLWrapper.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\light.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\LineSplitter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\LogAux.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Logger.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\LogStream.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\material.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\MathFunctions.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\matrix3x3.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\matrix4x4.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\MemoryIOWrapper.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\mesh.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\metadata.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\NullLogger.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\ParsingUtils.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\pbrmaterial.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\postprocess.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Profiler.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\ProgressHandler.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\qnan.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\quaternion.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\RemoveComments.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\scene.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\SceneCombiner.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\SGSpatialSort.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\SkeletonMeshBuilder.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\SmoothingGroups.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\SpatialSort.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\StandardShapes.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\StreamReader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\StreamWriter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\StringComparison.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\StringUtils.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Subdivision.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\texture.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\TinyFormatter.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\types.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\vector2.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\vector3.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\version.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\Vertex.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\XMLTools.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\ZipArchiveIOSystem.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\bullet\vaBulletIntegrationSpecifics.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSTextureLoader\DDSTextureLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSTextureLoader\DDSTextureLoader12.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSView\shaders\ps1D.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSView\shaders\ps1Darray.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSView\shaders\ps2D.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSView\shaders\ps2Darray.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSView\shaders\ps3D.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSView\shaders\psCube.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSView\shaders\vs.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\BC.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\BCDirectCompute.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DDS.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTex.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTexP.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\Filters.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\scoped.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\ScreenGrab\ScreenGrab.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\ScreenGrab\ScreenGrab12.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\WICTextureLoader\WICTextureLoader.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\WICTextureLoader\WICTextureLoader12.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\dxc\addref.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\dxc\dxcapi.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\dxc\dxcapi.use.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\config\config.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\config\version.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\algorithm.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\any.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\attribute.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\family.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\hashed_string.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\ident.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\monostate.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\type_info.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\type_traits.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\core\utility.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\actor.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\component.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\entity.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\fwd.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\group.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\handle.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\helper.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\observer.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\organizer.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\poly_storage.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\registry.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\runtime_view.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\snapshot.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\sparse_set.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\storage.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entity\view.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\entt.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\fwd.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\locator\locator.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\adl_pointer.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\container.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\ctx.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\factory.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\meta.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\node.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\pointer.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\policy.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\range.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\template.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\type_traits.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\meta\utility.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\poly\fwd.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\poly\poly.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\process\process.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\process\scheduler.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\resource\cache.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\resource\fwd.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\resource\handle.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\resource\loader.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\signal\delegate.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\signal\dispatcher.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\signal\emitter.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\signal\fwd.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\entt\signal\sigh.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\half\half.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\backends\imgui_impl_dx12.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\backends\imgui_impl_win32.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\imconfig.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\imgui.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\ImGuizmo\ImCurveEdit.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\ImGuizmo\ImGradient.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\ImGuizmo\ImGuizmo.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\ImGuizmo\ImSequencer.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\imgui_internal.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\imstb_rectpack.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\imstb_textedit.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\imstb_truetype.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\misc\cpp\imgui_stdlib.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\stb_rect_pack.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\stb_textedit.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\imgui\stb_truetype.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\meshoptimizer\meshoptimizer.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\nlohmann-json\json.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\algorithm\for_each.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\error.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\executor.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\flow_builder.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\graph.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\notifier.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\observer.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\task.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\taskflow.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\topology.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\tsq.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\cuda\cuda_device.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\cuda\cuda_error.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\cuda\cuda_flow.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\cuda\cuda_graph.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\cuda\cuda_task.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\declarations.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\nstd\any.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\nstd\optional.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\nstd\variant.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\taskflow.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\object_pool.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\os.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\passive_vector.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\singleton.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\stringify.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\traits.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\uuid.hpp" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\tinyxml2\tinyxml2.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaAssimpIntegration.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaBulletPhysicsIntegration.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaEnTTIntegration.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaGTSIntegration.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaHalfIntegration.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaImguiIntegration.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaMeshoptimizerIntegration.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaNLJsonIntegration.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaTaskflowIntegration.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaTinyxml2Integration.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaZlibIntegration.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\crc32.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\deflate.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\gzguts.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\inffast.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\inffixed.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\inflate.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\inftrees.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\trees.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\vaZLIBIntegrationSpecifics.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\zconf.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\zlib.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\zlib\zutil.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Source\IntegratedExternals\assimp\include\assimp\color4.inl" />
+    <None Include="..\..\Source\IntegratedExternals\assimp\include\assimp\config.h.in" />
+    <None Include="..\..\Source\IntegratedExternals\assimp\include\assimp\material.inl" />
+    <None Include="..\..\Source\IntegratedExternals\assimp\include\assimp\matrix3x3.inl" />
+    <None Include="..\..\Source\IntegratedExternals\assimp\include\assimp\matrix4x4.inl" />
+    <None Include="..\..\Source\IntegratedExternals\assimp\include\assimp\quaternion.inl" />
+    <None Include="..\..\Source\IntegratedExternals\assimp\include\assimp\SmoothingGroups.inl" />
+    <None Include="..\..\Source\IntegratedExternals\assimp\include\assimp\vector2.inl" />
+    <None Include="..\..\Source\IntegratedExternals\assimp\include\assimp\vector3.inl" />
+    <None Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\DirectXTex.inl" />
+    <None Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\Shaders\Compiled\BC6HEncode_EncodeBlockCS.inc" />
+    <None Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\Shaders\Compiled\BC6HEncode_TryModeG10CS.inc" />
+    <None Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\Shaders\Compiled\BC6HEncode_TryModeLE10CS.inc" />
+    <None Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\Shaders\Compiled\BC7Encode_EncodeBlockCS.inc" />
+    <None Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\Shaders\Compiled\BC7Encode_TryMode02CS.inc" />
+    <None Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\Shaders\Compiled\BC7Encode_TryMode137CS.inc" />
+    <None Include="..\..\Source\IntegratedExternals\DirectXTex\DirectXTex\Shaders\Compiled\BC7Encode_TryMode456CS.inc" />
+    <None Include="..\..\Source\IntegratedExternals\dxc\dxc.exe" />
+    <CopyFileToFolders Include="..\..\Source\IntegratedExternals\dxc\dxcompiler.dll">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </DeploymentContent>
+      <FileType>Document</FileType>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </DeploymentContent>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </ExcludedFromBuild>
+      <TreatOutputAsContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </TreatOutputAsContent>
+      <TreatOutputAsContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </TreatOutputAsContent>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\..\Source\IntegratedExternals\dxc\dxil.dll">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <None Include="..\..\Source\IntegratedExternals\imgui\LICENSE" />
+    <None Include="..\..\Source\IntegratedExternals\imgui\README.md" />
+    <CopyFileToFolders Include="..\..\Source\IntegratedExternals\WinPixEventRuntime\bin\x64\WinPixEventRuntime.dll">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\Source\IntegratedExternals\dxc\dxcompiler.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\..\Source\IntegratedExternals\dxc\info.txt" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{FBC754F5-B277-47AC-8F08-1AFE7D93F040}</ProjectGuid>
+    <RootNamespace>Vanilla</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TargetExt>.lib</TargetExt>
+    <IncludePath>$(ProjectDir)..\..\Source;$(ProjectDir)..\..\Source\Core\Platform\WindowsPC;$(VC_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\code\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\zlib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\rapidjson\include;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\unzip\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\irrXML\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\openddlparser\include\;$(WindowsSDK_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\Include\WinPixEventRuntime</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\bin\x64</LibraryPath>
+    <OutDir>$(SolutionDir).intermediate\.lib\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir).intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TargetExt>.lib</TargetExt>
+    <IncludePath>$(ProjectDir)..\..\Source;$(ProjectDir)..\..\Source\Core\Platform\WindowsPC;$(VC_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\code\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\zlib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\rapidjson\include;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\unzip\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\irrXML\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\openddlparser\include\;$(WindowsSDK_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\Include\WinPixEventRuntime</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\bin\x64</LibraryPath>
+    <OutDir>$(SolutionDir).intermediate\.lib\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir).intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>false</SDLCheck>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild>false</MinimalRebuild>
+      <PreprocessorDefinitions>_DEBUG;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <OpenMPSupport>true</OpenMPSupport>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\Source\IntegratedExternals\GTS\source\gts\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <ForcedIncludeFiles>$(ProjectDir)..\..\Source\vaConfig.h</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <CustomBuildStep />
+    <CustomBuildStep />
+    <CustomBuildStep />
+    <CustomBuildStep />
+    <Lib>
+      <AdditionalOptions>/ignore:4221</AdditionalOptions>
+    </Lib>
+    <CopyFileToFolders>
+      <DestinationFolders>$(SolutionDir)..\Build\</DestinationFolders>
+    </CopyFileToFolders>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <OpenMPSupport>true</OpenMPSupport>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <PreprocessorDefinitions>_UNICODE;UNICODE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\Source\IntegratedExternals\GTS\source\gts\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <ForcedIncludeFiles>$(ProjectDir)..\..\Source\vaConfig.h</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <CustomBuildStep />
+    <CustomBuildStep />
+    <CustomBuildStep />
+    <CustomBuildStep />
+    <Lib>
+      <AdditionalOptions>/ignore:4221</AdditionalOptions>
+    </Lib>
+    <CopyFileToFolders>
+      <DestinationFolders>$(SolutionDir)..\Build\</DestinationFolders>
+    </CopyFileToFolders>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

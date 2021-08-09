@@ -1,0 +1,3 @@
+manually downloaded from https://www.nuget.org/packages/WinPixEventRuntime
+
+version: 1.0.200127001

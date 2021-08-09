@@ -1,0 +1,102 @@
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Copyright (C) 2016-2021, Intel Corporation 
+// 
+// SPDX-License-Identifier: MIT
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Author(s):  Filip Strugar (filip.strugar@intel.com)
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#include "Core/vaCoreIncludes.h"
+
+#include "vaRenderMaterialDX12.h"
+
+#include "Rendering/DirectX/vaRenderDeviceContextDX12.h"
+#include "Rendering/DirectX/vaRenderBuffersDX12.h"
+
+using namespace Vanilla;
+
+vaRenderMaterialManagerDX12::vaRenderMaterialManagerDX12( const vaRenderingModuleParams & params ) : vaRenderMaterialManager( params )
+{
+    params.RenderDevice.e_BeforeEndFrame.AddWithToken( m_aliveToken, [ thisPtr = this ]( vaRenderDevice & )
+        { thisPtr->EndFrameCleanup( ); } );
+
+}
+
+void vaRenderMaterialManagerDX12::UpdateAndSetToGlobals( vaRenderDeviceContext & renderContext, vaShaderItemGlobals & shaderItemGlobals, const vaDrawAttributes * drawAttributes )
+{
+    // if raytracing enabled, this collects all callable shaders exposed by materials - one per material unfortunately (even though many will have identical shaders)
+    // and collates them for later use when creating shader tables and raytracing PSOs
+
+    // only needed if raytracing enabled, and only update once per frame (data is safe for the duration of the frame)
+    if( drawAttributes != nullptr && drawAttributes->Raytracing != nullptr && m_callableShaderTableLastFrameIndex < GetRenderDevice().GetCurrentFrameIndex() )
+    {
+        // no one touches materials now!
+        std::shared_lock manager( Mutex() );
+
+        // this doesn't necessarily mean any materials change but in most cases it does
+        bool needsRebuild = false;//m_callableShaderTable == nullptr;
+        needsRebuild |= m_callablesTable.size() != m_materials.Size();
+
+        // resize to SIZE, not the count - using the sparse array setup!
+        m_callablesTable.resize( m_materials.Size() );
+        m_uniqueCallableLibraries.clear();
+
+        for( uint32 sparseIndex : m_materials.PackedArray( ) )
+        {
+            vaRenderMaterial & material = *m_materials.At( sparseIndex );
+            CallableShaders & entry = m_callablesTable[ sparseIndex ];
+
+            // We can update all materials here - even the ones that can't be rendered; this will reduce the differences between
+            // the tables and reduce PSO rebuilds, but can be a lot more costly (will be performed for all loaded assets).
+            // Sticking with that for now - one can actually disable this by just removing the PreRenderUpdate below because
+            // the vaSceneRenderInstanceProcessor calls it on all used materials before this step.
+            material.PreRenderUpdate( renderContext );
+
+            // material ID changed on this sparse index - a material got deleted and another got added; that's fine, rebuild required
+            needsRebuild |= ( material.UIDObject_GetUID() != entry.MaterialID );
+            entry.MaterialID = material.UIDObject_GetUID();
+
+            vaFramePtr<vaShaderLibrary> shader; string uniqueID;
+            material.GetCallableShaderLibrary( shader, uniqueID );
+            int64 prevLibraryUniqueContentsID = entry.LibraryUniqueContentsID;
+            vaShader::State state = (shader == nullptr)?( vaShader::State::Empty ):(AsDX12( *shader ).GetShader( entry.LibraryBlob, entry.LibraryUniqueContentsID ));
+            if( state != vaShader::State::Cooked )
+            {
+                needsRebuild |= prevLibraryUniqueContentsID != -1;
+                entry.LibraryUniqueContentsID = -1;
+                assert( entry.LibraryBlob == nullptr );
+                entry.Reset();
+                continue;
+            }
+            entry.UniqueIDString    = vaStringTools::SimpleWiden( uniqueID );
+            m_uniqueCallableLibraries.insert( {entry.LibraryBlob, sparseIndex} );
+            needsRebuild |= entry.LibraryUniqueContentsID != prevLibraryUniqueContentsID;
+        }
+
+        // Callable group shader table
+        if( needsRebuild )
+            m_callableShaderTableUniqueContentsID++;
+
+        m_callableShaderTableLastFrameIndex = GetRenderDevice().GetCurrentFrameIndex();
+    }
+    vaRenderMaterialManager::UpdateAndSetToGlobals( renderContext, shaderItemGlobals, drawAttributes );
+}
+
+void vaRenderMaterialManagerDX12::EndFrameCleanup( )
+{
+    if( m_callableShaderTableLastFrameIndex == GetRenderDevice().GetCurrentFrameIndex() )
+    {
+        for( int i = 0; i < m_callablesTable.size(); i++ )
+            m_callablesTable[i].Reset();
+        m_uniqueCallableLibraries.clear();
+    }
+}
+
+void RegisterRenderMaterialDX12( )
+{
+    //VA_RENDERING_MODULE_REGISTER( vaRenderDeviceDX12, vaRenderMaterial, vaRenderMaterialDX12 );
+    VA_RENDERING_MODULE_REGISTER( vaRenderDeviceDX12, vaRenderMaterialManager, vaRenderMaterialManagerDX12 );
+}
+

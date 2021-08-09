@@ -1,0 +1,1 @@
+Version/source: https://github.com/microsoft/DirectXShaderCompiler/releases/tag/v1.6.2106

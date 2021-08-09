@@ -1,0 +1,38 @@
+## This is a directory/file filter for WinMerge 
+## This filter lets through only files ASP.NET developers care about 
+name: Filip's Exclude Source Control
+desc: Filip's Exclude Source Control files and directories
+
+## This is an inclusive (loose) filter
+## (it lets through everything not specified)
+def: include
+
+
+## Filters for filenames begin with f: 
+## Filters for directories begin with d: 
+## (Inline comments begin with " ##" and extend to the end of the line) 
+
+## f: *\.bzrignore$ ## Bazaar ignore file
+## f: *\.cvsignore$ ## CVS ignore file
+## f: *\.hgignore$ ## Mercurial ignore file
+## f: *\.svnignore$ ## Subversion ignore file
+
+f: \.(vs[sp])?scc$  ## Visual SourceSafe files
+
+d: \\\.svn$ ## Subversion working copy
+d: \\_svn$  ## Subversion working copy ASP.NET Hack
+d: \\cvs$   ## CVS control directory
+d: \\\.bzr$ ## Bazaar branch
+d: \\\.hg$  ## Mercurial repository
+d: \\\.git$ ## Git repository
+d: \\\.intermediate$
+d: \\\.vs$
+d: \\\.cache$
+
+## Optional SQL filter
+WHERE
+	Attributes LIKE 'D%' -- Include all directories
+OR	(LastWriteTime >= TO_TIMESTAMP(%Minimum Time%) OR %Minimum Time% IS NULL)
+AND (LastWriteTime <= TO_TIMESTAMP(%Maximum Time%) OR %Maximum Time% IS NULL)
+AND (Size >= TO_INT(%Minimum Size%) OR %Minimum Size% IS NULL)
+AND (Size <= TO_INT(%Maximum Size%) OR %Maximum Size% IS NULL)

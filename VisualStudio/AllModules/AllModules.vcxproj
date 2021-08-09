@@ -1,0 +1,586 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\Source\Core\Misc\simplexnoise1234.c" />
+    <ClCompile Include="..\..\Source\Core\Misc\vaBenchmarkTool.cpp" />
+    <ClCompile Include="..\..\Source\Core\Misc\vaLargeBitmapFile.cpp" />
+    <ClCompile Include="..\..\Source\Core\Misc\vaMiniScript.cpp" />
+    <ClCompile Include="..\..\Source\Core\Misc\vaPoissonDiskGenerator.cpp" />
+    <ClCompile Include="..\..\Source\Core\Misc\vaPropertyContainer.cpp" />
+    <ClCompile Include="..\..\Source\Core\Misc\vaResourceFormats.cpp" />
+    <ClCompile Include="..\..\Source\Core\Misc\vaXXHash.cpp" />
+    <ClCompile Include="..\..\Source\Core\Misc\xxhash.c" />
+    <ClCompile Include="..\..\Source\Core\Platform\WindowsPC\System\vaPlatformFileStream.cpp" />
+    <ClCompile Include="..\..\Source\Core\Platform\WindowsPC\System\vaPlatformFileTools.cpp" />
+    <ClCompile Include="..\..\Source\Core\Platform\WindowsPC\System\vaPlatformSocket.cpp" />
+    <ClCompile Include="..\..\Source\Core\Platform\WindowsPC\System\vaPlatformThreading.cpp" />
+    <ClCompile Include="..\..\Source\Core\Platform\WindowsPC\vaApplicationWin.cpp" />
+    <ClCompile Include="..\..\Source\Core\Platform\WindowsPC\vaInputKeyboard.cpp" />
+    <ClCompile Include="..\..\Source\Core\Platform\WindowsPC\vaInputMouse.cpp" />
+    <ClCompile Include="..\..\Source\Core\Platform\WindowsPC\vaPlatformBase.cpp" />
+    <ClCompile Include="..\..\Source\Core\Platform\WindowsPC\vaPlatformStringTools.cpp" />
+    <ClCompile Include="..\..\Source\Core\Platform\WindowsPC\vaSplashScreen.cpp" />
+    <ClCompile Include="..\..\Source\Core\System\vaCompressionStream.cpp" />
+    <ClCompile Include="..\..\Source\Core\System\vaFileTools.cpp" />
+    <ClCompile Include="..\..\Source\Core\System\vaMemoryStream.cpp" />
+    <ClCompile Include="..\..\Source\Core\System\vaThreading.cpp" />
+    <ClCompile Include="..\..\Source\Core\vaApplicationBase.cpp" />
+    <ClCompile Include="..\..\Source\Core\vaConcurrency.cpp" />
+    <ClCompile Include="..\..\Source\Core\vaCore.cpp" />
+    <ClCompile Include="..\..\Source\Core\vaEvent.cpp" />
+    <ClCompile Include="..\..\Source\Core\vaGeometry.cpp" />
+    <ClCompile Include="..\..\Source\Core\vaLog.cpp" />
+    <ClCompile Include="..\..\Source\Core\vaMath.cpp" />
+    <ClCompile Include="..\..\Source\Core\vaMemory.cpp" />
+    <ClCompile Include="..\..\Source\Core\vaProfiler.cpp" />
+    <ClCompile Include="..\..\Source\Core\vaSerializer.cpp" />
+    <ClCompile Include="..\..\Source\Core\vaStringTools.cpp" />
+    <ClCompile Include="..\..\Source\Core\vaUI.cpp" />
+    <ClCompile Include="..\..\Source\Core\vaUIDObject.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\DirectX\vaDirectXRecOMatic.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\DirectX\vaDirectXTools.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\DirectX\vaGBufferDX.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\DirectX\vaGPUTimerDX12.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\DirectX\vaPrimitiveShapeRendererDX.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Rendering\DirectX\vaRenderBuffersDX12.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\DirectX\vaRenderDeviceContextDX12.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\DirectX\vaRenderDeviceDX12.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\DirectX\vaRenderMaterialDX12.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\DirectX\vaRenderMeshDX12.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\DirectX\vaSceneLightingDX12.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\DirectX\vaSceneRaytracingDX12.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\DirectX\vaShaderDX12.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\DirectX\vaTextureDX12.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\Effects\vaASSAOLite.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\Effects\vaCMAA2.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\Effects\vaCMAA2DX12.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\Effects\vaDepthOfField.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\Effects\vaGTAO.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\Effects\vaPostProcess.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\Effects\vaPostProcessBlur.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\Effects\vaPostProcessTonemap.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\Effects\vaSimpleParticles.cpp">
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Rendering\Effects\vaSimpleShadowMap.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Rendering\Effects\vaSky.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\Effects\vaSkybox.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\Effects\vaTAA.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\Misc\vaImageCompareTool.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\Misc\vaTextureReductionTestTool.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\Misc\vaZoomTool.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaAssetPack.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaDebugCanvas.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaGBuffer.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaGPUTimer.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaIBL.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaPathTracer.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaPrimitiveShapeRenderer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Rendering\vaRenderBuffers.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaRenderCamera.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaRenderDevice.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaRenderDeviceContext.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaRenderGlobals.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaRendering.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaRenderInstanceList.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaRenderMaterial.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaRenderMesh.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaSceneLighting.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaSceneRaytracing.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaSceneRenderer.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaSceneRenderInstanceProcessor.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaSceneRenderViews.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaShader.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaStandardShapes.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaTexture.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaTextureHelpers.cpp" />
+    <ClCompile Include="..\..\Source\Scene\vaAssetImporter.cpp" />
+    <ClCompile Include="..\..\Source\Scene\vaAssetImporter_Assimp.cpp" />
+    <ClCompile Include="..\..\Source\Scene\vaCameraBase.cpp" />
+    <ClCompile Include="..\..\Source\Scene\vaCameraControllers.cpp" />
+    <ClCompile Include="..\..\Source\Scene\vaScene.cpp" />
+    <ClCompile Include="..\..\Source\Scene\vaSceneComponentCore.cpp" />
+    <ClCompile Include="..\..\Source\Scene\vaSceneComponents.cpp" />
+    <ClCompile Include="..\..\Source\Scene\vaSceneComponentsIO.cpp" />
+    <ClCompile Include="..\..\Source\Scene\vaSceneComponentsUI.cpp" />
+    <ClCompile Include="..\..\Source\Scene\vaSceneSystems.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Core\Misc\simplexnoise1234.h" />
+    <ClInclude Include="..\..\Source\Core\Misc\stack_container.h" />
+    <ClInclude Include="..\..\Source\Core\Misc\vaBenchmarkTool.h" />
+    <ClInclude Include="..\..\Source\Core\Misc\vaLargeBitmapFile.h" />
+    <ClInclude Include="..\..\Source\Core\Misc\vaMiniScript.h" />
+    <ClInclude Include="..\..\Source\Core\Misc\vaPoissonDiskGenerator.h" />
+    <ClInclude Include="..\..\Source\Core\Misc\vaPropertyContainer.h" />
+    <ClInclude Include="..\..\Source\Core\Misc\vaResourceFormats.h" />
+    <ClInclude Include="..\..\Source\Core\Misc\vaXXHash.h" />
+    <ClInclude Include="..\..\Source\Core\Misc\xxhash.h" />
+    <ClInclude Include="..\..\Source\Core\Platform\WindowsPC\System\vaPlatformFileStream.h" />
+    <ClInclude Include="..\..\Source\Core\Platform\WindowsPC\System\vaPlatformSocket.h" />
+    <ClInclude Include="..\..\Source\Core\Platform\WindowsPC\System\vaPlatformSystemTimer.h" />
+    <ClInclude Include="..\..\Source\Core\Platform\WindowsPC\vaApplicationWin.h" />
+    <ClInclude Include="..\..\Source\Core\Platform\WindowsPC\vaInputKeyboard.h" />
+    <ClInclude Include="..\..\Source\Core\Platform\WindowsPC\vaInputMouse.h" />
+    <ClInclude Include="..\..\Source\Core\Platform\WindowsPC\vaPlatformBase.h" />
+    <ClInclude Include="..\..\Source\Core\Platform\WindowsPC\vaSplashScreen.h" />
+    <ClInclude Include="..\..\Source\Core\System\vaCompressionStream.h" />
+    <ClInclude Include="..\..\Source\Core\System\vaFileStream.h" />
+    <ClInclude Include="..\..\Source\Core\System\vaFileTools.h" />
+    <ClInclude Include="..\..\Source\Core\System\vaMemoryStream.h" />
+    <ClInclude Include="..\..\Source\Core\System\vaSocket.h" />
+    <ClInclude Include="..\..\Source\Core\System\vaStream.h" />
+    <ClInclude Include="..\..\Source\Core\System\vaSystemTimer.h" />
+    <ClInclude Include="..\..\Source\Core\System\vaThreading.h" />
+    <ClInclude Include="..\..\Source\Core\vaApplicationBase.h" />
+    <ClInclude Include="..\..\Source\Core\vaConcurrency.h" />
+    <ClInclude Include="..\..\Source\Core\vaContainers.h" />
+    <ClInclude Include="..\..\Source\Core\vaCore.h" />
+    <ClInclude Include="..\..\Source\Core\vaCoreIncludes.h" />
+    <ClInclude Include="..\..\Source\Core\vaCoreTypes.h" />
+    <ClInclude Include="..\..\Source\Core\vaEvent.h" />
+    <ClInclude Include="..\..\Source\Core\vaFramePtr.h" />
+    <ClInclude Include="..\..\Source\Core\vaGeometry.h" />
+    <ClInclude Include="..\..\Source\Core\vaInput.h" />
+    <ClInclude Include="..\..\Source\Core\vaLog.h" />
+    <ClInclude Include="..\..\Source\Core\vaMath.h" />
+    <ClInclude Include="..\..\Source\Core\vaMemory.h" />
+    <ClInclude Include="..\..\Source\Core\vaProfiler.h" />
+    <ClInclude Include="..\..\Source\Core\vaRandom.h" />
+    <ClInclude Include="..\..\Source\Core\vaSerializer.h" />
+    <ClInclude Include="..\..\Source\Core\vaSingleton.h" />
+    <ClInclude Include="..\..\Source\Core\vaSTL.h" />
+    <ClInclude Include="..\..\Source\Core\vaStringTools.h" />
+    <ClInclude Include="..\..\Source\Core\vaUI.h" />
+    <ClInclude Include="..\..\Source\Core\vaUIDObject.h" />
+    <ClInclude Include="..\..\Source\Core\vaXMLSerialization.h" />
+    <ClInclude Include="..\..\Source\Rendering\DirectX\d3dx12.h" />
+    <ClInclude Include="..\..\Source\Rendering\DirectX\vaDirectXIncludes.h" />
+    <ClInclude Include="..\..\Source\Rendering\DirectX\vaDirectXRecOMatic.h" />
+    <ClInclude Include="..\..\Source\Rendering\DirectX\vaDirectXTools.h" />
+    <ClInclude Include="..\..\Source\Rendering\DirectX\vaGPUTimerDX12.h" />
+    <ClInclude Include="..\..\Source\Rendering\DirectX\vaRenderBuffersDX12.h" />
+    <ClInclude Include="..\..\Source\Rendering\DirectX\vaRenderDeviceContextDX12.h" />
+    <ClInclude Include="..\..\Source\Rendering\DirectX\vaRenderDeviceDX12.h" />
+    <ClInclude Include="..\..\Source\Rendering\DirectX\vaRenderMaterialDX12.h" />
+    <ClInclude Include="..\..\Source\Rendering\DirectX\vaRenderMeshDX12.h" />
+    <ClInclude Include="..\..\Source\Rendering\DirectX\vaSceneRaytracingDX12.h" />
+    <ClInclude Include="..\..\Source\Rendering\DirectX\vaShaderDX12.h" />
+    <ClInclude Include="..\..\Source\Rendering\DirectX\vaTextureDX12.h" />
+    <ClInclude Include="..\..\Source\Rendering\Effects\vaASSAOLite.h" />
+    <ClInclude Include="..\..\Source\Rendering\Effects\vaCMAA2.h" />
+    <ClInclude Include="..\..\Source\Rendering\Effects\vaDepthOfField.h" />
+    <ClInclude Include="..\..\Source\Rendering\Effects\vaGTAO.h" />
+    <ClInclude Include="..\..\Source\Rendering\Effects\vaPostProcess.h" />
+    <ClInclude Include="..\..\Source\Rendering\Effects\vaPostProcessBlur.h" />
+    <ClInclude Include="..\..\Source\Rendering\Effects\vaPostProcessTonemap.h" />
+    <ClInclude Include="..\..\Source\Rendering\Effects\vaSimpleParticles.h" />
+    <ClInclude Include="..\..\Source\Rendering\Effects\vaSimpleShadowMap.h" />
+    <ClInclude Include="..\..\Source\Rendering\Effects\vaSky.h" />
+    <ClInclude Include="..\..\Source\Rendering\Effects\vaSkybox.h" />
+    <ClInclude Include="..\..\Source\Rendering\Effects\vaTAA.h" />
+    <ClInclude Include="..\..\Source\Rendering\Misc\vaImageCompareTool.h" />
+    <ClInclude Include="..\..\Source\Rendering\Misc\vaTextureReductionTestTool.h" />
+    <ClInclude Include="..\..\Source\Rendering\Misc\vaZoomTool.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\IntelTAA.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\SLC\LightTreeMacros.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaASSAOLite_types.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaConversions.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaHelperToolsShared.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaIBLShared.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaLightingShared.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaPathTracerShared.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaPoissonDisk64.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaPoissonDisk8.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaPoissonDisk96.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaPostProcessShared.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaRaytracingShared.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaShaderCore.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaSharedTypes.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaTAAShared.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\XeGTAO.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaAssetPack.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaCanvasImpl.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaDebugCanvas.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaGBuffer.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaGPUTimer.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaIBL.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaPathTracer.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaPrimitiveShapeRenderer.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\vaRenderBuffers.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaRenderCamera.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaRenderDevice.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaRenderDeviceContext.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaRenderGlobals.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaRendering.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaRenderingIncludes.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaRenderInstanceList.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaRenderMaterial.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaRenderMesh.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaSceneLighting.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaSceneRaytracing.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaSceneRenderer.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaSceneRenderInstanceProcessor.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaSceneRenderViews.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaShader.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaStandardShapes.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaTexture.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaTextureHelpers.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaTriangleMesh.h" />
+    <ClInclude Include="..\..\Source\Scene\vaAssetImporter.h" />
+    <ClInclude Include="..\..\Source\Scene\vaCameraBase.h" />
+    <ClInclude Include="..\..\Source\Scene\vaCameraControllers.h" />
+    <ClInclude Include="..\..\Source\Scene\vaScene.h" />
+    <ClInclude Include="..\..\Source\Scene\vaSceneComponentCore.h" />
+    <ClInclude Include="..\..\Source\Scene\vaSceneComponents.h" />
+    <ClInclude Include="..\..\Source\Scene\vaSceneComponentsUI.h" />
+    <ClInclude Include="..\..\Source\Scene\vaSceneSystems.h" />
+    <ClInclude Include="..\..\Source\Scene\vaSceneTypes.h" />
+    <ClInclude Include="..\..\Source\vaConfig.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Source\Core\Platform\WindowsPC\System\vaPlatformSystemTimer.inl" />
+    <None Include="..\..\Source\Core\vaGeometry.inl" />
+    <None Include="..\..\Source\Core\vaSerializer.inl" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\ambient_occlusion.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\Filament\ambient_occlusion.va.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\brdf.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\Filament\brdf.va.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\common_getters.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\Filament\common_getters.va.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\common_graphics.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\Filament\common_graphics.va.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\common_lighting.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\Filament\common_lighting.va.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\common_material.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\common_math.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\common_post_process.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\common_shading.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\Filament\common_shading.va.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\common_types.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\conversion_functions.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\Filament\conversion_functions.va.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\depth_main.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\depth_main.vs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\dithering.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\fxaa.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\getters.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\getters.vs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\inputs.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\inputs.vs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\light_directional.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\Filament\light_directional.va.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\light_indirect.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\Filament\light_indirect.va.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\light_punctual.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\Filament\light_punctual.va.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\main.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\main.vs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\material_inputs.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\Filament\material_inputs.va.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\material_inputs.vs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\post_process.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\post_process.vs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\post_process_old.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\post_process_old.vs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\shading_lit.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\Filament\shading_lit.va.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\shading_model_cloth.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\Filament\shading_model_cloth.va.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\shading_model_standard.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\Filament\shading_model_standard.va.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\shading_model_subsurface.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\Filament\shading_model_subsurface.va.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\shading_parameters.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\Filament\shading_parameters.va.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\shading_unlit.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\shadowing.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\shadowing.vs" />
+    <None Include="..\..\Source\Rendering\Shaders\filament\tone_mapping.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\vaTonemappers.hlsli" />
+    <None Include="..\..\Source\Rendering\Shaders\XeGTAO.hlsli" />
+    <None Include="..\..\Source\vaDocumentation.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\..\Source\vaReferences.txt" />
+    <Text Include="..\..\Source\vaTODO.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaCanvas.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaGBuffer.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaHelperTools.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\SLC\SLCMain.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\SLC\SLCRayGen.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaLighting.hlsl">
+      <FileType>Document</FileType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaPostProcess.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaPostProcessBlur.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaPostProcessTonemap.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaPrimitiveShapeRenderer.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaRenderingShared.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaRenderMesh.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaShared.hlsl">
+      <FileType>Document</FileType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaSimpleParticles.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaSimpleShadowMap.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaSky.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaSkybox.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaStandardSamplers.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaASSAOLite.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaCMAA2.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaDepthOfField.hlsl">
+      <FileType>Document</FileType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaMaterialFilament.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaIBL.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaMaterialLoaders.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaRenderMaterial.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaPathTracer.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaNoise.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaDebugging.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaGTAO.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaTAA.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\IntelTAA.hlsli">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaGTAO_RT.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{30430E2D-C12E-4537-866E-52B1B49F6410}</ProjectGuid>
+    <RootNamespace>Vanilla</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TargetExt>.lib</TargetExt>
+    <IncludePath>$(ProjectDir)..\..\Source;$(ProjectDir)..\..\Source\Core\Platform\WindowsPC;$(VC_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\code\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\zlib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\rapidjson\include;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\unzip\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\irrXML\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\openddlparser\include\;$(WindowsSDK_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\Include\WinPixEventRuntime</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\bin\x64</LibraryPath>
+    <OutDir>$(SolutionDir).intermediate\.lib\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir).intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TargetExt>.lib</TargetExt>
+    <IncludePath>$(ProjectDir)..\..\Source;$(ProjectDir)..\..\Source\Core\Platform\WindowsPC;$(VC_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\code\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\zlib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\rapidjson\include;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\unzip\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\irrXML\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\openddlparser\include\;$(WindowsSDK_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\Include\WinPixEventRuntime</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\bin\x64</LibraryPath>
+    <OutDir>$(SolutionDir).intermediate\.lib\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir).intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>false</SDLCheck>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild>false</MinimalRebuild>
+      <PreprocessorDefinitions>_DEBUG;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <OpenMPSupport>true</OpenMPSupport>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\Source\IntegratedExternals\GTS\source\gts\include</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <CustomBuildStep />
+    <CustomBuildStep />
+    <CustomBuildStep />
+    <CustomBuildStep />
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>
+      </Message>
+    </PreBuildEvent>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>
+      </Message>
+      <Outputs>
+      </Outputs>
+    </CustomBuildStep>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <OpenMPSupport>true</OpenMPSupport>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <PreprocessorDefinitions>_UNICODE;UNICODE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\Source\IntegratedExternals\GTS\source\gts\include</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <CustomBuildStep />
+    <CustomBuildStep />
+    <CustomBuildStep />
+    <CustomBuildStep />
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>
+      </Message>
+    </PreBuildEvent>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+      <Message>
+      </Message>
+      <Outputs>
+      </Outputs>
+    </CustomBuildStep>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

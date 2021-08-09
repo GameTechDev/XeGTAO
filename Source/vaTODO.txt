@@ -1,0 +1,232 @@
+
+ [moving to Github Issues - leaving below during transition and for historical purposes]
+
+ [ ] GTAO sprint 3 - public sample update
+   [ ] bent normals & rendering intergration (itemize)
+   [ ] https://www.gdcvault.com/play/1026701/Fast-Denoising-With-Self-Stabilizing
+   [ ] FP16 depth precision - hey it looks like storing in viewspace/100 might yield more precision? try it out!
+   [ ] remove normal generation from the core of the effect and put it into Vanilla itself; this will simplify fp16 stuff too
+   [ ] consider (optional?) normals for edges? too costly? should make things sharper though and should work nice with TAA
+   [ ] overdarkening bug - on a floor, center-down on screen, looking at a very slant angle, there's some overdarkening - why?
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// FINISHED ITEMS
+
+finished as of 01 March 2021:
+ [x] auto data dump 
+   [x] camera pos save load (ctrl+1...?)
+   [x] script using camera pos-es to auto dump data
+
+finished as of 03 March 2021:
+ 
+  [x] those remaining pesky RT artifacts, why do they happen? 
+   [x] look at the bottles for ex, why are they there? maybe it's some NaNs? 
+     ->  not NaNs, it's just the stickers
+   [x] look at the helmet - black values all around too!
+     -> that's what the geometry is
+   [x] white values at the 90 degree wall intersections - bad normal offset? perhaps also move ray "back" a tiny bit as well, not just offset by normal?
+     -> there's actual interconnecting geometry there and the lightness is valid because it's a 45 deg 
+   [x] white/dark values around window (cam7)
+     -> these are rays missing the curtain panel which is too small - fix art or ignore
+   [x] black values around paintings frame (cam3)
+     -> unfortunately it's all the way geometry is
+   [x] if it's because of the primary ray hitting holes, perhaps add miniscule subpixel jitter to the start pos, see if it helps (but make it so small that it avoids anti-aliasing) 
+     -> tried, it's not that, it's the geometry
+
+finished as of 08 June 2021:
+
+ [x] GTAO sprint 1
+   [x] radius is broken? (debug circle not matching but rest is ok?)
+   [x] precision fudges?
+   [x] nearby samples (low radius) must never land on the center pixel
+   [x] use the (integer) pixel loc to compute viewspace/worldspace sample pos for calc
+   [x] falloff (check https://github.com/MaxwellGengYF/Unity-Ground-Truth-Ambient-Occlusion/blob/master/Shaders/GTAO_Common.cginc)
+     [x] it's broken for RTAO reference? when changing it doesn't restart accumulation
+     [x] test lerping in angle space
+     [x] test using power lerp - which one better matches angle space
+   [x] w.t.h. is thickness (read paper) - instead of max use a bit of averaging?
+   [x] some weird unwanted occlusion at slopes (ground)
+   [x] pow distribution for samples
+   [x] falloff - falloffFrontBackBias
+   [x] noise
+     [x] for the slice
+     [x] for the sample
+   [x] instead of the thickness param, use slice vs step ratio?
+   [x] expose to GUI and external settings
+   [x] AUTOTUNE
+     [x] get current settings MSE
+     [x] first working search
+     [x] multi-pass search with narrowing ranges
+   [x] thickness heuristics
+   [x] pow for final output
+   [x] integration code - original from the paper or IntegrateArc? check vs GT
+   [x] disable thickness heuristic for now (set to 0) and train on the rest
+   [x] settle on settings
+   [x] make GTAO.hlsl -> GTAO.hlsli, rename all MIAO stuff to GTAO and cleanup
+   [x] noise
+
+ [x] TAA & noise
+     [x] create a placeholder
+     [x] move shaders in
+     [x] refactor TAA into two-file format
+     [x] first working version
+     [x] jitter
+     [x] colors broken?
+     [x] subpixel offset - best noise, best scale
+     [x] energy loss bug: not reinhard/inversereinhard; not bicubic filter; not variance clipping; it's storage - figure out some other time
+     [x] there's a slight directional offset (upper left)
+     [x] disable jitter option
+     [-] dynamic exposure - store unexposed? <- pre-exposed is better
+     [x] faster convergence - add option, test best
+     [x] add texture MIP bias - add option, test best
+     [x] clean up - perf/formats (just rudimentary - we don't care for this sample), anything else weird?
+     [x] disable TAA with path tracing
+     [x] why does TAA break with GTAO RT? (because double-accumulation - same as path tracing)
+     [x] disable TAA with AutoTune
+ 
+finished as of 17 June 2021:
+
+ [ ] GTAO sprint 2 - public sample
+   [x] last big cleanup pass: GTAO.h and GTAO.hlsli should be all that's needed!
+   [x] Depth convert to viewspace in FP16, pre-compute mips and generate (optional) normals. Make main pass  [5 days]. 
+     [x] depth to viewspace FP16 works and GTAO consumes it correctly
+     [x] depth mips - create and use
+     [x] normals
+       [x] basic implementation
+       [-] optimized implementation based on pixelDirRBViewspaceSizeAtCenterZ & rename that to viewspaceDDX/DDY or something
+   [x] AUTOTUNE BUG
+     [x] use only camera 0 - do PSNRs match?
+     [x] dump images, compare with imagecompare
+      -> it was the radius setting on RTAO that was broken
+   [x] edges of plants - why are normals broken? <- was due to Z offset
+   [-] edge remove AO heuristic from ASSAO <- doesn't help
+   [x] we need better edges 
+     [x] rely on diff more
+     [-] more than 8 bit helpful?
+   [x] rename input textures and texture code cleanup
+   [x] support for worldspace normals
+   [x] Denoising - a giant CS relying on SLM? Reuse logic from ASSAO [5 days] 
+     [x] how to encode/provide edges?
+     [x] what's the max visibility value? - GTAO_MAX_THREESLICE_VISIBILITY
+     [x] denoise CS - simple
+     [x] denoise CS 
+       [x] multi-pass visual reference
+       [x] SLM-based single-pass
+       [-] pack to R16_UNORM?
+       [-] 'fat' pass - instead of a cross covering 5 pixels, do a block of 9 with different weights
+     [-] disable and test against TAA - try different settings
+     [x] slices vs steps - find best perf
+   [x] Noise fine tune
+     [x] slices, blue noise
+     [x] slices, temporal
+     [-] points - power broken?
+     [x] use 3 samples
+   [x] do we need the falloff? try search without/with  -> yes we do
+   [x] sample distribution power - fix to 2             -> ok
+   [x] lowHorizonCos0 - can we remove (autotune-test)   -> NO WE CAN'T REMOVE, this is essential
+   [x] front/back bias - remove?                        -> ok
+   [x] Depth pre-pass - single shader
+   [x] better blue noise - https://github.com/kecho/Noice ?
+   [x] noise for slices - don't use for internal ones, make them regular steps
+   [x] AutoTune ASSAO
+   [x] SHADER COMPILER UPDATE
+   [x] apply power before blur and mul?
+   [x] add 'final mul' like 'final pow' except direct multiplier; add too?
+   [x] fat blur kernel - this can take a day
+   [x] add variance clipping min max for TAA as float2 options
+   [x] double-blur option
+   [x] high quality option & make reference use the same codepath?
+   [x] copyright update: Copyright (C) 2016-2021, Intel Corporation for files, and for Readme.MD - Copyright(C) <year(s)> Intel Corporation SPDX-License-Identifier: MIT
+   [x] performance & cleanup pass
+     [x] Can heuristics become macros? But revert to consts if not at defaults?
+     [x] quality levels (only 'high' and 'highest'? :D 3 and 9?)
+     [x] how to get a number of instructions in the shader?
+     [x] optimize range falloff
+     [-] R8_SRGB enough for visibility? -> there is no R8_SRGB and R8_UNORM doesn't help :)
+     [x] sample offset compute could be unnecessarily long
+     [-] viewspace pos compute can be simplified with minor qual loss -> no, quality loss was too high
+     [x] manual clamp for depth prepass - use sampler
+     [x] fp16 in GTAO
+     [x] fp16 packing to SLM in depth prepass
+     [x] fp16 packing to SLM in blur
+
+finished as of 08 July 2021:
+
+   [x] rename to XeGTAO (and rename XeTAA?)
+   [x] simplified math
+   [x] texture resource naming
+   [x] automatic benchmark
+   [x] test on gen9, gen12
+   [x] versioning
+   [x] loading splash screen
+   [x] hopefully fixed camera movement under RIL (left clik + drag mouse move)
+   [x] read https://momentsingraphics.de/3DBlueNoise.html and add to comments / noise
+     [x] try 2D 64x64 blue noise with different settings - automate load?
+     [x] import 3D blue noise
+   [x] select GTAO in profiling
+   [-] fp16 instability - nvidia specific
+   [-] add AA for ground truth RTAO (but not for training!!!!!) ZBB-ed
+
+   [x] merge with master
+
+   [x] need to change bistro lighting - see some example somewhere?
+
+   [x] shadows on main lights are broken, why? :(
+
+   [x] light emissive effect RT shadow test radius scale (default 0.8?)
+
+   [x] TAA overbright areas bug
+
+   [-] tonemapping bug - something's causing wild fluctuations
+
+   [x] bring back transparencies
+
+   [x] benchmark upgrades: 
+     [x] per-pass perf measurements
+     [x] "are you sure you want to run without fullscreen mode?" warning
+     [x] 2 complete passes and 3 no-AO passes - just do a switch on "% modes" <shrug>
+     [x] shorten the text - it's confusing now
+
+finished as of 23 July 2021:
+
+[x] GTAO sprint 2 - public sample
+
+   [x] how is AO term used? check original paper, check filament
+     [-] use bent normal / bent cone path just without.. bending? AO->cone angle?
+
+   [x] profiler selection bug
+
+   [x] pull noise code into header
+
+   [x] fp16 on DG2 (disable in passes where it doesn't work)
+     seems to work fine now :/
+
+   [x] remove dpfp16 stuff
+
+   [x] make the annoying cookie jar glass more transparent
+
+   [x] Compare Intel vs comp, compare with CACAO, further optimize
+     [-] integrate CACAO
+     [x] build sample for Patrick
+   [x] Packaging ? one .h and one .hlsli ? port to Holger?s framework [5 days] <-> done by SteveM
+   [x] Sample cleanup, review
+     [x] auto-select XeGTAO
+     [x] add #define VA_GTAO_SAMPLE and do all the mods below based on it
+     [x] remove other workspaces
+     [x] fix to bistro only
+     [x] need to remove all the other stuff with VA_MINIMAL_UI
+     [x] app name
+     [x] remove needless UI
+     [x] Steve's feedback
+     [x] schedule TAA reset on: changing AO option, changing debug view option, etc
+     [x] move RT stuff into separate file
+     [ ] review
+   
+   [-] wrap wireframe & exposure in their own setting -> just moved below
+   [x] log file "11:47:03: C:\Work\vanilla_GTAO\Source\Core\vaApplicationBase.cpp:652 : Unable to open 'C'"
+   [x] log file needs a system info
+
+   [x] Write-up
+   [x] Sample scanning & publication
+
