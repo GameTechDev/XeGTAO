@@ -154,7 +154,7 @@ Many thanks to Jorge Jimenez, Xian-Chun Wu, Angelo Pesce and Adrian Jarabo, auth
 
 Thanks to Trapper McFerron for implementing the DoF effect and other things, Lukasz Migas for his excellent [TAA implementation](https://github.com/GameTechDev/TAA), Andrew Helmer (https://andrewhelmer.com/) for help with the Owen-Scrambled Sobol noise sequences, Adam Lake and David Bookout for reviews, bug reports and valuable suggestions!
 
-Many thanks to Amazon and Nvidia for providing the Amazon Lumberyard Bistro dataset through the Open Research Content Archive (ORCA): https://developer.nvidia.com/orca/amazon-lumberyard-bistro
+Many thanks to: Amazon and Nvidia for providing the Amazon Lumberyard Bistro dataset through the Open Research Content Archive (ORCA): https://developer.nvidia.com/orca/amazon-lumberyard-bistro; author of the [spaceship model available on Sketchfab](https://sketchfab.com/3d-models/sf-light-fighter-x6-24a995860c51424da2d93e23d0c0ec57); Khronos Group for providing the Flight Helmet model and other [reference GLTF models](https://github.com/KhronosGroup/glTF-Sample-Models/tree/master/2.0).
 
 Many thanks to the developers of the following open-source libraries or projects that make the Vanilla sample framework possible: 
  * dear imgui (https://github.com/ocornut/imgui)
