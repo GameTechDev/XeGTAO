@@ -1,11 +1,10 @@
 
- [moving to Github Issues - leaving below during transition and for historical purposes]
+ [consider moving to Github Issues]
 
- [ ] GTAO sprint 3 - public sample update
+ [ ] Next update
+   [ ] revisit screen space sampling kernel: check out GetKernelBasis (29:57 https://www.gdcvault.com/play/1026701/Fast-Denoising-With-Self-Stabilizing)?
    [ ] bent normals & rendering intergration (itemize)
-   [ ] https://www.gdcvault.com/play/1026701/Fast-Denoising-With-Self-Stabilizing
-   [ ] FP16 depth precision - hey it looks like storing in viewspace/100 might yield more precision? try it out!
-   [ ] remove normal generation from the core of the effect and put it into Vanilla itself; this will simplify fp16 stuff too
+   [ ] (cleanup) remove normal generation from the core of the effect and put it into Vanilla itself; this will simplify fp16 stuff too
    [ ] consider (optional?) normals for edges? too costly? should make things sharper though and should work nice with TAA
    [ ] overdarkening bug - on a floor, center-down on screen, looking at a very slant angle, there's some overdarkening - why?
 
