@@ -87,7 +87,7 @@ _left: default 'Thin occluder compensation' of 0; middle: ray traced ground trut
 
 Above image demonstrates two opposing scenarios: in the top row, even the default settings (left column) over-compensate the thin occluder issue due to shelves being very deep, and increasing _thin occluder compensation_ setting (right column) serves only to further deviate from the ground truth (middle column). This is in contrast to the bottom row where pipe and chair legs are very thin, and a high _occluder compensation_ setting (right column) matches ground truth more closely.
 
-### Noise
+### Sampling noise
 
 As with any technique based on Monte Carlo integration, a [a good sampling method can significantly reduce the number of samples needed for the same quality](https://pbr-book.org/3ed-2018/Monte_Carlo_Integration/Careful_Sample_Placement). The original GTAO paper describes a tileable spatial noise of 4x4 with 6 different temporal rotations.
 
@@ -99,8 +99,6 @@ Since computing Hilbert curve index in the compute shader adds measurable cost (
 
 ![reference raytracer](Images/random-vs-hilbert-r2.png)  
 _5x5 spatial with 8 frame temporal filter, left: using hash-based pseudo-random noise; right: using Hilbert curve index driving R2 sequence_
-
-In the future it is likely that we will upgrade to using higher quality precomputed sample sequence such as from _Stochastic Generation of (t,s) Sample Sequences_ [\[Helmer at al., 2021\]](https://diglib.eg.org/bitstream/handle/10.2312/sr20211287/021-033.pdf).
 
 ### Memory bandwidth bottleneck
 Most screen space effects are performance-limited by the available memory bandwidth and texture caching efficiency, and XeGTAO is no different. 
@@ -184,7 +182,6 @@ Many thanks to the developers of the following open-source libraries or projects
  * **Hilbert R1 Blue Noise**: paniq, https://www.shadertoy.com/view/3tB3z3
  * **Free blue noise textures**: Moments in Graphics, A blog by Christoph Peters, http://momentsingraphics.de/BlueNoise.html
  * **The problem with 3D blue noise**: Moments in Graphics, A blog by Christoph Peters, http://momentsingraphics.de/3DBlueNoise.html
- * **[Helmer at al., 2021]**: Stochastic Generation of (t,s) Sample Sequences, Andrew Helmer, Per Christensen, Andrew Kensler, https://diglib.eg.org/bitstream/handle/10.2312/sr20211287/021-033.pdf
  * **[McGuire et al, 2012]**: Scalable Ambient Obscurance, Morgan McGuire. Michael Mara, David Luebke, https://research.nvidia.com/sites/default/files/pubs/2012-06_Scalable-Ambient-Obscurance/McGuire12SAO.pdf
  * **[Bavoil, 2014]**, Deinterleaved Texturing for Cache-Efficient Interleaved Sampling, Louis Bavoil, https://developer.nvidia.com/sites/default/files/akamai/gameworks/samples/DeinterleavedTexturing.pdf
  * **[Chan 2018]**, Material Advances in Call of Duty: WWII_ (https://www.activision.com/cdn/research/MaterialAdvancesInWWII.pdf)
