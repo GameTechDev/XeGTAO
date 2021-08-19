@@ -459,6 +459,8 @@ std::vector<string> vaFileTools::FindDirectories( const string & startDirectory 
 
 bool vaFileTools::WriteText( const string & filePath, const string & text )
 {
+    if( text.size() == 0 )
+        return true;
     // Todo: standardize to UTF-8
     return WriteBuffer( filePath, (void*)text.data(), text.size() );
 }

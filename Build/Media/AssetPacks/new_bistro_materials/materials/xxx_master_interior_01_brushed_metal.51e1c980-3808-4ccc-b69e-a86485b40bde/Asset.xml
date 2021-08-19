@@ -37,7 +37,7 @@
             <Properties>
                 <Value>
                     <type>4</type>
-                    <Value>{0.073239,0.073239,0.073239,1.000000}</Value>
+                    <Value>{0.214041,0.214041,0.214041,1.000000}</Value>
                 </Value>
                 <Min>
                     <type>4</type>
@@ -153,7 +153,7 @@
                     <Max>{100000.000000,100000.000000,100000.000000}</Max>
                 </Max>
                 <IsColor>true</IsColor>
-                <ValueIsMultiplier>true</ValueIsMultiplier>
+                <ValueIsMultiplier>false</ValueIsMultiplier>
             </Properties>
             <InputSwizzle>xyz</InputSwizzle>
         </_item_>
@@ -163,7 +163,7 @@
             <Properties>
                 <Value>
                     <type>2</type>
-                    <Value>0.60000002</Value>
+                    <Value>0.30000001</Value>
                 </Value>
                 <Min>
                     <type>2</type>

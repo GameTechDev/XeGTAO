@@ -73,7 +73,7 @@ alignas( VA_ALIGN_PAD * 2 ) std::mutex                                  vaTracer
 std::vector< std::weak_ptr<vaTracer::ThreadContext> >                   vaTracer::s_threadContexts;
 std::weak_ptr<vaTracer::ThreadContext>                                  vaTracer::s_mainThreadContext;
 
-vaTracer::ThreadContext::ThreadContext( const char * name, const std::thread::id & threadID, bool automaticFrameIncrement, bool isGPU ) : Name( name ), ThreadID( threadID ), AutomaticFrameIncrement( automaticFrameIncrement ), IsGPU( isGPU )
+vaTracer::ThreadContext::ThreadContext( const string & name, const std::thread::id & threadID, bool automaticFrameIncrement, bool isGPU ) : Name( name ), ThreadID( threadID ), AutomaticFrameIncrement( automaticFrameIncrement ), IsGPU( isGPU )
 {
     m_UI_ProfilingThreadNamesDirty = true;
 }

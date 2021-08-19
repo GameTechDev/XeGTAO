@@ -437,7 +437,7 @@ fp16_t3 ClipHistoryColour( TAAParams params, fp16_t3 inCurrentColour, fp16_t3 in
 
         // mean is the center of AABB and variance (standard deviation) is its extents
         const fp32_t3 mean = moment1 * rcpDivider;
-        const fp32_t3 variance = sqrt( max( 0.001, moment2 * rcpDivider - mean * mean ) ) * inVarianceGamma;   // <- 0.001 is found empirically & avoids sqrt(neg-number) as well as close-to-zero values causing temporal artifacts
+        const fp32_t3 variance = sqrt( max( float3( 0.0000003, 0.00001, 0.00001 ), moment2 * rcpDivider - mean * mean ) ) * inVarianceGamma;
 
 #if 1 == USE_VARIANCE_CLIPPING
         // clamp to AABB min/max

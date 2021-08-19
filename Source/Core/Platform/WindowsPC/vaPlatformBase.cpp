@@ -77,7 +77,7 @@ void vaPlatformBase::DebugOutput( const wchar_t * message )
 
 void vaPlatformBase::Error( const wchar_t * messageString )
 {
-    DebugOutput( messageString );
+    DebugOutput( messageString ); DebugOutput( L"\n" );
     evilg_inOtherMessageLoop_PreventTick = true;
     ::MessageBoxW( NULL, messageString, L"Fatal error", MB_ICONERROR | MB_OK );
     VA_LOG_ERROR( messageString );
@@ -88,7 +88,7 @@ void vaPlatformBase::Error( const wchar_t * messageString )
 
 void vaPlatformBase::Warning( const wchar_t * messageString )
 {
-    DebugOutput( messageString );
+    DebugOutput( messageString ); DebugOutput( L"\n" );
     evilg_inOtherMessageLoop_PreventTick = true;
     //::MessageBoxW( NULL, messageString, L"Warning", MB_ICONWARNING | MB_OK );
     VA_LOG_WARNING( messageString );

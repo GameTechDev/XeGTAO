@@ -24,10 +24,10 @@ namespace Vanilla
     class vaTF : protected vaSingletonBase<vaTF>
     {
         tf::Executor                    m_executor;
-        shared_ptr<tf::ExecutorObserverInterface> 
+        shared_ptr<tf::ObserverInterface> 
                                         m_observer = nullptr;
 
-        friend class tf::Graph;
+        friend tf::ObjectPool<tf::Node>& tf::get_node_pool( );
         tf::ObjectPool<tf::Node>        m_pool;
 
     public:
@@ -200,13 +200,14 @@ namespace Vanilla
     }
 }
 
-// if you get "error C2084: function 'tf::ObjectPool<tf::Node,65536> &tf::Graph::_node_pool(void)' already has a body" just comment out
-// this in taskflow - this is a hack to make sure any & all allocations are freed so we don't trigger our memory leak detection!
-inline tf::ObjectPool<tf::Node>& tf::Graph::_node_pool( )
+namespace tf
 {
-    // static ObjectPool<Node> pool;
-    // return pool;
-    return Vanilla::vaTF::GetInstance().m_pool;
+    // if you get "error C2084: function 'tf::ObjectPool<tf::Node,65536> &tf::Graph::_node_pool(void)' already has a body" just comment out
+    // this in taskflow - this is a hack to make sure any & all allocations are freed so we don't trigger our memory leak detection!
+    inline tf::ObjectPool<Node>& tf::get_node_pool( )
+    {
+        return Vanilla::vaTF::GetInstance().m_pool;
+    }
 }
 
 #endif // VA_TASKFLOW_INTEGRATION_ENABLED

@@ -20,7 +20,10 @@
 
 #include "Scene/vaScene.h"
 
+#include "Rendering/vaSceneRaytracing.h"
+
 #include "IntegratedExternals/vaImguiIntegration.h"
+
 
 using namespace Vanilla;
 
@@ -155,6 +158,7 @@ void vaSceneRenderer::UpdateSettingsDependencies( )
 
 void vaSceneRenderer::OnNewScene( )
 {
+    m_instanceProcessor.SetScene( m_scene );
     m_lighting->Reset();
     //m_shadowsStable = false;
     //m_IBLsStable = false;
@@ -194,7 +198,7 @@ void vaSceneRenderer::OnSceneTickBegin( vaScene & scene, float deltaTime, int64 
 
     // This schedules the multithreaded update from the scene, but does not start it yet! It starts after this function exits.
     vaLODSettings LODSettings = GetLODReferenceCamera()->GetLODSettings( );
-    m_instanceProcessor.ScheduleSelection( LODSettings, *m_scene, m_instanceStorage, applicationTickIndex );
+    m_instanceProcessor.SetSelectionParameters( LODSettings, m_instanceStorage, applicationTickIndex );
 
     for( int i = 0; i < (int)m_allViews.size( ); i++ )
     {
@@ -288,7 +292,7 @@ vaDrawResultFlags vaSceneRenderer::RenderTick( float deltaTime, int64 applicatio
     m_sceneTickDrawResults = vaDrawResultFlags::None;
 
     // wait for selections to finish and call PreRenderTickParallelFinished which waits on any view-specific custom threading
-    m_scene->TickWait( "render_selections" );
+    m_scene->Async().WaitAsyncComplete( "renderlists_done_marker" );
 
     m_sceneTickDrawResults |= m_instanceProcessor.ResultFlags();
 
@@ -302,7 +306,7 @@ vaDrawResultFlags vaSceneRenderer::RenderTick( float deltaTime, int64 applicatio
 
     vaRenderDeviceContext & renderContext = *GetRenderDevice().GetMainContext();
 
-    // we can call FinalizeSelection after the m_scene->TickWait( "render_selections" ) call above!
+    // we can call FinalizeSelection after the m_scene->TickWait( "renderlists_done_marker" ) call above!
     m_instanceProcessor.FinalizeSelectionAndPreRenderUpdate( renderContext, m_raytracer );
 
     vaDrawResultFlags drawResults = m_sceneTickDrawResults;

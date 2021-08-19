@@ -133,5 +133,7 @@ namespace Vanilla
         static string               Base64Encode( const void * data, const size_t dataSize );
         static shared_ptr<vaMemoryStream>       
                                     Base64Decode( const string & base64 );
+
+        static string               URLEncode( const string & text );
     };
 }

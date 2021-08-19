@@ -319,8 +319,10 @@ void ClosestHitPathTrace( inout ShaderPathTracerRayPayload rayPayload, in BuiltI
 
         rayPayload.Beta             *= bsdf.F / bsdf.PDF;
 
+        // this maps PDF to specularness - very rough intuition, not worked out but it looks ok-ish. Need to come back and re-evaluate. Depends on MAX_ROUGHNESS and many other things.
         const float k = 4 * VA_PI;
-        rayPayload.LastSpecularness = bsdf.PDF / (k+bsdf.PDF);
+        // const float p = <- how many steradians does the pixel subtend? how to define specularity? 
+        rayPayload.LastSpecularness = saturate( bsdf.PDF / (k+bsdf.PDF) + 0.002 );
 
         if( false && debugDrawRayDetails )
         {

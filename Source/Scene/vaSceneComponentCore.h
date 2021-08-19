@@ -113,8 +113,12 @@ namespace Vanilla
             template< typename First, typename Second, typename... Rest >
             static void             Export( std::vector<int> & readWriteComponents, std::vector<int> & readComponents );
             //
-            bool                    TryAcquire( std::vector<int> & readWriteComponents, std::vector<int> & readComponents );
-            void                    Release( std::vector<int> & readWriteComponents, std::vector<int> & readComponents );
+            template<  typename... AccessedComponents >
+            static std::pair< std::vector<int>, std::vector<int> >
+                                    ExportPairLists( )                  { std::pair<std::vector<int>, std::vector<int>> locks; Scene::AccessPermissions::Export< AccessedComponents... >( locks.first, locks.second ); return locks; }
+            //
+            bool                    TryAcquire( const std::vector<int> & readWriteComponents, const std::vector<int> & readComponents );
+            void                    Release( const std::vector<int> & readWriteComponents, const std::vector<int> & readComponents );
             //
             std::mutex &            MasterMutex( )                  { return m_masterMutex; }
         };
@@ -131,8 +135,8 @@ namespace Vanilla
         struct Components
         {
             // all other getters here
-            template< typename ComponentType >                          // if the assert below fires, it probably means you haven't done "RegisterComponent"
-            static int              TypeIndex( )                        { int retVal = ComponentRuntimeID< std::remove_const_t<ComponentType> >::s_runtimeID; assert( retVal >= 0 ); return retVal; }
+            template< typename ComponentType >
+            static int              TypeIndex( );
             static int              TypeIndex( const string & name );
 
             static int              TypeCount( );
@@ -173,6 +177,19 @@ namespace Vanilla
             static void             UIDraw( entt::registry & registry, entt::entity entity, vaDebugCanvas2D & canvas2D, vaDebugCanvas3D & canvas3D )
                 { return UIDraw(TypeIndex<ComponentType>(), registry, entity, canvas2D, canvas3D ); }
         };
+
+        template< typename ComponentType >                          
+        static int Components::TypeIndex( )                        
+        { 
+            int retVal = ComponentRuntimeID< std::remove_const_t<ComponentType> >::s_runtimeID; 
+            if( retVal == -1 )
+            {
+                VA_LOG( "Unable to find TypeIndex for type '%s' - did you forget to RegisterComponent in vaSceneComponentRegistry::vaSceneComponentRegistry()? ", typeid(ComponentType).name() );
+                assert( retVal >= 0 ); // see ^above^
+            }
+            return retVal; 
+        }
+
     }
 
     // To avoid figuring out type handling now, I'm just going to use a global, thread-safe registry for obtaining component manipulation functions

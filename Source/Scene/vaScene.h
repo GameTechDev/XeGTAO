@@ -23,9 +23,11 @@
 #include "vaSceneSystems.h"
 #include "vaSceneComponents.h"
 
+#include "vaSceneAsync.h"
+
 #ifdef VA_TASKFLOW_INTEGRATION_ENABLED
 #include "IntegratedExternals/vaTaskflowIntegration.h"
-#define VA_SCENE_USE_TASKFLOW
+//#define VA_SCENE_USE_TASKFLOW
 #endif
 
 
@@ -80,39 +82,6 @@ namespace Vanilla
             bool operator == ( const DragDropNodeData & other ) { return this->SceneUID == other.SceneUID && this->Entity == other.Entity; }
         };
 
-        struct WorkItem
-        {
-            // entt components to lock, either for read-write (unique lock) or read-only (shared lock)
-            std::vector<int>            ReadWriteComponents;
-            std::vector<int>            ReadComponents;
-
-            string                      Name;
-            string                      NameNarrowBefore;
-            string                      NameWide;
-            string                      NameWideBlock;
-            string                      NameNarrowAfter;
-            string                      NameFinalizer;
-
-            // This is the first callback; it executes on a worker thread and returns the pair of int-s where .first is the total number of items to be 
-            // processed in the next (Wide) step and .second defined the 'chunk size' (number of items processed per one Wide call) - use 1 to process
-            // single item per Wide call.
-            std::function<std::pair<uint32, uint32>( ConcurrencyContext & )>
-                                        NarrowBefore;
-            // This is the second (optional) callback that gets called multiple times from worker threads (for_each) to process all items, with the
-            // total item count defined by .first returned from NarrowBefore, and the max number of items performed by each Wide defined by the .second.
-            std::function<void ( int begin, int end, ConcurrencyContext & )>
-                                        Wide;
-            // This is the third (optional) callback that gets called after all Wide items have been processed, from the worker thread.
-            std::function<void ( ConcurrencyContext & )>     
-                                        NarrowAfter;
-            // This is the fourth (optional) callback that gets called from the main thread, after all concurrent work has finished.
-            std::function<void( )>      Finalizer;
-            
-            // Stage indices, corresponding to vaScene::m_stages
-            int                         StageStart;
-            int                         StageStop;
-        };
-
     protected:
         static int                                  s_instanceCount;
         // vaGUID                                      m_UID;
@@ -122,14 +91,6 @@ namespace Vanilla
 
         // last storage path, could be "" if SaveJSON/LoadJSON never called!
         string                                      m_storagePath;
-
-        // Scene::Staging                              m_staging;
-
-        // the only purpose of these for now is learning exactly how these callbacks work - these will likely be removed
-        // vector<entt::entity>                        m_toDestroyList;
-
-        // vector<string>                              m_assetPackNames;            // names of the below used asset packs
-        // vector<shared_ptr<vaAssetPack>>             m_assetPacks;                // currently used asset packs
 
         // also used as a skybox :)
         Scene::IBLProbe                             m_IBLProbeDistant;
@@ -166,30 +127,18 @@ namespace Vanilla
 
         //////////////////////////////////////////////////////////////////////////
         // 
-        Scene::UniqueStaticAppendConsumeList        m_listDirtyTransforms;
+        friend struct TransformsUpdateWorkNode;
+        friend struct DirtyBoundsUpdateWorkNode;
+        //
         Scene::UniqueStaticAppendConsumeList        m_listDirtyBounds;
+        Scene::UniqueStaticAppendConsumeList        m_listDirtyTransforms;
         vaAppendConsumeList<entt::entity>           m_listDirtyBoundsUpdatesFailed;
         Scene::UniqueStaticAppendConsumeList        m_listDestroyEntities;
-        //
         // specialized for traversing dirty transform hierarchy - 32k total for 16 levels when unused, grows with used storage (no shrink to fit yet!)
         vaAppendConsumeList<entt::entity>           m_listHierarchyDirtyTransforms[Scene::Relationship::c_MaxDepthLevels];
         // 
         //////////////////////////////////////////////////////////////////////////
 
-        //////////////////////////////////////////////////////////////////////////
-        static constexpr int                        c_maxStageCount                     = 16;
-        std::vector<string>                         m_stages;
-        std::vector<WorkItem>                       m_workItemStorage;                  // contains both active and inactive - use m_workItemCount
-        int                                         m_workItemCount                     = 0;
-        bool                                        m_canAddWork                        = false;
-        //////////////////////////////////////////////////////////////////////////
-#ifdef VA_SCENE_USE_TASKFLOW
-        tf::Taskflow                                m_tf;
-        std::future<void>                           m_stageDriver;
-#endif
-        std::mutex                                  m_stagingMutex;
-        std::condition_variable                     m_stagingCV;
-        int                                         m_finishedStageIndex                = -1;
         //////////////////////////////////////////////////////////////////////////
         float                                       m_currentTickDeltaTime              = -1.0f;
         int64                                       m_lastApplicationTickIndex          = -1;
@@ -197,6 +146,10 @@ namespace Vanilla
         //////////////////////////////////////////////////////////////////////////
     
         shared_ptr<void> const                      m_aliveToken                        = std::make_shared<int>( 42 );    // this is only used to track object lifetime for callbacks and etc.
+
+        vaSceneAsync                                m_async;
+        std::vector<shared_ptr<vaSceneAsync::WorkNode>> 
+                                                    m_asyncWorkNodes;
 
     public:
         //////////////////////////////////////////////////////////////////////////
@@ -210,7 +163,7 @@ namespace Vanilla
                                                     e_TickEnd;
         //////////////////////////////////////////////////////////////////////////
     public:
-        vaScene( const string & name = "Unnamed scene", const vaGUID UID = vaGUID::Create() );
+        vaScene( const string & name = "UnnamedScene", const vaGUID UID = vaGUID::Create() );
         virtual ~vaScene( );
 
     public:
@@ -239,54 +192,19 @@ namespace Vanilla
         int64                                       GetLastApplicationTickIndex( ) const                { return m_lastApplicationTickIndex; }
         double                                      GetTime( ) const                                    { return m_time; }
 
-
+        // these are thread-safe lists used only for async processing
         auto &                                      ListDirtyTransforms( )                              { return m_listDirtyTransforms; }
         auto &                                      ListDirtyBounds( )                                  { return m_listDirtyBounds;     }
         auto &                                      ListDestroyEntities( )                              { return m_listDestroyEntities; }
 
+        vaSceneAsync &                              Async( )                                            { return m_async; }
+
     public:
-        //////////////////////////////////////////////////////////////////////////
-        // "Systems" part
-        //
-        // This is the main async execution part
+        // This is the main async execution part - wraps Async( ), might get removed for direct access instead
         void                                        TickBegin( float deltaTime, int64 applicationTickIndex );
-        void                                        TickWait( const string & stageName );
         void                                        TickEnd( );
         bool                                        IsTicking( ) const                                  { return m_currentTickDeltaTime != -1.0f; }
         //
-        //////////////////////////////////////////////////////////////////////////
-        // 
-        // This is a convenient way to safely run multithreaded workloads on the scene.
-        //  - stageStart:   start work when this stage starts
-        //  - stageStop:    stop work when this stage stops (or -1 to stop in the same it started)
-        // Example: if stageStart == "render_selections" and stageStop == "render_selections" then it will start with all other work assigned to "selections", 
-        // execute in parallel with them, and finish before the next stage.
-        //  - narrowBefore, wide and narrowAfter are callbacks that do the work in parallel; see below for details
-        template< 
-            // AccessedComponents is the lock list (const for read-only components, non-const for read-write)
-            typename... AccessedComponents,
-            //
-            // This is the first callback; it executes on a worker thread and returns the pair of int-s where .first is the total number of items to be processed in the 
-            // next (Wide) step and .second defined the 'chunk size' (number of items processed per one Wide call) - use 1 to process single item per Wide call.
-            typename _NarrowBefore,     // callback type: std::pair<uint32, uint32>( ConcurrencyContext & )
-            //
-            // This is the second (optional) callback that gets called multiple times from worker threads (for_each) to process all items, with the
-            // total item count defined by .first returned from NarrowBefore, and the max number of items performed by each Wide defined by the .second.
-            typename _Wide,             // callback type: void ( int begin, int end, ConcurrencyContext & )
-            //
-            // This is the third (optional) callback that gets called after all Wide items have been processed, from the worker thread.
-            typename _NarrowAfter,      // callback type: void ( ConcurrencyContext & )
-            //
-            // This is the fourth (optional) callback that gets called from the main thread from vaScene::TickEnd, after ALL concurrent work has finished.
-            typename _Finalizer         // callback type: void ( void )
-        >
-        bool                                        AddWork( const string & workName, const string & stageStart, const string & stageStop, 
-                                                        _NarrowBefore && narrowBefore, _Wide && wide, _NarrowAfter && narrowAfter, _Finalizer && finalizer );
-
-        // Generic way to convert tag components to more thread-safe AppendConsume traversal lists
-        template< typename TagComponent, typename ListType > 
-        bool                                        AddWork_ComponentToList( const string & workName, ListType & list );
-
     public:
         // Generic helpers
         const string &                              GetName( entt::entity entity )                      { return Scene::GetName( m_registry, entity ); }
@@ -314,14 +232,6 @@ namespace Vanilla
         void                                        OnDisallowedOperation( entt::registry &, entt::entity );
         void                                        OnRelationshipEmplace( entt::registry &, entt::entity );
         void                                        OnTransformDirtyFlagEmplace( entt::registry & registry, entt::entity );
-
-        void                                        InternalOnTickBegin( vaScene & scene, float deltaTime, int64 tickCounter );
-        void                                        InternalOnTickEnd( vaScene & scene, float deltaTime, int64 tickCounter );
-#ifdef VA_SCENE_USE_TASKFLOW
-        void                                        StageDriver( tf::Subflow & subflow );
-#else
-        void                                        StageDriver( );
-#endif
 
     protected:
         virtual string                              UIPanelGetDisplayName( ) const override { return Name(); }
@@ -362,105 +272,5 @@ namespace Vanilla
         assert( &registry == &m_registry ); registry;
         // TODO: handle this with Component states
         // assert( m_canEmplaceTransformDirtyFlag );    // you're doing something that's not allowed
-    }
-
-    template< typename... AccessedComponents, typename _NarrowBefore, typename _Wide, typename _NarrowAfter, typename _Finalizer >
-    inline bool vaScene::AddWork( const string & workName, const string & stageStart, const string & stageStop, _NarrowBefore && narrowBefore, _Wide && wide, _NarrowAfter && narrowAfter, _Finalizer && finalizer )
-    {
-        assert( vaThreading::IsMainThread( ) && m_registry.ctx<Scene::AccessPermissions>().GetState( ) != Scene::AccessPermissions::State::Concurrent );
-        if( !m_canAddWork )
-        {
-            assert( false ); return false;
-        }
-
-        auto findStr = []( const std::vector<string> & vec, const string & name ) -> int
-        {
-            for( int i = 0; i < (int)vec.size( ); i++ )
-                if( vaStringTools::CompareNoCase( vec[i], name ) == 0 )
-                    return i;
-            return -1;
-        };
-
-        int stageStartIndex = findStr( m_stages, stageStart );
-        int stageStopIndex = findStr( m_stages, stageStop );
-        if( stageStopIndex == -1 )
-            stageStopIndex = (int)m_stages.size()-1;
-
-        // must know where to start
-        if( stageStartIndex == -1 || stageStopIndex < stageStartIndex )
-            { assert( false ); return false; }
-
-        // enlarge storage if needed
-        if( m_workItemCount >= m_workItemStorage.size( ) )
-            m_workItemStorage.push_back( {} );
-
-        WorkItem & item = m_workItemStorage[m_workItemCount];
-        m_workItemCount++;
-
-        item.ReadWriteComponents.clear(); item.ReadComponents.clear();
-        Scene::AccessPermissions::Export< AccessedComponents... >( item.ReadWriteComponents, item.ReadComponents );
-        vaAssertSits( narrowBefore );       // lambda captures too large to fit into std::function with no dynamic allocations?
-        vaAssertSits( wide );               // lambda captures too large to fit into std::function with no dynamic allocations?
-        vaAssertSits( narrowAfter );        // lambda captures too large to fit into std::function with no dynamic allocations?
-        vaAssertSits( finalizer );          // lambda captures too large to fit into std::function with no dynamic allocations?
-        item.Name               = workName;
-        item.NameNarrowBefore   = workName + "_NB";
-        item.NameWide           = workName + "_W";
-        item.NameWideBlock      = workName + "_WB";
-        item.NameNarrowAfter    = workName + "_NA";
-        item.NameFinalizer      = workName + "_FIN";
-        item.NarrowBefore       = narrowBefore;
-        item.Wide               = wide;
-        item.NarrowAfter        = narrowAfter;
-        item.Finalizer          = finalizer;
-        item.StageStart         = stageStartIndex;
-        item.StageStop          = stageStopIndex;
-        assert( item.NarrowBefore );  // must have at least narrowBefore callback
-
-        return true;
-    }
-
-    template< typename TagComponentType, typename ListType >
-    inline bool vaScene::AddWork_ComponentToList( const string & workName, ListType & dstList )
-    {
-        struct LocalContext
-        {
-            entt::registry& Registry;
-            ListType& DstList;
-            entt::basic_view< entt::entity, entt::exclude_t<>, const TagComponentType>     View = Registry.view<std::add_const_t<TagComponentType>>( );
-            //bool const              ClearComponent;
-            LocalContext( entt::registry& registry, ListType& dstList ) : Registry( registry ), DstList( dstList ) { }
-        };
-
-        // TODO: use some kind of object pool here
-        LocalContext* localContext = new LocalContext( m_registry, dstList );
-
-        auto narrowBefore   = [localContext]( ConcurrencyContext & ) noexcept
-        { 
-            localContext->DstList.StartAppending( (uint32)localContext->Registry.size( ) );
-            return std::make_pair( (uint32)localContext->View.size(), vaTF::c_chunkBaseSize * 8 ); 
-        };
-
-        auto wide           = [localContext]( int begin, int end, ConcurrencyContext & ) noexcept
-        {
-            for( int index = begin; index < end; index++ )
-            {
-                entt::entity entity = localContext->View[index];
-                assert( localContext->Registry.valid( entity ) );   // if this fires, you've corrupted the data somehow - possibly destroying elements outside of DestroyTag path?
-                localContext->DstList.Append( entity );
-            }
-        };
-
-        auto narrowAfter    = [localContext]( ConcurrencyContext & ) noexcept
-        {
-            // localContext->DstList.StartConsuming( ); <- don't switch to consuming because others might want to keep appending later!
-            {
-                VA_TRACE_CPU_SCOPE( ClearEnTTTag );
-                localContext->Registry.clear<TagComponentType>( );
-            }
-            delete localContext;
-        };
-
-        return AddWork<TagComponentType>( workName, "dirtylists", "dirtylists", std::move(narrowBefore), std::move(wide), std::move(narrowAfter), nullptr );
     }
 }

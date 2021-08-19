@@ -70,9 +70,9 @@ namespace Vanilla
         vaVector2                                   m_previousJitter                = {0,0};
 
         float                                       m_globalMIPOffset               = -0.7f;
-        float                                       m_lerpMul                       = 0.99f;
-        float                                       m_lerpPow                       = 1.1f;
-        vaVector2                                   m_varianceGammaMinMax           = { 0.75f, 5.0f };
+        float                                       m_lerpMul                       = 0.99f;    // for debugging
+        float                                       m_lerpPow                       = 1.0f;     // for debugging
+        vaVector2                                   m_varianceGammaMinMax           = { 0.75f, 6.0f };
 
     protected:
         VA_RENDERING_MODULE_MAKE_FRIENDS( );

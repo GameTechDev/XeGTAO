@@ -561,6 +561,8 @@ bool Scene::SaveJSON( entt::registry & registry, const string & filePath, std::f
     std::reverse( rootEntities.begin(), rootEntities.end() );       // registry.each iterates them in the reverse order, so invert that to preserve ordering
     std::reverse( unrootEntities.begin(), unrootEntities.end() );   // registry.each iterates them in the reverse order, so invert that to preserve ordering
 
+    serializer.Serialize<string>( "Name", registry.ctx<Scene::Name>( ) );
+
     retVal &= serializer.SerializeVector( "ROOT", rootEntities, EntitySerializeHelper( &registry ) );
     retVal &= serializer.SerializeVector( "UNROOT", unrootEntities, EntitySerializeHelper( &registry ) );
     
@@ -574,6 +576,9 @@ bool Scene::SaveJSON( entt::registry & registry, const string & filePath, std::f
 bool Scene::LoadJSON( entt::registry & registry, const string & filePath )
 {
     vaSerializer serializer = vaSerializer::OpenRead( filePath, "VanillaScene" );
+
+    // should sanitize name after this
+    serializer.Serialize<string>( "Name", registry.ctx<Scene::Name>( ), "UnnamedScene" );
 
     registry; filePath;
     bool retVal = true;

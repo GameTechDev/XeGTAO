@@ -54,6 +54,137 @@ namespace
 #endif
 }
 
+namespace Vanilla
+{
+    struct TransformsUpdateWorkNode : vaSceneAsync::WorkNode
+    {
+        vaScene &               Scene;
+
+        TransformsUpdateWorkNode( const string & name, vaScene & scene, const std::vector<string> & predecessors, const std::vector<string> & successors ) : Scene( scene ),
+            vaSceneAsync::WorkNode( name, predecessors, successors, Scene::AccessPermissions::ExportPairLists<
+                const Scene::TransformLocal, Scene::TransformWorld, const Scene::Relationship, const Scene::WorldBounds, const Scene::TransformLocalIsWorldTag >() )
+        { 
+        }
+
+        //virtual void                    ExecutePrologue( float deltaTime, int64 applicationTickIndex ) override     { deltaTime; applicationTickIndex; }
+        //
+        // Asynchronous narrow processing; called after ExecuteWide, returned std::pair<uint, uint> will be used to immediately repeat ExecuteWide if non-zero
+        virtual std::pair<uint, uint>   ExecuteNarrow( const uint32 pass, vaSceneAsync::ConcurrencyContext & ) override
+        {
+            if( pass == 0 )
+            {   // STEP 0, we're starting to consume all dirty transforms and prepare & fill in the per-hierarchy level dirty flags
+                if( !Scene.m_listDirtyTransforms.IsConsuming( ) )
+                    Scene.m_listDirtyTransforms.StartConsuming( );
+
+                for( uint32 depth = 0; depth < Scene::Relationship::c_MaxDepthLevels; depth++ )
+                    Scene.m_listHierarchyDirtyTransforms[depth].StartAppending( );
+
+                return { (uint32)Scene.m_listDirtyTransforms.Count(), vaTF::c_chunkBaseSize * 8 };
+            }
+            else
+            {
+                int depth = pass-1;  // (we used pass 0 for updates and switching containers to 'consume' state)
+
+                // that's it, we're done
+                if( depth == Scene::Relationship::c_MaxDepthLevels )
+                    return {0,0};
+
+                assert( depth >= 0 && depth < Scene::Relationship::c_MaxDepthLevels );
+
+                // Switch hierarchy transform dirty tag containers into 'readable'
+                Scene.m_listHierarchyDirtyTransforms[depth].StartConsuming( );
+
+                // set up wide parameters
+                assert( depth >= 0 && depth < Scene::Relationship::c_MaxDepthLevels );
+                return { (uint32)Scene.m_listHierarchyDirtyTransforms[depth].Count( ), vaTF::c_chunkBaseSize * 4 };
+            }
+        }
+        //
+        // Asynchronous wide processing; items run in chunks to minimize various overheads
+        virtual void                    ExecuteWide( const uint32 pass, const uint32 itemBegin, const uint32 itemEnd, vaSceneAsync::ConcurrencyContext & ) override
+        {
+            if( pass == 0 )
+            {   
+                // continue from Narrow pass 0, we categorizes transform-dirty entities to hierarchy-depth-based buckets
+                for( uint32 index = itemBegin; index < itemEnd; index++ )
+                {
+                    const auto& cregistry = std::as_const( Scene.Registry() );
+                    entt::entity entity = Scene.m_listDirtyTransforms[index];
+                    const Scene::Relationship* relationship = cregistry.try_get<Scene::Relationship>( entity );
+                    uint32 depth = ( relationship != nullptr ) ? ( relationship->Depth ) : ( 0 );
+                    assert( depth < Scene::Relationship::c_MaxDepthLevels );
+                    Scene.m_listHierarchyDirtyTransforms[depth].Append( entity );
+                }
+            }
+            else
+            {
+                // continue from Narrow pass 1+, update transforms in layers
+                int depth = pass-1;  // (we used pass 0 for updates and switching containers to 'consume' state)
+                assert( depth >= 0 && depth < Scene::Relationship::c_MaxDepthLevels );
+
+                auto & dirtyTransforms = Scene.m_listHierarchyDirtyTransforms[depth];
+
+                for( uint32 i = itemBegin; i < itemEnd; i++ )
+                    Scene::UpdateTransforms( Scene.Registry(), dirtyTransforms[i], Scene.m_listDirtyBounds );
+            }
+        }
+        //
+        // Wraps up things (if needed); called from main thread ( assert(vaThreading::IsMainThread( )) )
+        // virtual void                    ExecuteEpilogue( ) override { }
+
+    };
+
+    struct DirtyBoundsUpdateWorkNode : vaSceneAsync::WorkNode
+    {
+        vaScene &               Scene;
+
+        DirtyBoundsUpdateWorkNode( const string & name, vaScene & scene, const std::vector<string> & predecessors, const std::vector<string> & successors ) : Scene( scene ),
+            vaSceneAsync::WorkNode( name, predecessors, successors, Scene::AccessPermissions::ExportPairLists<
+                Scene::WorldBounds, Scene::WorldBoundsDirtyTag, const Scene::TransformWorld, const Scene::CustomBoundingBox, const Scene::RenderMesh >() )
+        { 
+        }
+
+        // Asynchronous narrow processing; called after ExecuteWide, returned std::pair<uint, uint> will be used to immediately repeat ExecuteWide if non-zero
+        virtual std::pair<uint, uint>   ExecuteNarrow( const uint32 pass, vaSceneAsync::ConcurrencyContext & ) override
+        {
+            if( pass == 0 )
+            {   
+                // prepare list states
+                Scene.m_listDirtyBounds.StartConsuming( );
+                Scene.m_listDirtyBoundsUpdatesFailed.StartAppending( );
+                // return wide item counts
+                return { (uint32)Scene.m_listDirtyBounds.Count(), vaTF::c_chunkBaseSize * 2 }; 
+            }
+            else
+            {
+                assert( pass == 1 );
+                // this is exception handling (not sure why I even needed to bother...............)
+                Scene.m_listDirtyBoundsUpdatesFailed.StartConsuming( );
+                const int count = (int)Scene.m_listDirtyBoundsUpdatesFailed.Count( );
+                for( int i = 0; i < count; i++ )
+                    Scene.Registry().emplace<Scene::WorldBoundsDirtyTag>( Scene.m_listDirtyBoundsUpdatesFailed[i] ); // <- is this safe use of the entt registry?
+                return {0,0};
+            }
+        }
+        //
+        // Asynchronous wide processing; items run in chunks to minimize various overheads
+        virtual void                    ExecuteWide( const uint32 pass, const uint32 itemBegin, const uint32 itemEnd, vaSceneAsync::ConcurrencyContext & ) override
+        {
+            if( pass == 0 )
+            {   
+                for( uint32 index = itemBegin; index < itemEnd; index++ )
+                {
+                    auto entity = Scene.m_listDirtyBounds[index];
+                    if( !Scene.Registry().get<Scene::WorldBounds>( entity ).Update( Scene.Registry(), entity ) )
+                        Scene.m_listDirtyBoundsUpdatesFailed.Append( entity );
+                }
+            }
+            else
+            { assert ( false );}
+        }
+    };
+}
+
 using namespace Vanilla;
 
 int vaScene::s_instanceCount = 0;
@@ -72,7 +203,8 @@ vaScene * vaScene::FindByRuntimeID( uint64 runtimeID )
 }
 
 vaScene::vaScene( const string & name, const vaGUID UID )
-    : vaUIPanel( "Scene", 1, !VA_MINIMAL_UI_BOOL, vaUIPanel::DockLocation::DockedLeft, "Scenes" )
+    : vaUIPanel( "Scene", 1, !VA_MINIMAL_UI_BOOL, vaUIPanel::DockLocation::DockedLeft, "Scenes" ),
+    m_async( *this )
 {
     m_registry.set<Scene::UID>( UID );
     m_registry.set<Scene::Name>( name ); 
@@ -128,42 +260,27 @@ vaScene::vaScene( const string & name, const vaGUID UID )
     auto groupTransforms = m_registry.group<Scene::TransformLocal, Scene::TransformWorld>( );
     //////////////////////////////////////////////////////////////////////////
 
-    
-    // If this is enabled, final rendering-related selections will be performed based on previous frame scene data
-    // (but this frame's camera), introducing 1-frame lag to render data but allowing for more parallelization on 
-    // the CPU.
-    // #define VA_RENDER_SELECTIONS_FIRST // WARNING - static shadow maps will be broken by this!
+    //m_asyncMarkers.push_back( std::make_shared<vaSceneAsync::WorkNode>( "dirtylists", {}, {}, Scene::AccessPermissions::ExportPairLists<Scene::WorldBoundsDirtyTag> ) );
+    m_asyncWorkNodes.push_back( vaSceneAsync::MarkerWorkNodeMakeShared( "dirtylists_done_marker", {}, {} ) );
+    m_asyncWorkNodes.push_back( vaSceneAsync::MarkerWorkNodeMakeShared( "motion_done_marker", {"dirtylists_done_marker"}, { } ) );
+    m_asyncWorkNodes.push_back( vaSceneAsync::MarkerWorkNodeMakeShared( "transforms_done_marker", {"motion_done_marker"}, { } ) );
+    m_asyncWorkNodes.push_back( vaSceneAsync::MarkerWorkNodeMakeShared( "bounds_done_marker", {"transforms_done_marker"}, { } ) );
+    m_asyncWorkNodes.push_back( vaSceneAsync::MarkerWorkNodeMakeShared( "renderlists_done_marker", {"bounds_done_marker"}, { } ) );
 
-    // set up basic staging
-    {
-#ifdef VA_RENDER_SELECTIONS_FIRST
-        m_stages.push_back( "render_selections" );
-#endif
-        m_stages.push_back( "dirtylists" );
-        m_stages.push_back( "logic" );
-        m_stages.push_back( "motion" );
-        m_stages.push_back( "transforms" );
-        m_stages.push_back( "bounds" );
-#ifndef VA_RENDER_SELECTIONS_FIRST
-        m_stages.push_back( "render_selections" );
-#endif
-        m_stages.push_back( "late" );
-        assert( m_stages.size() <= c_maxStageCount );
-    }
+    m_asyncWorkNodes.push_back( vaSceneAsync::MoveTagsToListWorkNodeMakeShared<Scene::WorldBoundsDirtyTag>( "WorldBoundsDirtyTag", *this, m_listDirtyBounds, { }, { "dirtylists_done_marker" } ) );
+    m_asyncWorkNodes.push_back( vaSceneAsync::MoveTagsToListWorkNodeMakeShared<Scene::TransformDirtyTag>( "TransformDirtyTag", *this, m_listDirtyTransforms, { }, { "dirtylists_done_marker" } ) );
 
-    e_TickBegin.AddWithToken( m_aliveToken, this, &vaScene::InternalOnTickBegin );
-    // e_TickEnd.AddWithToken( m_aliveToken, this, &vaScene::InternalOnTickEnd );
 
-    // vector<int>                 ReadWriteComponents;
-    // vector<int>                 ReadComponents;
-    //
-    //    Scene::AccessPermissions::Export<Scene::TransformDirtyTag, const Scene::CustomBoundingBox, Scene::Relationship, const Scene::TransformWorld>( ReadWriteComponents, ReadComponents );
-    //    VA_LOG( "ReadWrite: " );
-    //    for( int rw : ReadWriteComponents )
-    //        VA_LOG( "  %s", Scene::Components::TypeName( rw ).c_str() );
-    //    VA_LOG( "ReadOnly: " );
-    //    for( int r : ReadComponents )
-    //        VA_LOG( "  %s", Scene::Components::TypeName( r ).c_str( ) );
+
+    typedef std::vector<std::string> strvec;
+
+    m_asyncWorkNodes.push_back( std::make_shared<TransformsUpdateWorkNode>( "TransformsUpdate", *this, strvec{ "motion_done_marker" }, strvec{ "transforms_done_marker" } ) );
+
+    m_asyncWorkNodes.push_back( std::make_shared<DirtyBoundsUpdateWorkNode>( "DirtyBoundsUpdate", *this, strvec{ "TransformsUpdate" }, strvec{ "bounds_done_marker" } ) );
+
+    for( auto & workNodes : m_asyncWorkNodes )
+        m_async.AddWorkNode( workNodes );
+
 
     s_sceneInstances.insert( {RuntimeIDGet( ), this} );
 }
@@ -466,6 +583,13 @@ void vaScene::UIPanelTick( vaApplicationBase& application )
         if( fileName != "" )
             LoadJSON( fileName );
     }
+
+    if( ImGui::CollapsingHeader( "Systems", /*ImGuiTreeNodeFlags_DefaultOpen*/ 0 ) )
+    {
+        if( ImGui::Button( "Dump systems graph", {-1, 0} ) )
+            m_async.ScheduleGraphDump( );
+    }
+
 
     // if( ImGui::CollapsingHeader( "Globals", /*ImGuiTreeNodeFlags_DefaultOpen | */ImGuiTreeNodeFlags_Framed ) )
     // {
@@ -945,297 +1069,6 @@ void vaScene::UIPanelTickAlways( vaApplicationBase & application )
 
 }
 
-void vaScene::InternalOnTickBegin( vaScene & scene, float deltaTime, int64 applicationTickIndex )
-{
-    deltaTime; applicationTickIndex;
-
-    scene.AddWork_ComponentToList<Scene::WorldBoundsDirtyTag>( "UpdateDirtyBoundsList",    m_listDirtyBounds );
-    
-    // if the transform dirty flag needs to propagate to children, probably do it here
-    scene.AddWork_ComponentToList<Scene::TransformDirtyTag>( "UpdateTransformDirtyList",   m_listDirtyTransforms );
-
-    // process transforms with parent/child relationships
-    {
-        auto narrowBefore = [&]( ConcurrencyContext& ) noexcept
-        {
-            if( !m_listDirtyTransforms.IsConsuming( ) )
-                m_listDirtyTransforms.StartConsuming( );
-
-            for( uint32 depth = 0; depth < Scene::Relationship::c_MaxDepthLevels; depth++ )
-                m_listHierarchyDirtyTransforms[depth].StartAppending( );
-
-            return std::pair<uint32, uint32>( (uint32)m_listDirtyTransforms.Count(), vaTF::c_chunkBaseSize * 8 );
-        };
-
-        // this only categorizes transform-dirty entities to a depth-based bucket (this used to be one sorted list, but sorting is slow and harder to parallelize)
-        auto wide = [ & ]( const int beg, const int end, ConcurrencyContext& ) noexcept
-        {
-            for( int index = beg; index < end; index++ )
-            {
-                const auto& cregistry = std::as_const( m_registry );
-                entt::entity entity = m_listDirtyTransforms[index];
-                const Scene::Relationship* relationship = cregistry.try_get<Scene::Relationship>( entity );
-                uint32 depth = ( relationship != nullptr ) ? ( relationship->Depth ) : ( 0 );
-                assert( depth < Scene::Relationship::c_MaxDepthLevels );
-                m_listHierarchyDirtyTransforms[depth].Append( entity );
-            }
-        };
-
-        // this actually goes wide again for each depth layer and does the main job of transform updates!
-        auto narrowAfter = [ & ]( ConcurrencyContext & concurrencyContext )
-        {
-            // This switches all hierarchy transform dirty tag containers into 'readable'
-            VA_TRACE_CPU_SCOPE( ContainersStartConsuming );
-            for( uint32 depth = 0; depth < Scene::Relationship::c_MaxDepthLevels; depth++ )
-                m_listHierarchyDirtyTransforms[depth].StartConsuming( );
-
-#ifdef VA_SCENE_USE_TASKFLOW
-            tf::Task prev = concurrencyContext.Subflow->placeholder( );
-#else
-            concurrencyContext;
-#endif
-
-            // Go from the top ('root') of the hierarchy to the bottom, so children entities pick up transforms of their parents
-            for( uint32 depth = 0; depth < Scene::Relationship::c_MaxDepthLevels; depth++ )
-            {
-                if( m_listHierarchyDirtyTransforms[depth].Count( ) == 0 )
-                    continue;
-                string layerName = vaStringTools::Format( "TransformLayer_%02d", depth );
-#ifdef VA_SCENE_USE_TASKFLOW
-                auto [layerS, layerT] = vaTF::parallel_for_emplace( *concurrencyContext.Subflow, 0, (int)m_listHierarchyDirtyTransforms[depth].Count( ),
-                    [&registry = m_registry, &dirtyTransforms = m_listHierarchyDirtyTransforms[depth], &listDirtyBounds = m_listDirtyBounds]( int begin, int end ) noexcept
-                {
-                    for( int i = begin; i < end; i++ )
-                        Scene::UpdateTransforms( registry, dirtyTransforms[i], listDirtyBounds );
-                }, vaTF::c_chunkBaseSize * 4, layerName.c_str() );
-                prev.precede( layerS );
-                prev = layerT;
-                prev.name( std::move(layerName) );
-#else
-                auto & dirtyTransforms = m_listHierarchyDirtyTransforms[depth];
-                for( int i = 0; i < (int)m_listHierarchyDirtyTransforms[depth].Count( ); i++ )
-                    Scene::UpdateTransforms( m_registry, dirtyTransforms[i], m_listDirtyBounds );
-                VA_TRACE_CPU_SCOPE_CUSTOMNAME( DispatchLayer, layerName );
-#endif
-            }
-        };
-
-        scene.AddWork<const Scene::TransformLocal, Scene::TransformWorld, const Scene::Relationship, const Scene::WorldBounds, const Scene::TransformLocalIsWorldTag>
-            ( "TransformsUpdate", "transforms", "transforms", narrowBefore, wide, narrowAfter, nullptr ); 
-    }
-
-    // update bounds
-    {
-        auto narrowBefore = [ & ]( ConcurrencyContext& ) noexcept
-        { 
-            // prepare list states
-            m_listDirtyBounds.StartConsuming( );
-            m_listDirtyBoundsUpdatesFailed.StartAppending( );
-            // return wide item counts
-            return std::make_pair( (uint32)m_listDirtyBounds.Count(), vaTF::c_chunkBaseSize * 2 ); 
-        };
-
-        auto wide = [ & ]( int begin, int end, ConcurrencyContext& ) noexcept
-        {
-            for( int index = begin; index < end; index++ )
-            {
-                auto entity = m_listDirtyBounds[index];
-                if( !m_registry.get<Scene::WorldBounds>( entity ).Update( m_registry, entity ) )
-                    m_listDirtyBoundsUpdatesFailed.Append( entity );
-            }
-        };
-
-        // this CAN'T be parallelized, but it's an exception handling anyway (not sure why I even needed to bother...............)
-        auto finalizeFn = [ & ]( )
-        {
-            m_listDirtyBoundsUpdatesFailed.StartConsuming( );
-            const int count = (int)m_listDirtyBoundsUpdatesFailed.Count( );
-            for( int i = 0; i < count; i++ )
-                m_registry.emplace<Scene::WorldBoundsDirtyTag>( m_listDirtyBoundsUpdatesFailed[i] );
-        };
-
-        scene.AddWork<Scene::WorldBounds, Scene::WorldBoundsDirtyTag, const Scene::TransformWorld, const Scene::CustomBoundingBox, const Scene::RenderMesh>(
-            "DirtyBoundsUpdate", "bounds", "bounds", narrowBefore, wide, nullptr, finalizeFn );
-    }
-}
-
-void vaScene::InternalOnTickEnd( vaScene & scene, float deltaTime, int64 applicationTickIndex )
-{
-    scene; deltaTime; applicationTickIndex;
-}
-
-#ifndef VA_SCENE_USE_TASKFLOW
-
-void vaScene::StageDriver(  )
-{
-    Scene::AccessPermissions & accessPermissions = m_registry.ctx<Scene::AccessPermissions>( ); accessPermissions;
-
-    for( int si = 0; si < m_stages.size( ); si++ )
-    {
-        for( int wi = 0; wi < m_workItemCount; wi++ )
-        {
-            WorkItem& item = m_workItemStorage[wi];
-            if( item.StageStart == si )
-            {
-#ifdef _DEBUG
-                // none of this is really needed for a singlethreaded approach but it's useful for testing the multithreaded components
-                {
-                    std::unique_lock<std::mutex> lk( accessPermissions.MasterMutex( ) );
-                    if( !accessPermissions.TryAcquire( item.ReadWriteComponents, item.ReadComponents ) )
-                    {
-                        VA_ERROR( "Error trying to start work task '%s' - unable to acquire component access premissions", item.Name.c_str( ) ); //, m_stages[item.StageStart].c_str( ) );
-                        return;
-                    }
-                }
-#endif
-
-                uint32 wideItemCount, wideItemChunkSize;
-                {
-                    VA_TRACE_CPU_SCOPE_CUSTOMNAME( NarrowBefore, item.NameNarrowBefore );
-                    auto [_wideItemCount, _wideItemChunkSize] = item.NarrowBefore( vaScene::ConcurrencyContext{} );
-                    item.NarrowBefore = nullptr;
-                    wideItemCount = _wideItemCount; wideItemChunkSize = _wideItemChunkSize;
-                }
-                if( item.Wide && wideItemCount > 0 )
-                {
-                    assert( wideItemChunkSize > 0 );
-                    VA_TRACE_CPU_SCOPE_CUSTOMNAME( WideItem, item.NameWide );
-                    for( uint32 i = 0; i < wideItemCount; i += wideItemChunkSize )
-                    {
-                        VA_TRACE_CPU_SCOPE_CUSTOMNAME( block, item.NameWideBlock );
-                        item.Wide( i, std::min( i + wideItemChunkSize, wideItemCount ), vaScene::ConcurrencyContext{} );
-                    }
-                    item.Wide = nullptr;
-                }
-                if( item.NarrowAfter )
-                {
-                    VA_TRACE_CPU_SCOPE_CUSTOMNAME( NarrowAfter, item.NameNarrowAfter );
-                    item.NarrowAfter( vaScene::ConcurrencyContext{} );
-                    item.NarrowAfter = nullptr;
-                }
-            }
-
-            // none of this is really needed for a singlethreaded approach but it's useful for testing the multithreaded components
-#ifdef _DEBUG
-            if( item.StageStop == si )
-            {
-                std::unique_lock<std::mutex> lk( accessPermissions.MasterMutex( ) );
-                accessPermissions.Release( item.ReadWriteComponents, item.ReadComponents );
-            }
-#endif
-        }
-
-        // none of this is really needed for a singlethreaded approach but it's useful for testing the multithreaded components
-        {
-            std::unique_lock<std::mutex> lk( m_stagingMutex );
-            assert( m_finishedStageIndex < si );
-            m_finishedStageIndex = si;
-            lk.unlock( );
-            m_stagingCV.notify_one( );
-        }
-    }
-}
-
-#else
-
-void vaScene::StageDriver( tf::Subflow & subflow )
-{
-    assert( m_currentTickDeltaTime >= 0.0f );
-    subflow;
-
-    Scene::AccessPermissions & accessPermissions = m_registry.ctx<Scene::AccessPermissions>( );
-
-    tf::Task stageCompleteTasks[c_maxStageCount];
-
-    // create stage 'finalizer' tasks (updates the m_finishedStageIndex)
-    for( int si = 0; si < m_stages.size( ); si++ )
-    {
-        auto finishStage = [ &, index = si ]( tf::Subflow & ) noexcept
-        {
-            std::unique_lock<std::mutex> lk( m_stagingMutex );
-            assert( m_finishedStageIndex < index );
-            m_finishedStageIndex = index;
-            lk.unlock();
-            m_stagingCV.notify_one();
-        };
-        stageCompleteTasks[si] = subflow.emplace( finishStage ).name( m_stages[si] );
-        if( si > 0 )
-            stageCompleteTasks[si-1].precede(stageCompleteTasks[si]);
-    }
-
-    for( int si = 0; si < m_stages.size( ); si++ )
-    {
-        for( int wi = 0; wi < m_workItemCount; wi++ )
-        {
-            WorkItem & item = m_workItemStorage[wi];
-            if( item.StageStart == si )
-            {
-                auto itemDriver = [ &item, &accessPermissions ]( tf::Subflow & subflow ) noexcept
-                {
-                    // this could be under debug only
-#ifdef _DEBUG
-                    {
-                        std::unique_lock<std::mutex> lk( accessPermissions.MasterMutex( ) );
-                        if( !accessPermissions.TryAcquire( item.ReadWriteComponents, item.ReadComponents ) )
-                        {
-                            VA_ERROR( "Error trying to start work task '%s' - unable to acquire component access premissions", item.Name.c_str( ) ); //, m_stages[item.StageStart].c_str( ) );
-                            return;
-                        }
-                    }
-#endif
-
-                    assert( item.NarrowBefore );    // work item has to have at least 'NarrowBefore' callback
-
-                    auto [wideItemCount, wideItemChunkSize] = item.NarrowBefore( vaScene::ConcurrencyContext{ &subflow } );
-                    item.NarrowBefore = nullptr;
-
-                    auto T = subflow.placeholder( );
-                    if( item.Wide && wideItemCount > 0 )
-                    {
-                        assert( wideItemChunkSize > 0 );
-                        auto wideCB = [ &item ]( int beg, int end, tf::Subflow& subflow )
-                        {
-                            item.Wide( beg, end, vaScene::ConcurrencyContext{ &subflow } );
-                        };
-                        auto [_s, _t] = vaTF::parallel_for_emplace( subflow, 0, wideItemCount, std::move( wideCB ), wideItemChunkSize, item.NameWideBlock.c_str( ) );
-                        _s.name( "wide_start" );
-                        _t.name( "wide_terminate" );
-                        T = _t;
-                        //T.name( item.NameWide );
-                    }
-                    if( item.NarrowAfter )
-                    {
-                        auto afterCB = [ &item ]( tf::Subflow& subflow )
-                        {
-                            item.NarrowAfter( vaScene::ConcurrencyContext{ &subflow } );
-                        };
-                        auto N = subflow.emplace( afterCB );
-                        N.name( item.NameNarrowAfter );
-                        T.precede( N );
-                    }
-
-                    // this could be under debug only
-#ifdef _DEBUG
-                    subflow.join();
-                    {
-                        std::unique_lock<std::mutex> lk( accessPermissions.MasterMutex( ) );
-                        accessPermissions.Release( item.ReadWriteComponents, item.ReadComponents );
-                    };
-#endif
-                };
-
-                // Connect dependencies;
-                auto workTask = subflow.emplace( itemDriver ).name( item.Name );
-                if( si > 0 )
-                    stageCompleteTasks[si - 1].precede( workTask );
-                stageCompleteTasks[item.StageStop].succeed( workTask );
-            }
-        }
-    }
-    subflow.join();
-}
-#endif
-
 void vaScene::TickBegin( float deltaTime, int64 applicationTickIndex )
 {
     VA_TRACE_CPU_SCOPE( SceneTick );
@@ -1257,132 +1090,24 @@ void vaScene::TickBegin( float deltaTime, int64 applicationTickIndex )
         Scene::DestroyTagged( m_registry );
     }
 
-    // check that our reactive update of tags on Scene::Relationship change is correct
-    // maybe put this under EXHAUSTIVE_DEBUG or something?
-#ifdef _DEBUG
-    {
-        //        m_registry.view<const Scene::Relationship>( ).each( [ & ]( entt::entity entity, const Scene::Relationship & relationship )
-        //        {
-        //            assert( m_registry.has<Scene::RelationshipRootTag>( entity ) == (relationship.Parent != entt::null ) );
-        //        } );
-
-        //        m_registry.view<entt::exclude_t<const Scene::Relationship>>( ).each( [ & ]( entt::entity entity ) 
-        //        {
-        //            assert( !m_registry.has<Scene::RelationshipRootTag>( entity ) );
-        //        } );
-    }
-#endif 
-
     {
         VA_TRACE_CPU_SCOPE( BeginCallbacks );
-
-        assert( m_workItemCount == 0 );
-        VA_GENERIC_RAII_SCOPE( m_canAddWork = true;, m_canAddWork = false; )
         e_TickBegin( *this, deltaTime, applicationTickIndex );
     }
 
-    // concurrent stuff
-    VA_TRACE_CPU_SCOPE( ConcurrentWork );
-
-    Scene::AccessPermissions& accessPermissions = m_registry.ctx<Scene::AccessPermissions>( );
-    accessPermissions.SetState( Scene::AccessPermissions::State::Concurrent );
-
-    {
-        std::unique_lock<std::mutex> lk( m_stagingMutex );
-        m_finishedStageIndex = -1;
-    }
-
-
-#ifdef VA_SCENE_USE_TASKFLOW
-    assert( !m_stageDriver.valid( ) );
-    auto stageDriverProc = [ this ]( tf::Subflow& subflow ) { this->StageDriver( subflow ); };
-#if 0
-    m_stageDriver = vaTF::GetInstance( ).async( stageDriverProc );
-#else
-    m_tf.emplace( stageDriverProc );
-    m_stageDriver = vaTF::Executor().run( m_tf );
-#endif
-#else
-    StageDriver( );
-#endif
+    m_async.Begin( deltaTime, applicationTickIndex );
 }
 
 void vaScene::TickEnd( )
 {
     assert( IsTicking() );
 
-    // Make sure everything is done
-    TickWait( "" );
-
-#ifdef VA_SCENE_USE_TASKFLOW
-    assert( m_stageDriver.valid() );
-    m_stageDriver.wait();
-    m_stageDriver = {};
-    // vaFileTools::WriteText( "C:\\temp\\aeiou.graphviz", m_tf.dump() );
-   
-    m_tf.clear( );
-#endif
-
-    Scene::AccessPermissions& accessPermissions = m_registry.ctx<Scene::AccessPermissions>( );
-    accessPermissions.SetState( Scene::AccessPermissions::State::Serialized );
-
-    // Cleanup!
-    for( int wi = 0; wi < m_workItemCount; wi++ )
-    {
-        WorkItem & item = m_workItemStorage[wi];
-            
-        if( item.Finalizer )
-        {
-            VA_TRACE_CPU_SCOPE_CUSTOMNAME( Finalizer, item.NameFinalizer );
-            item.Finalizer( );
-            item.Finalizer  = nullptr;
-        }
-
-        // make sure we've cleared these up (avoids any unwanted lambda captures)
-        assert( item.NarrowBefore == nullptr );
-        item.Wide           = nullptr;
-        item.NarrowAfter    = nullptr;
-    }
-
-    m_workItemCount     = 0;
+    m_async.End( );
 
     {
         VA_TRACE_CPU_SCOPE( EndCallbacks );
-
-        assert( m_workItemCount == 0 );
         e_TickEnd( *this, m_currentTickDeltaTime, m_lastApplicationTickIndex );
     }
 
     m_currentTickDeltaTime     = -1.0f;
 }
-
-void vaScene::TickWait( const string & stageName )
-{
-    assert( vaThreading::IsMainThread() );
-
-    int waitStageIndex = -1;
-
-    if( stageName != "" )
-    {
-        for( int i = 0; i < m_stages.size(); i++ )
-            if( m_stages[i] == stageName )
-            {
-                waitStageIndex = i;
-                break;
-            }
-        assert( waitStageIndex != -1 );
-    }
-
-    if( m_workItemCount == 0 )
-        return;
-
-    {
-        std::unique_lock<std::mutex> lk( m_stagingMutex );
-        m_stagingCV.wait( lk, [ &finishedStageIndex = m_finishedStageIndex, waitStageIndex ] 
-        { 
-            return finishedStageIndex >= waitStageIndex; 
-        } );
-    }
-}
-
-

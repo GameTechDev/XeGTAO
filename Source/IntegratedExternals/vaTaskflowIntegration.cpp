@@ -13,33 +13,33 @@
 
 namespace Vanilla
 {
-    class vaTFObserver : public tf::ExecutorObserverInterface 
+    class vaTFObserver : public tf::ObserverInterface 
     {
     public:
         friend class tf::Executor;
         virtual ~vaTFObserver( ) = default;
 
         virtual void set_up( size_t num_workers ) override { num_workers; };
-        virtual void on_entry( size_t worker_id, tf::TaskView task_view ) override    
+        virtual void on_entry( tf::WorkerView w, tf::TaskView task_view ) override    
         { 
             if( task_view.name().length() == 0 ) 
                 return; 
-            worker_id; 
+            w; 
             auto context = vaTracer::LocalThreadContext(); 
             context->OnBegin( context->MapName( task_view.name() ) );  
         };
 #ifdef _DEBUG
-        virtual void on_exit( size_t worker_id, tf::TaskView task_view ) override     
+        virtual void on_exit( tf::WorkerView w, tf::TaskView task_view ) override     
         { 
             if( task_view.name().length() == 0 ) return; 
-            worker_id; 
+            w;
             auto context = vaTracer::LocalThreadContext(); 
             vaTracer::LocalThreadContext()->OnEnd( context->MapName( task_view.name() ) );
         };
 #else
-        virtual void on_exit( size_t worker_id, tf::TaskView task_view ) override
+        virtual void on_exit( tf::WorkerView w, tf::TaskView task_view ) override
         { 
-            if( task_view.name().length() == 0 ) return; worker_id; task_view; vaTracer::LocalThreadContext()->OnEnd( );  
+            if( task_view.name().length() == 0 ) return; w; task_view; vaTracer::LocalThreadContext()->OnEnd( );  
         };
 #endif
     };

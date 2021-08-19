@@ -62,7 +62,7 @@ struct AsteroidStatic
     // unsigned int textureIndex;
 };
 
-void SetupAsteroids( vaScene& scene, std::vector<shared_ptr<vaRenderMesh>> asteroidMeshes, shared_ptr<vaRenderMesh> iceAsteroidMesh, int numAsteroids, float ratioOfIceAsteroids )
+void SetupAsteroids( vaScene & scene, std::vector<shared_ptr<vaRenderMesh>> asteroidMeshes, shared_ptr<vaRenderMesh> iceAsteroidMesh, int numAsteroids, float ratioOfIceAsteroids )
 {
     // registry is where all entities and components are stored, and it provides traversal structures (groups, views, observers)
     entt::registry & registry = scene.Registry( );
@@ -169,58 +169,56 @@ void SetupAsteroids( vaScene& scene, std::vector<shared_ptr<vaRenderMesh>> aster
     }
 }
 
-void TickAsteroids( vaScene & scene, float deltaTime, bool animate )
+struct AsteroidsMotionWorkNode : vaSceneAsync::WorkNode
 {
-    scene; deltaTime; animate;
+    vaScene &                   Scene;
+    entt::basic_view< entt::entity, entt::exclude_t<>, const AsteroidStatic>
+                                View;
+    float                       DeltaTime = 0.0f;
+    bool &                      AnimateAsteroids;
 
-    if( !animate )
-        return;
+    AsteroidsMotionWorkNode( vaScene & scene, bool & animateAsteroids ) : Scene( scene ), View( scene.Registry().view<std::add_const_t<AsteroidStatic>>( ) ), AnimateAsteroids( animateAsteroids ),
+        vaSceneAsync::WorkNode( "MoveAsteroids", {}, {"motion_done_marker"}, Scene::AccessPermissions::ExportPairLists<
+            const AsteroidStatic, Scene::TransformLocal >() )
+    { 
+    }
 
-    struct LocalContext
+    virtual void                    ExecutePrologue( float deltaTime, int64 applicationTickIndex ) override     { DeltaTime = deltaTime; applicationTickIndex; }
+    //
+    // Asynchronous narrow processing; called after ExecuteWide, returned std::pair<uint, uint> will be used to immediately repeat ExecuteWide if non-zero
+    virtual std::pair<uint, uint>   ExecuteNarrow( const uint32 pass, vaSceneAsync::ConcurrencyContext & ) override
     {
-        entt::registry &                Registry;
-        Scene::UniqueStaticAppendConsumeList & DirtyList;
-        entt::basic_view< entt::entity, entt::exclude_t<>, const AsteroidStatic>
-                                        View = Registry.view<std::add_const_t<AsteroidStatic>>( );
-        float                           DeltaTime;
-        LocalContext( entt::registry& registry, Scene::UniqueStaticAppendConsumeList & dirtyList, float deltaTime ) 
-            : Registry( registry ), DirtyList( dirtyList ), DeltaTime( deltaTime ) { }
+        if( pass == 0 && AnimateAsteroids )
+            return { (uint32)View.size( ), vaTF::c_chunkBaseSize * 2 };
+        return { 0, 0 };
+    }
+    //
+    // Asynchronous wide processing; items run in chunks to minimize various overheads
+    virtual void                    ExecuteWide( const uint32 pass, const uint32 itemBegin, const uint32 itemEnd, vaSceneAsync::ConcurrencyContext & ) override
+    {
+        assert( pass == 0 ); pass;
 
-        void                            TickAsteroids( const int beg, const int end ) const noexcept
+        entt::registry &    registry = Scene.Registry();
+        auto & dirtyList    = Scene.ListDirtyTransforms();
+
+        for( uint32 i = itemBegin; i < itemEnd; i++ )
         {
-            for( int i = beg; i < end; i++ )
+            auto entity = View[i];
+            if( !registry.any_of<Scene::TransformLocal>( entity ) )
+                continue;
+            const AsteroidStatic& staticData = std::as_const( registry ).get<AsteroidStatic>( entity );
+            Scene::TransformLocal& transform = registry.get<Scene::TransformLocal>( entity );
+            float deltaTime = DeltaTime;
             {
-                auto entity = View[i];
-                if( !Registry.any_of<Scene::TransformLocal>( entity ) )
-                    continue;
-                const AsteroidStatic& staticData = std::as_const( Registry ).get<AsteroidStatic>( entity );
-                Scene::TransformLocal& transform = Registry.get<Scene::TransformLocal>( entity );
-                float deltaTime = DeltaTime;
-                {
-                    auto orbit = vaMatrix4x4::RotationZ( staticData.orbitVelocity * deltaTime );
-                    auto spin = vaMatrix4x4::RotationAxis( staticData.spinAxis.AsVec3( ), staticData.spinVelocity * deltaTime );
-                    transform = spin * transform * orbit;
-                }
-                DirtyList.Append( entity );
+                auto orbit = vaMatrix4x4::RotationZ( staticData.orbitVelocity * deltaTime );
+                auto spin = vaMatrix4x4::RotationAxis( staticData.spinAxis.AsVec3( ), staticData.spinVelocity * deltaTime );
+                transform = spin * transform * orbit;
             }
+            dirtyList.Append( entity );
         }
-    };
-
-    // TODO: use some kind of object pool here
-    LocalContext* localContext = new LocalContext( scene.Registry(), scene.ListDirtyTransforms(), deltaTime );
-
-    auto narrowBefore = [ localContext ]( vaScene::ConcurrencyContext & ) noexcept
-        { return std::make_pair((uint32)localContext->View.size( ), vaTF::c_chunkBaseSize * 2); };
-
-    auto wide = [localContext]( int begin, int end, vaScene::ConcurrencyContext& ) noexcept
-        { localContext->TickAsteroids( begin, end ); };
-
-    auto narrowAfter = [ localContext ]( vaScene::ConcurrencyContext & ) noexcept
-        { delete localContext; };
-
-    scene.AddWork<const AsteroidStatic, Scene::TransformLocal>( "MoveAsteroids", "motion", "motion", 
-        narrowBefore, wide, narrowAfter, nullptr );
-}
+    }
+    // virtual void                    ExecuteEpilogue( ) override { }
+};
 
 void Workspace01_Asteroids( vaRenderDevice & renderDevice, vaApplicationBase & application, float deltaTime, vaApplicationState applicationState )
 {
@@ -247,7 +245,7 @@ void Workspace01_Asteroids( vaRenderDevice & renderDevice, vaApplicationBase & a
         //                                    AsteroidMeshes;
         //shared_ptr<vaTexture>               AsteroidTexture;
         //shared_ptr<vaRenderMaterial>        AsteroidMaterial;
-        bool                                AnimateAsteroids = true;
+        bool                                AnimateAsteroids = false;
         entt::entity                        MovableEntity;
         entt::entity                        FighterEntity;
         std::vector<entt::entity>           OtherEntities;
@@ -258,6 +256,8 @@ void Workspace01_Asteroids( vaRenderDevice & renderDevice, vaApplicationBase & a
         shared_ptr<vaSceneRenderer>         SceneRenderer;
         // this is where the SceneRenderer draws the scene
         shared_ptr<vaSceneMainRenderView>   SceneMainView;
+
+        shared_ptr<AsteroidsMotionWorkNode> MotionWorkerNode;
 
         shared_ptr<vaUISimplePanel>         UIPanel;
 
@@ -270,7 +270,13 @@ void Workspace01_Asteroids( vaRenderDevice & renderDevice, vaApplicationBase & a
             void EnTTTest( );
             EnTTTest( );
 
-            Scene           = std::make_shared<vaScene>( "Asteroids!!" );
+            // we've got to register all components we're about to be using
+            vaSceneComponentRegistry::RegisterComponent<AsteroidStatic>();
+
+            Scene               = std::make_shared<vaScene>( "Asteroids!!" );
+
+            MotionWorkerNode    = std::make_shared<AsteroidsMotionWorkNode>( *Scene, AnimateAsteroids );
+            Scene->Async().AddWorkNode( MotionWorkerNode );
             SceneRenderer   = renderDevice.CreateModule<vaSceneRenderer>( );
             SceneMainView   = SceneRenderer->CreateMainView( );
             SceneMainView->SetCursorHoverInfoEnabled(true);
@@ -436,15 +442,6 @@ void Workspace01_Asteroids( vaRenderDevice & renderDevice, vaApplicationBase & a
                     Scene->SetParent( OtherEntities[rnd.NextIntRange((int)OtherEntities.size()-1)], OtherEntities[rnd.NextIntRange((int)OtherEntities.size()-1)] );
 #endif
             }
-
-            // we've got to register all components we're about to be using
-            vaSceneComponentRegistry::RegisterComponent<AsteroidStatic>();
-
-            // for ticking asteroids from vaScene directly
-            Scene->e_TickBegin.AddWithToken( this->shared_from_this( ), [&globals = *this]( vaScene & scene, float deltaTime, uint64 tickCounter )
-            {
-                TickAsteroids( scene, deltaTime, globals.AnimateAsteroids ); tickCounter;
-            } );
 
             // UI
             UIPanel = std::make_shared<vaUISimplePanel>( [ globals = this ]( vaApplicationBase& application )

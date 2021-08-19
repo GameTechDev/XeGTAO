@@ -123,6 +123,7 @@
     <ClCompile Include="..\..\Source\Scene\vaSceneComponentsIO.cpp" />
     <ClCompile Include="..\..\Source\Scene\vaSceneComponentsUI.cpp" />
     <ClCompile Include="..\..\Source\Scene\vaSceneSystems.cpp" />
+    <ClCompile Include="..\..\Source\Scene\vaSceneAsync.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Source\Core\Misc\simplexnoise1234.h" />
@@ -257,6 +258,7 @@
     <ClInclude Include="..\..\Source\Scene\vaSceneComponents.h" />
     <ClInclude Include="..\..\Source\Scene\vaSceneComponentsUI.h" />
     <ClInclude Include="..\..\Source\Scene\vaSceneSystems.h" />
+    <ClInclude Include="..\..\Source\Scene\vaSceneAsync.h" />
     <ClInclude Include="..\..\Source\Scene\vaSceneTypes.h" />
     <ClInclude Include="..\..\Source\vaConfig.h" />
   </ItemGroup>

@@ -202,7 +202,7 @@ void AccessPermissions::SetState( State newState )
     m_state = newState;
 }
 
-bool AccessPermissions::TryAcquire( std::vector<int> & readWriteComponents, std::vector<int> & readComponents )
+bool AccessPermissions::TryAcquire( const std::vector<int> & readWriteComponents, const std::vector<int> & readComponents )
 {
     for( int i = 0; i < readWriteComponents.size( ); i++ )
     {
@@ -244,7 +244,7 @@ bool AccessPermissions::TryAcquire( std::vector<int> & readWriteComponents, std:
     return true;
 }
 
-void AccessPermissions::Release( std::vector<int> & readWriteComponents, std::vector<int>& readComponents )
+void AccessPermissions::Release( const std::vector<int> & readWriteComponents, const std::vector<int>& readComponents )
 {
     for( int i = 0; i < readWriteComponents.size( ); i++ )
     {
@@ -265,7 +265,7 @@ vaSceneComponentRegistry::vaSceneComponentRegistry( )
     // No need to register components if they don't need to get serialized, visible in the UI, accessed dynamically or etc.
 
     //int a = Components::RuntimeID<Relationship>( );
-
+    RegisterComponent< DestroyTag > ( );
     RegisterComponent< Name >( "Name" );            // <- just an example on how you can use a custom name - perhaps you want to shorten the name to something more readable or even substitute a component for another
     RegisterComponent< Relationship >( );
     RegisterComponent< TransformLocalIsWorldTag >( );

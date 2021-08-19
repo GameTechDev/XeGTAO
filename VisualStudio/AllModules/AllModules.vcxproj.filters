@@ -360,6 +360,9 @@
     <ClCompile Include="..\..\Source\Core\Platform\WindowsPC\vaSplashScreen.cpp">
       <Filter>Core\Platform\WindowsPC</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Scene\vaSceneAsync.cpp">
+      <Filter>Scene</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Source\Core\vaCore.h">
@@ -848,6 +851,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaGTAO_RT.hlsl">
       <Filter>Rendering\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Scene\vaSceneAsync.h">
+      <Filter>Scene</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

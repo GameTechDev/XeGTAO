@@ -211,7 +211,7 @@ BSDFSample BSDFSample_f( const SurfaceInteraction surface, const ShadingParams s
         Wi = SampleHemisphereCosineWeighted( u );
     else
     {
-        Wi = SampleGGXVNDF( Wo, pixel.RoughnessUnclamped, pixel.RoughnessUnclamped, u, dummy );
+        Wi = SampleGGXVNDF( Wo, pixel.RoughnessUnclamped, pixel.RoughnessUnclamped, u, dummy ); // <- RoughnessUnclamped used only for picking the direction, not for computing pdf; hack, not sure how much if any bias it adds
     }
 
 // prevent rays from going under the physical geometry triangle normal to avoid self-intersections

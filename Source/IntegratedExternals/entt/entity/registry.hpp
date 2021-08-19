@@ -398,7 +398,7 @@ public:
      */
     [[nodiscard]] entity_type create() {
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanCreateEntity( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanCreateEntity( ) );
         
         return (free_list == null) ? entities.emplace_back(generate_identifier(entities.size())) : recycle_identifier();
     }
@@ -416,7 +416,7 @@ public:
      */
     [[nodiscard]] entity_type create(const entity_type hint) {
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanCreateEntity( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanCreateEntity( ) );
 
         const auto length = entities.size();
 
@@ -452,7 +452,7 @@ public:
     template<typename It>
     void create(It first, It last) {
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanCreateEntity( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanCreateEntity( ) );
 
         for(; free_list != null && first != last; ++first) {
             *first = recycle_identifier();
@@ -486,7 +486,7 @@ public:
     template<typename It>
     void assign(It first, It last, const entity_type destroyed) {
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanCreateEntity( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanCreateEntity( ) );
 
         ENTT_ASSERT(!alive(), "Entities still alive");
         entities.assign(first, last);
@@ -574,8 +574,8 @@ public:
      */
     version_type destroy(const entity_type entity, const version_type version) {
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanDestroyEntity( ) );
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).Serialized( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanDestroyEntity( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).Serialized( ) );
 
         ENTT_ASSERT(valid(entity), "Invalid entity");
 
@@ -630,7 +630,7 @@ public:
     template<typename Component, typename... Args>
     decltype(auto) emplace(const entity_type entity, Args &&... args) {
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component>>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component>>( ) );
 
         ENTT_ASSERT(valid(entity), "Invalid entity");
         return assure<Component>()->emplace(*this, entity, std::forward<Args>(args)...);
@@ -651,7 +651,7 @@ public:
     void insert(It first, It last, const Component &value = {}) {
 
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component>>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component>>( ) );
 
         ENTT_ASSERT(std::all_of(first, last, [this](const auto entity) { return valid(entity); }), "Invalid entity");
         assure<Component>()->insert(*this, first, last, value);
@@ -700,7 +700,7 @@ public:
     decltype(auto) emplace_or_replace(const entity_type entity, Args &&... args) {
 
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component>>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component>>( ) );
 
         ENTT_ASSERT(valid(entity), "Invalid entity");
         auto *cpool = assure<Component>();
@@ -738,7 +738,7 @@ public:
     decltype(auto) patch(const entity_type entity, Func &&... func) {
 
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component>>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component>>( ) );
 
         ENTT_ASSERT(valid(entity), "Invalid entity");
         return assure<Component>()->patch(*this, entity, std::forward<Func>(func)...);
@@ -765,7 +765,7 @@ public:
     decltype(auto) replace(const entity_type entity, Args &&... args) {
 
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component>>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component>>( ) );
 	
         return assure<Component>()->patch(*this, entity, [&args...](auto &... curr) { ((curr = Component{std::forward<Args>(args)...}), ...); });
     }
@@ -784,7 +784,7 @@ public:
     size_type remove(const entity_type entity) {
     	
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component>...>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component>...>( ) );
 	
         ENTT_ASSERT(valid(entity), "Invalid entity");
         static_assert(sizeof...(Component) > 0, "Provide one or more component types");
@@ -809,7 +809,7 @@ public:
         size_type count{};
         
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component>...>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component>...>( ) );
 
         for(; first != last; ++first) {
             const auto entity = *first;
@@ -834,7 +834,7 @@ public:
     void erase(const entity_type entity) {
     	
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component>...>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component>...>( ) );
 	
         ENTT_ASSERT(valid(entity), "Invalid entity");
         static_assert(sizeof...(Component) > 0, "Provide one or more component types");
@@ -905,7 +905,7 @@ public:
         ENTT_ASSERT(valid(entity), "Invalid entity");
 
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent< Scene::AccessPermissions::AllType >( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent< Vanilla::Scene::AccessPermissions::AllType >( ) );
 
         for(auto &&pdata: pools) {
             pdata.pool && pdata.pool->remove(entity, this);
@@ -926,7 +926,7 @@ public:
     [[nodiscard]] bool all_of(const entity_type entity) const {
   	
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent<std::add_const_t<Component>...>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent<std::add_const_t<Component>...>( ) );
 	
         ENTT_ASSERT(valid(entity), "Invalid entity");
         return [entity](const auto *... cpool) { return ((cpool && cpool->contains(entity)) && ...); }(pool_if_exists<Component>()...);
@@ -947,7 +947,7 @@ public:
     [[nodiscard]] bool any_of(const entity_type entity) const {
     	
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent<std::add_const_t<Component>...>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent<std::add_const_t<Component>...>( ) );
 	
         ENTT_ASSERT(valid(entity), "Invalid entity");
         return [entity](const auto *... cpool) { return !((!cpool || !cpool->contains(entity)) && ...); }(pool_if_exists<Component>()...);
@@ -968,7 +968,7 @@ public:
     [[nodiscard]] decltype(auto) get([[maybe_unused]] const entity_type entity) const {
 
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent<std::add_const_t<Component>...>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent<std::add_const_t<Component>...>( ) );
 
         ENTT_ASSERT(valid(entity), "Invalid entity");
 
@@ -987,7 +987,7 @@ public:
         ENTT_ASSERT(valid(entity), "Invalid entity");
 
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent<Component...>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent<Component...>( ) );
 
         ENTT_ASSERT(valid(entity));
 
@@ -1024,7 +1024,7 @@ public:
     [[nodiscard]] decltype(auto) get_or_emplace(const entity_type entity, Args &&... args) {
     	
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component>>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component>>( ) );
 	
         ENTT_ASSERT(valid(entity), "Invalid entity");
         auto *cpool = assure<Component>();
@@ -1048,7 +1048,7 @@ public:
     [[nodiscard]] auto try_get([[maybe_unused]] const entity_type entity) const {
 
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent<std::add_const_t<Component>...>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent<std::add_const_t<Component>...>( ) );
 
         ENTT_ASSERT(valid(entity), "Invalid entity");
 
@@ -1065,7 +1065,7 @@ public:
     [[nodiscard]] auto try_get([[maybe_unused]] const entity_type entity) {
 
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent<Component...>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent<Component...>( ) );
 
         ENTT_ASSERT(valid(entity), "Invalid entity");
 
@@ -1085,7 +1085,7 @@ public:
         if constexpr(sizeof...(Component) == 0) {
 
             // Vanilla-specific asserts (should move elsewhere in future)
-            assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent<Scene::AccessPermissions::AllType>( ) );
+            assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent<Vanilla::Scene::AccessPermissions::AllType>( ) );
 
             for(auto &&pdata: pools) {
                 pdata.pool && (pdata.pool->clear(this), true);
@@ -1095,7 +1095,7 @@ public:
         } else {
 
             // Vanilla-specific asserts (should move elsewhere in future)
-            assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component...>>( ) );
+            assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent<std::remove_const_t<Component...>>( ) );
         	
             (assure<Component>()->clear(this), ...);
         }
@@ -1277,7 +1277,7 @@ public:
     [[nodiscard]] basic_view<Entity, exclude_t<Exclude...>, std::add_const_t<Component>...> view(exclude_t<Exclude...> = {}) const {
 
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent<Component...>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent<Component...>( ) );
         
         static_assert(sizeof...(Component) > 0, "Exclusion-only views are not supported");
         return { *assure<std::remove_const_t<Component>>()..., *assure<Exclude>()... };
@@ -1288,7 +1288,7 @@ public:
     [[nodiscard]] basic_view<Entity, exclude_t<Exclude...>, Component...> view(exclude_t<Exclude...> = {}) {
 
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || ctx<Scene::AccessPermissions>( ).CanAccessComponent<Component...>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || ctx<Vanilla::Scene::AccessPermissions>( ).CanAccessComponent<Component...>( ) );
 
         static_assert(sizeof...(Component) > 0, "Exclusion-only views are not supported");
         return { *assure<std::remove_const_t<Component>>()..., *assure<Exclude>()... };
@@ -1371,9 +1371,9 @@ public:
     [[nodiscard]] basic_group<Entity, exclude_t<Exclude...>, get_t<Get...>, Owned...> group(get_t<Get...>, exclude_t<Exclude...> = {}) {
 
         // Vanilla-specific asserts (should move elsewhere in future)
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || try_ctx<Scene::AccessPermissions>( )->CanAccessComponent<Owned...>( ) );
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || try_ctx<Scene::AccessPermissions>( )->CanAccessComponent<Get...>( ) );
-        assert( try_ctx<Scene::AccessPermissions>( ) == nullptr || try_ctx<Scene::AccessPermissions>( )->CanAccessComponent<Exclude...>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || try_ctx<Vanilla::Scene::AccessPermissions>( )->CanAccessComponent<Owned...>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || try_ctx<Vanilla::Scene::AccessPermissions>( )->CanAccessComponent<Get...>( ) );
+        assert( try_ctx<Vanilla::Scene::AccessPermissions>( ) == nullptr || try_ctx<Vanilla::Scene::AccessPermissions>( )->CanAccessComponent<Exclude...>( ) );
 
         static_assert(sizeof...(Owned) + sizeof...(Get) > 0, "Exclusion-only groups are not supported");
         static_assert(sizeof...(Owned) + sizeof...(Get) + sizeof...(Exclude) > 1, "Single component groups are not allowed");

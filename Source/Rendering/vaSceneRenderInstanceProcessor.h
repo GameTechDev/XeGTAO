@@ -14,6 +14,8 @@
 
 #include "Scene/vaSceneComponentCore.h"
 
+#include "Scene/vaSceneAsync.h"
+
 #include "Rendering/vaRendering.h"
 
 namespace Vanilla
@@ -22,6 +24,7 @@ namespace Vanilla
     class vaRenderMaterial;
 
     class vaSceneRenderer;
+    class vaScene;
 
     // Used by vaSceneRenderer to takes scene render instances and fill them into (multiple) vaRenderInstanceLists as well as filling in
     // vaRenderInstanceStorage and updating render meshes, materials and etc.
@@ -68,6 +71,11 @@ namespace Vanilla
         std::atomic_uint32_t                m_instanceCount         = 0;
 
         shared_ptr<class vaRenderInstanceStorage> m_currentInstanceStorage;
+        int64                               m_currentApplicationTickIndex   = -1;
+
+        shared_ptr<vaScene>           m_scene                 = nullptr;
+        std::vector<shared_ptr<vaSceneAsync::WorkNode>> 
+                                            m_asyncWorkNodes;
 
     public:
         static constexpr uint32             c_ConcurrentChuckMaxItemCount = 512;
@@ -77,10 +85,9 @@ namespace Vanilla
                                             ~vaSceneRenderInstanceProcessor( );
 
         // const shared_ptr<vaScene> &         GetScene( ) const                                   { return m_scene; }
-        // void                                SetScene( const shared_ptr<class vaScene> & scene );
+        void                                SetScene( const shared_ptr<class vaScene> & scene );
 
-        // schedules render instance collection from scene : starts and finishes with the scene "render_selection" phase
-        void                                ScheduleSelection( const vaLODSettings & LODSettings, vaScene & scene, const shared_ptr<class vaRenderInstanceStorage> & instanceStorage, int64 applicationTickIndex );
+        void                                SetSelectionParameters( const vaLODSettings & LODSettings, const shared_ptr<class vaRenderInstanceStorage> & instanceStorage, int64 applicationTickIndex );
         
         // this updates meshes and materials and updates the GPU instance buffer
         void                                FinalizeSelectionAndPreRenderUpdate( vaRenderDeviceContext & renderContext, const shared_ptr<vaSceneRaytracing> & raytracer );
@@ -91,11 +98,33 @@ namespace Vanilla
 
         vaDrawResultFlags                   ResultFlags( ) const                                { assert( !m_inAsync ); return (vaDrawResultFlags)m_selectResults.load(); }
 
-    private:
-        void                                PreSelectionProc( struct vaSceneRenderInstanceProcessorLocalContext & localContext );
-        void                                SelectionProc( struct vaSceneRenderInstanceProcessorLocalContext & localContext, uint32 entityBegin, uint32 entityEnd );
+    protected:
+        friend struct MainWorkNode;
+        struct MainWorkNode : vaSceneAsync::WorkNode
+        {
+            vaSceneRenderInstanceProcessor &        Processor;
+            vaScene &                               Scene;
+            entt::basic_view< entt::entity, entt::exclude_t<>, const Scene::WorldBounds>
+                BoundsView;
+
+            ShaderInstanceConstants *               UploadConstants = nullptr;
+            struct vaRenderInstance *               InstanceArray   = nullptr;
+            std::atomic_uint32_t                    InstanceCounter = 0;
+            uint32                                  MaxInstances    = 0;
+            int64                                   ApplicationTickIndex = -1;
+            MainWorkNode( vaSceneRenderInstanceProcessor & processor, vaScene & scene );
+            virtual void                    ExecutePrologue( float deltaTime, int64 applicationTickIndex ) override { ApplicationTickIndex = applicationTickIndex; deltaTime; assert( Processor.m_currentApplicationTickIndex == applicationTickIndex ); }
+            virtual std::pair<uint, uint>   ExecuteNarrow( const uint32 pass, vaSceneAsync::ConcurrencyContext & ) override;
+            virtual void                    ExecuteWide( const uint32 pass, const uint32 itemBegin, const uint32 itemEnd, vaSceneAsync::ConcurrencyContext & ) override;
+        };
+
+    protected:
+        void                                PreSelectionProc( MainWorkNode & workNode );
+        void                                SelectionProc( MainWorkNode & workNode, uint32 entityBegin, uint32 entityEnd );
         void                                Report( vaDrawResultFlags flags )                   { m_selectResults.fetch_or( (uint32)flags ); }
     };
+
+
 
 
 }

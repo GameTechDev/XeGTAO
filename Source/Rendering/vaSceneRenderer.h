@@ -18,12 +18,12 @@
 
 #include "Rendering/vaSceneLighting.h"
 
-#include "Rendering/vaSceneRaytracing.h"
-
 #include "Rendering/vaSceneRenderInstanceProcessor.h"
 
 namespace Vanilla
 {
+    class vaSceneRaytracing;
+
     class vaSceneRenderer : public vaRenderingModule, public vaUIPanel, public std::enable_shared_from_this<vaSceneRenderer>
     {
     private:
@@ -96,7 +96,7 @@ namespace Vanilla
         VA_RENDERING_MODULE_MAKE_FRIENDS( );
         vaSceneRenderer( const vaRenderingModuleParams & params );
     public:
-        ~vaSceneRenderer( );
+        virtual ~vaSceneRenderer( );
 
         const shared_ptr<vaScene> &         GetScene( ) const                   { return m_scene; }
         void                                SetScene( const shared_ptr<class vaScene>& scene ) { bool changed = m_scene != scene; m_scene = scene; if( changed ) OnNewScene( ); }

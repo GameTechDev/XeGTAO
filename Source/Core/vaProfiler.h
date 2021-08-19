@@ -108,7 +108,7 @@ namespace Vanilla
             // just a marker saying that it needs to get re-created
             std::atomic_bool                                    Abandoned           = false;
 
-            ThreadContext( const char * name, const std::thread::id & id = std::thread::id(), bool automaticFrameIncrement = true, bool isGPU = false );
+            ThreadContext( const string & name, const std::thread::id & id = std::thread::id(), bool automaticFrameIncrement = true, bool isGPU = false );
             ~ThreadContext( );
 
             vaMappedString                                      MapName( const string & name )       { return NameDictionary.Map( name ); }
@@ -132,8 +132,12 @@ namespace Vanilla
             inline void                                         OnEnd( vaMappedString verifyName );
 #else
             inline void                                         OnEnd( );
+            inline void                                         OnEnd( vaMappedString verifyName ) { verifyName; OnEnd(); }
 #endif
+            // populate a single level (depth) of entries; Entry::Depth must be -1 to acknowledge they'll use current level
+            inline void                                         BatchAddSingleLevelEntries( Entry * entries, int count );
 
+            // populate entire frame of entries and advance frame; make sure AutomaticFrameIncrement == false
             inline void                                         BatchAddFrame( Entry * entries, int count );
 
             inline void                                         Capture( std::vector<Entry> & outEntries )
@@ -216,10 +220,10 @@ namespace Vanilla
         }
 
         // caller is responsible for keeping it alive! we only keep a weak reference and it gets deleted if not there
-        inline static shared_ptr<ThreadContext>                 CreateVirtualThreadContext( const char* name, bool isGPU )
+        inline static shared_ptr<ThreadContext>                 CreateVirtualThreadContext( const std::string & name, bool automaticIncrementFrameCounter, bool isGPU )
         {
             std::lock_guard lock( s_globalMutex );
-            shared_ptr<ThreadContext> retContext = std::make_shared<ThreadContext>( name, std::thread::id(), false, isGPU );
+            shared_ptr<ThreadContext> retContext = std::make_shared<ThreadContext>( name, std::thread::id(), automaticIncrementFrameCounter, isGPU );
             // s_threadContexts.emplace( std::this_thread::get_id(), localThreadContext );
             s_threadContexts.push_back( retContext );
             return retContext;
@@ -569,11 +573,25 @@ namespace Vanilla
         }
     }
 
+    inline void vaTracer::ThreadContext::BatchAddSingleLevelEntries( Entry* entries, int count )
+    {
+        for( int i = 0; i < count; i++ )
+        {
+            Entry e = entries[i];
+            assert( e.Depth == -1 );
+            e.Depth = (int)CurrentOpenStack.size()+1;
+            LocalTimeline.emplace_back( e );
+        }
+    }
+            
+
     inline void vaTracer::ThreadContext::BatchAddFrame( Entry* entries, int count )
     {
         assert( CurrentOpenStack.size( ) == 0 );
         if( CurrentOpenStack.size( ) != 0 )
             return;
+
+        assert( !AutomaticFrameIncrement );
 
         double now = vaCore::TimeFromAppStart( );
 

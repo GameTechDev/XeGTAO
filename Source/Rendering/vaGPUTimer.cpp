@@ -22,5 +22,5 @@ vaGPUContextTracer::vaGPUContextTracer( const vaGPUContextTracerParams & params 
     : vaRenderingModule( params ),
     m_renderContext( params.RenderDeviceContext )
 {
-    m_threadContext = vaTracer::CreateVirtualThreadContext( ( string(c_threadNamePrefix) + " " + GetRenderDevice( ).GetAdapterNameShort( ) + "' main context" ).c_str( ), true );
+    m_threadContext = vaTracer::CreateVirtualThreadContext( ( string(c_threadNamePrefix) + " " + GetRenderDevice( ).GetAdapterNameShort( ) + "' main context" ).c_str( ), false, true );
 }

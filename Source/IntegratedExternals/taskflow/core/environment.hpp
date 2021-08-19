@@ -1,12 +1,8 @@
 #pragma once
 
-#include "./tensorframe/tensorframe.hpp"
+#define TF_ENABLE_PROFILER "TF_ENABLE_PROFILER"
 
 namespace tf {
 
 }  // end of namespace tf -----------------------------------------------------
-
-
-
-
 

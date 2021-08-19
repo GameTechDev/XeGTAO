@@ -2051,95 +2051,11 @@
     <ClInclude Include="..\..\Source\IntegratedExternals\imgui\misc\cpp\imgui_stdlib.h">
       <Filter>IntegratedExternals\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\error.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\executor.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\flow_builder.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\graph.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\notifier.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\observer.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\task.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\taskflow.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\topology.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\tsq.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\cuda\cuda_device.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\cuda\cuda_error.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\cuda\cuda_flow.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\cuda\cuda_graph.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\cuda\cuda_task.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\nstd\any.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\nstd\optional.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\nstd\variant.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\object_pool.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\os.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\passive_vector.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\singleton.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\stringify.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\traits.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\uuid.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\declarations.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\taskflow.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Source\IntegratedExternals\vaMeshoptimizerIntegration.h">
       <Filter>IntegratedExternals</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\IntegratedExternals\meshoptimizer\meshoptimizer.h">
       <Filter>IntegratedExternals\meshoptimizer</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\algorithm\for_each.hpp">
-      <Filter>IntegratedExternals\taskflow</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\IntegratedExternals\nlohmann-json\json.hpp">
       <Filter>IntegratedExternals\nlohmann-json</Filter>
@@ -2206,6 +2122,102 @@
     </ClInclude>
     <ClInclude Include="..\..\Source\IntegratedExternals\entt\poly\poly.hpp">
       <Filter>IntegratedExternals\entt\Poly</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\algorithm\critical.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\algorithm\for_each.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\algorithm\reduce.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\algorithm\sort.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\declarations.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\environment.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\error.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\executor.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\flow_builder.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\graph.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\notifier.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\observer.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\semaphore.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\task.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\taskflow.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\topology.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\tsq.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\worker.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\sanitizer\deadlock_sanitizer.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\sanitizer\infinite_loop_sanitizer.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\sanitizer\nonreachable_sanitizer.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\sanitizer\sanitizer.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\iterator.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\math.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\object_pool.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\os.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\serializer.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\singleton.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\small_vector.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\stream.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\traits.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\uuid.hpp">
+      <Filter>IntegratedExternals\taskflow</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

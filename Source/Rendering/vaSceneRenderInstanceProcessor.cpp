@@ -18,6 +18,8 @@
 #include "Rendering/vaRenderMaterial.h"
 #include "Rendering/vaSceneRenderer.h"
 
+#include "Rendering/vaSceneRaytracing.h"
+
 #include "Rendering/vaRenderInstanceList.h"
 
 #include <future>
@@ -30,28 +32,45 @@
 
 namespace Vanilla
 {
-    struct vaSceneRenderInstanceProcessorLocalContext
-    {
-        vaSceneRenderInstanceProcessor &        This;
-        vaScene &                               Scene;
-        entt::basic_view< entt::entity, entt::exclude_t<>, const Scene::WorldBounds>
-                                                BoundsView;
-        shared_ptr<vaRenderInstanceStorage>     InstanceStorage;
-        int64                                   ApplicationTickIndex;
+    //struct vaSceneRenderInstanceProcessorLocalContext
+    //{
+    //    vaSceneRenderInstanceProcessor &        This;
+    //    vaScene &                               Scene;
+    //    entt::basic_view< entt::entity, entt::exclude_t<>, const Scene::WorldBounds>
+    //                                            BoundsView;
+    //    shared_ptr<vaRenderInstanceStorage>     InstanceStorage;
+    //    int64                                   ApplicationTickIndex;
 
-        ShaderInstanceConstants *               UploadConstants = nullptr;
-        vaRenderInstance *                      InstanceArray   = nullptr;
+    //    ShaderInstanceConstants *               UploadConstants = nullptr;
+    //    vaRenderInstance *                      InstanceArray   = nullptr;
 
-        std::atomic_uint32_t                    InstanceCounter = 0;
-        uint32                                  MaxInstances    = 0;
+    //    std::atomic_uint32_t                    InstanceCounter = 0;
+    //    uint32                                  MaxInstances    = 0;
 
-        vaSceneRenderInstanceProcessorLocalContext( vaSceneRenderInstanceProcessor & _this, vaScene & scene, const entt::basic_view< entt::entity, entt::exclude_t<>, const Scene::WorldBounds> & boundsView, const shared_ptr<vaRenderInstanceStorage> & instanceStorage, int64 applicationTickIndex )
-            : This(_this), Scene(scene), BoundsView(boundsView), InstanceStorage(instanceStorage), ApplicationTickIndex(applicationTickIndex) { }
-    };
+    //    vaSceneRenderInstanceProcessorLocalContext( vaSceneRenderInstanceProcessor & _this, vaScene & scene, const entt::basic_view< entt::entity, entt::exclude_t<>, const Scene::WorldBounds> & boundsView, const shared_ptr<vaRenderInstanceStorage> & instanceStorage, int64 applicationTickIndex )
+    //        : This(_this), Scene(scene), BoundsView(boundsView), InstanceStorage(instanceStorage), ApplicationTickIndex(applicationTickIndex) { }
+    //};
+
 }
 
-
 using namespace Vanilla;
+
+void vaSceneRenderInstanceProcessor::SetScene( const shared_ptr<vaScene> & scene )
+{
+    if( m_scene == scene )
+        return;
+
+    // this actually disconnects work nodes
+    m_asyncWorkNodes.clear();
+
+    if( scene == nullptr )
+        return;
+
+    m_asyncWorkNodes.push_back( std::make_shared<MainWorkNode>( *this, *scene ) );
+
+    for( auto & node : m_asyncWorkNodes )
+        scene->Async().AddWorkNode( node );
+}
 
 vaSceneRenderInstanceProcessor::vaSceneRenderInstanceProcessor( vaSceneRenderer & sceneRenderer ) : m_sceneRenderer( sceneRenderer )
 {
@@ -61,22 +80,22 @@ vaSceneRenderInstanceProcessor::vaSceneRenderInstanceProcessor( vaSceneRenderer 
 
 vaSceneRenderInstanceProcessor::~vaSceneRenderInstanceProcessor( ) 
 { 
-    //SetScene( nullptr );
+    SetScene( nullptr );
     assert( !m_inAsync );
 }
 
-void vaSceneRenderInstanceProcessor::PreSelectionProc( struct vaSceneRenderInstanceProcessorLocalContext & localContext )
+void vaSceneRenderInstanceProcessor::PreSelectionProc( MainWorkNode & workNode )
 {
-    m_sceneRenderer.PrepareInstanceBatchProcessing( localContext.MaxInstances );
+    m_sceneRenderer.PrepareInstanceBatchProcessing( workNode.MaxInstances );
 }
 
-void vaSceneRenderInstanceProcessor::SelectionProc( vaSceneRenderInstanceProcessorLocalContext & localContext, uint32 entityBegin, uint32 entityEnd )
+void vaSceneRenderInstanceProcessor::SelectionProc( MainWorkNode & workNode, uint32 entityBegin, uint32 entityEnd )
 {
     vaSceneRenderInstanceProcessor::SceneItem localList[c_ConcurrentChuckMaxItemCount];
     int localCount = 0;
 
-    entt::registry & registry = localContext.Scene.Registry();
-    entt::basic_view< entt::entity, entt::exclude_t<>, const Scene::WorldBounds> & registryView = localContext.BoundsView;
+    entt::registry & registry = workNode.Scene.Registry();
+    entt::basic_view< entt::entity, entt::exclude_t<>, const Scene::WorldBounds> & registryView = workNode.BoundsView;
     const auto & cregistry = std::as_const( registry ); 
 
     // this is a _shared_ lock for using vaUIDObjectRegistrar::FindFPNoMutexLock 
@@ -145,7 +164,7 @@ void vaSceneRenderInstanceProcessor::SelectionProc( vaSceneRenderInstanceProcess
                 // Figure out the correct mesh LOD based on mesh settings
                 float meshLOD = renderMesh->FindLOD( LODRangeFactor );
                 const std::vector<vaRenderMesh::LODPart> & LODParts = renderMesh->GetLODParts();
-                if( renderMesh->HasOverrideLODLevel( localContext.ApplicationTickIndex ) )
+                if( renderMesh->HasOverrideLODLevel( workNode.ApplicationTickIndex ) )
                     meshLOD = renderMesh->GetOverrideLODLevel( );
                 int LODPartCount             = std::min( (int)LODParts.size(), vaRenderMesh::LODPart::MaxLODParts );
                 if( LODParts.size() == 0 || LODParts[0].IndexCount == 0 )
@@ -155,8 +174,8 @@ void vaSceneRenderInstanceProcessor::SelectionProc( vaSceneRenderInstanceProcess
                 bool isDecal = renderMaterial->GetMaterialSettings( ).LayerMode == vaLayerMode::Decal;
 
                 bool showAsSelected = false;
-                showAsSelected      |= renderMesh->GetUIShowSelectedAppTickIndex( ) >= localContext.ApplicationTickIndex;
-                showAsSelected      |= renderMaterial->GetUIShowSelectedAppTickIndex( ) >= localContext.ApplicationTickIndex;
+                showAsSelected      |= renderMesh->GetUIShowSelectedAppTickIndex( ) >= workNode.ApplicationTickIndex;
+                showAsSelected      |= renderMaterial->GetUIShowSelectedAppTickIndex( ) >= workNode.ApplicationTickIndex;
 
                 localList[localCount++] = { entity, renderMesh, renderMaterial, dist, meshLOD, false, isDecal, showAsSelected };
             }
@@ -166,14 +185,15 @@ void vaSceneRenderInstanceProcessor::SelectionProc( vaSceneRenderInstanceProcess
     if( localCount == 0 )
         return;
 
-    uint32 baseInstanceIndex = localContext.InstanceCounter.fetch_add( localCount );
+    uint32 baseInstanceIndex = workNode.InstanceCounter.fetch_add( localCount );
+    assert( baseInstanceIndex < workNode.MaxInstances );
 
     m_sceneRenderer.ProcessInstanceBatch( localList, localCount, baseInstanceIndex );
 
     for( int i = 0; i < localCount; i++ )
     {
         auto & item = localList[i];
-        auto & renderInstance = localContext.InstanceArray[baseInstanceIndex+i];
+        auto & renderInstance = workNode.InstanceArray[baseInstanceIndex+i];
         if( !item.IsUsed )
         {
             renderInstance.Mesh     = nullptr;
@@ -195,7 +215,7 @@ void vaSceneRenderInstanceProcessor::SelectionProc( vaSceneRenderInstanceProcess
         renderInstance.Flags.IsDecal    = item.IsDecal;
 
         renderInstance.OriginInfo.EntityID          = (uint32)(item.Entity);                        assert( static_cast<uint64>(item.Entity) < 0xFFFFFFFF );
-        renderInstance.OriginInfo.SceneID           = (uint32)(localContext.Scene.RuntimeIDGet());  assert( localContext.Scene.RuntimeIDGet() < 0xFFFFFFFF );
+        renderInstance.OriginInfo.SceneID           = (uint32)(workNode.Scene.RuntimeIDGet());  assert( workNode.Scene.RuntimeIDGet() < 0xFFFFFFFF );
         renderInstance.OriginInfo.MeshAssetID       = ( renderInstance.Mesh->GetParentAsset( ) == nullptr ) ? ( 0xFFFFFFFF ) : ( static_cast<uint32>( renderInstance.Mesh->GetParentAsset( )->RuntimeIDGet( ) ) );
         renderInstance.OriginInfo.MaterialAssetID   = ( renderInstance.Material->GetParentAsset( ) == nullptr ) ? ( 0xFFFFFFFF ) : ( static_cast<uint32>( renderInstance.Material->GetParentAsset( )->RuntimeIDGet( ) ) );
 
@@ -217,19 +237,19 @@ void vaSceneRenderInstanceProcessor::SelectionProc( vaSceneRenderInstanceProcess
 
         if( item.ShowAsSelected )
         {
-            float highlight = 0.5f * (float)vaMath::Sin( localContext.Scene.GetTime( ) * VA_PI * 2.0 ) + 0.5f;
+            float highlight = 0.5f * (float)vaMath::Sin( workNode.Scene.GetTime( ) * VA_PI * 2.0 ) + 0.5f;
             renderInstance.EmissiveAdd = vaVector4( highlight*0.8f, highlight*0.9f, highlight*1.0f, highlight );
         }
 
         // Finally, upload to shader constants
         //ShaderInstanceConstants instanceConstants;
         //renderInstance.WriteToShaderConstants( instanceConstants );
-        //memcpy( &localContext.UploadConstants[baseInstanceIndex+i], &instanceConstants, sizeof(instanceConstants) );
-        renderInstance.WriteToShaderConstants( localContext.UploadConstants[baseInstanceIndex+i] );
+        //memcpy( &workNode.UploadConstants[baseInstanceIndex+i], &instanceConstants, sizeof(instanceConstants) );
+        renderInstance.WriteToShaderConstants( workNode.UploadConstants[baseInstanceIndex+i] );
     }
 }
 
-void vaSceneRenderInstanceProcessor::ScheduleSelection( const vaLODSettings & LODSettings, vaScene & scene, const shared_ptr<vaRenderInstanceStorage> & instanceStorage, int64 applicationTickIndex )
+void vaSceneRenderInstanceProcessor::SetSelectionParameters( const vaLODSettings & LODSettings, const shared_ptr<vaRenderInstanceStorage> & instanceStorage, int64 applicationTickIndex )
 {
     m_LODSettings = LODSettings;
 
@@ -242,59 +262,24 @@ void vaSceneRenderInstanceProcessor::ScheduleSelection( const vaLODSettings & LO
 
     assert( m_currentInstanceStorage == nullptr && instanceStorage != nullptr );
     m_currentInstanceStorage = instanceStorage;
+    m_currentApplicationTickIndex = applicationTickIndex;
 
+    /*
     // TODO: use some kind of object pool here
     vaSceneRenderInstanceProcessorLocalContext * localContext = new vaSceneRenderInstanceProcessorLocalContext( *this, scene, scene.Registry().view<const Scene::WorldBounds>( ), instanceStorage, applicationTickIndex );
 
     auto narrowBefore = [ localContext ]( vaScene::ConcurrencyContext& ) noexcept -> std::pair<uint32, uint32>
     {
-        assert( localContext->This.m_inAsync );
-
-        assert( !localContext->This.m_canConsume );
-        localContext->This.m_uniqueMeshes.StartAppending();
-        localContext->This.m_uniqueMaterials.StartAppending();
-
-        localContext->MaxInstances      = (uint32)localContext->BoundsView.size( );
-        localContext->InstanceStorage->StartWriting( localContext->MaxInstances );
-        localContext->UploadConstants   = localContext->InstanceStorage->GetShaderConstantsUploadArray();
-        localContext->InstanceArray     = localContext->InstanceStorage->GetInstanceArray();
-        assert( localContext->InstanceStorage->GetInstanceMaxCount() >= localContext->MaxInstances );
-
-        localContext->This.PreSelectionProc( *localContext );
-
-        // tell scene work manager how to do the parallel for loop (see 'wide' below)
-        return std::make_pair( localContext->MaxInstances, (uint32)c_ConcurrentChuckMaxItemCount );
     };
 
     auto wide = [ localContext ]( int begin, int end, vaScene::ConcurrencyContext& ) noexcept
     {
-        assert( !localContext->This.m_uniqueMeshes.IsConsuming() );
-        assert( !localContext->This.m_uniqueMaterials.IsConsuming() );
 
-        localContext->This.SelectionProc( *localContext, begin, end );
     };
 
     // this one has to happen on the main thread because "vaRenderInstanceList::Stop" spawns its own taskflow stuff and that's not allowed to happen from non-master thread
     auto narrowAfter = [ &outInstanceCount = m_instanceCount, localContext ]( vaScene::ConcurrencyContext & )
     {
-        assert( localContext->InstanceCounter <= localContext->MaxInstances );
-
-        assert( localContext->This.m_inAsync );
-        assert( !localContext->This.m_asyncFinalized );
-        localContext->This.m_asyncFinalized = true;
-
-        assert( localContext->This.m_inAsync );
-        assert( localContext->This.m_asyncFinalized );  // have you waited for "render_selections"?
-
-        outInstanceCount.store( localContext->InstanceCounter );
-
-        localContext->This.m_uniqueMeshes.StartConsuming();
-        localContext->This.m_uniqueMaterials.StartConsuming();
-
-        localContext->This.m_inAsync = false;
-        assert( !localContext->This.m_canConsume );
-        localContext->This.m_canConsume = true;
-
         delete localContext;
     };
 
@@ -302,6 +287,7 @@ void vaSceneRenderInstanceProcessor::ScheduleSelection( const vaLODSettings & LO
         const Scene::Name, const Scene::Relationship, const Scene::IgnoreByIBLTag>
         ( "SelectForRendering", "render_selections", "render_selections", std::move( narrowBefore ), std::move( wide ), std::move( narrowAfter ), nullptr );
     assert( workAdded ); workAdded;
+    */
 
     m_inAsync = true;
 }
@@ -362,3 +348,70 @@ void vaSceneRenderInstanceProcessor::PostRenderCleanup( )
     m_instanceCount = 0;
 }
 
+
+vaSceneRenderInstanceProcessor::MainWorkNode::MainWorkNode( vaSceneRenderInstanceProcessor & processor, vaScene & scene ) 
+    : Processor( processor ), Scene( scene ), BoundsView( scene.Registry().view<const Scene::WorldBounds>( ) ),
+    vaSceneAsync::WorkNode( "CreateRenderLists", {"bounds_done_marker"}, {"renderlists_done_marker"},
+        Scene::AccessPermissions::ExportPairLists<
+            const Scene::WorldBounds, const Scene::TransformWorld, const Scene::RenderMesh, const Scene::MaterialPicksLightEmissive, 
+            const Scene::LightPoint, const Scene::Name, const Scene::Relationship, const Scene::IgnoreByIBLTag> () )
+{ 
+}
+
+// Asynchronous narrow processing; called after ExecuteWide, returned std::pair<uint, uint> will be used to immediately repeat ExecuteWide if non-zero
+std::pair<uint, uint>   vaSceneRenderInstanceProcessor::MainWorkNode::ExecuteNarrow( const uint32 pass, vaSceneAsync::ConcurrencyContext & ) 
+{
+    auto & instanceStorage = Processor.m_currentInstanceStorage;
+
+    if( pass == 0 )
+    {
+        assert( Processor.m_inAsync );
+
+        assert( !Processor.m_canConsume );
+        Processor.m_uniqueMeshes.StartAppending();
+        Processor.m_uniqueMaterials.StartAppending();
+
+        InstanceCounter   = 0;
+        MaxInstances      = (uint32)BoundsView.size( );
+        instanceStorage->StartWriting( MaxInstances );
+        UploadConstants   = instanceStorage->GetShaderConstantsUploadArray();
+        InstanceArray     = instanceStorage->GetInstanceArray();
+        assert( instanceStorage->GetInstanceMaxCount() >= MaxInstances );
+
+        Processor.PreSelectionProc( *this );
+
+        // tell scene work manager how to do the parallel for loop (see 'wide' below)
+        return { MaxInstances, (uint32)vaSceneRenderInstanceProcessor::c_ConcurrentChuckMaxItemCount };
+    }
+    else if( pass == 1 )
+    {
+        assert( InstanceCounter <= MaxInstances );
+
+        assert( Processor.m_inAsync );
+        assert( !Processor.m_asyncFinalized );
+        Processor.m_asyncFinalized = true;
+
+        assert( Processor.m_inAsync );
+        assert( Processor.m_asyncFinalized );  // have you waited for "renderlists_done_marker"?
+
+        Processor.m_instanceCount.store( InstanceCounter );
+
+        Processor.m_uniqueMeshes.StartConsuming();
+        Processor.m_uniqueMaterials.StartConsuming();
+
+        Processor.m_inAsync = false;
+        assert( !Processor.m_canConsume );
+        Processor.m_canConsume = true;
+    }
+    return {0,0};
+}
+//
+// Asynchronous wide processing; items run in chunks to minimize various overheads
+void                    vaSceneRenderInstanceProcessor::MainWorkNode::ExecuteWide( const uint32 pass, const uint32 itemBegin, const uint32 itemEnd, vaSceneAsync::ConcurrencyContext & ) 
+{
+    assert( !Processor.m_uniqueMeshes.IsConsuming() );
+    assert( !Processor.m_uniqueMaterials.IsConsuming() );
+
+    Processor.SelectionProc( *this, itemBegin, itemEnd );
+    assert( pass == 0 ); pass;
+}

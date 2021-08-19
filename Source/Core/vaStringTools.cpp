@@ -19,6 +19,9 @@
 #include <locale>
 // #include <ctype.h>
 
+#include <iomanip>
+#include <sstream>
+
 using namespace Vanilla;
 
 wstring vaStringTools::Format(const wchar_t * fmtString, ...)
@@ -529,4 +532,29 @@ shared_ptr<vaMemoryStream> vaStringTools::Base64Decode( const string & base64 )
     assert( cacheCounter == 0 );
 
     return out;
+}
+
+string vaStringTools::URLEncode( const string & text )
+{
+    // https://stackoverflow.com/questions/154536/encode-decode-urls-in-c - https://stackoverflow.com/a/17708801/335646 (many thanks to xperroni and others)
+    std::ostringstream escaped;
+    escaped.fill('0');
+    escaped << std::hex;
+
+    for (string::const_iterator i = text.begin(), n = text.end(); i != n; ++i) {
+        string::value_type c = (*i);
+
+        // Keep alphanumeric and other accepted characters intact
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+            escaped << c;
+            continue;
+        }
+
+        // Any other characters are percent-encoded
+        escaped << std::uppercase;
+        escaped << '%' << std::setw(2) << int((unsigned char) c);
+        escaped << std::nouppercase;
+    }
+
+    return escaped.str();
 }

@@ -181,6 +181,8 @@ namespace Vanilla
         // this will trigger a prompt 
         static void                     SetAppSafeQuitFlag( bool safeQuitFlag ) { s_appSafeQuitFlag = safeQuitFlag; }
 
+        static void                     System( string sytemCommand );
+
         // this is thread-safe (as long as the threads are spawned after first line of Initialize() :) )
 #ifdef VA_USE_NATIVE_WINDOWS_TIMER
         inline static double            TimeFromAppStart( )                 { LARGE_INTEGER now; ::QueryPerformanceCounter(&now); return (now.QuadPart - s_appStartTime.QuadPart) * s_timerFrequencyRD; }

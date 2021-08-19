@@ -420,5 +420,10 @@ bool vaCore::AnyContentDirty( )
     return anyDirty;
 }
 
+void vaCore::System( string sytemCommand )
+{
+    std::thread([sytemCommand](){ system( sytemCommand.c_str() ); }).detach();
+}
+
 vaInputKeyboardBase *    vaInputKeyboardBase::s_current = NULL;
 vaInputMouseBase *       vaInputMouseBase::s_current = NULL;
