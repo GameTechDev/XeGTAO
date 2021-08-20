@@ -28,6 +28,11 @@ const wchar_t * c_splashClass = L"vaSplashScreen";
 vaSplashScreen::vaSplashScreen( )
 {
     HINSTANCE instance = GetModuleHandle( NULL );
+    if( instance == NULL )  // make Klocwork happy
+    {
+        assert( false );
+        return;
+    }
 
     wstring file = vaCore::GetMediaRootDirectory( ) + L"splash.png";
     if( !vaFileTools::FileExists( file ) )
