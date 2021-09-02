@@ -8,7 +8,7 @@
 // https://www.activision.com/cdn/research/Practical_Real_Time_Strategies_for_Accurate_Indirect_Occlusion_NEW%20VERSION_COLOR.pdf
 // 
 // Implementation:  Filip Strugar (filip.strugar@intel.com), Steve Mccalla <stephen.mccalla@intel.com>         (\_/)
-// Version:         1.00                                                                                      (='.'=)
+// Version:         (see XeGTAO.h)                                                                            (='.'=)
 // Details:         https://github.com/GameTechDev/XeGTAO                                                     (")_(")
 //
 // Version history: see XeGTAO.h
@@ -97,7 +97,7 @@ namespace Vanilla
         virtual ~vaGTAO( ) { }
 
     public:
-        vaDrawResultFlags                           Compute( vaRenderDeviceContext & renderContext, const vaCameraBase & cameraBase, bool usingTAA, const shared_ptr<vaTexture> & outputAO, const vaMatrix4x4 & projMatrix, const shared_ptr<vaTexture> & inputDepth, const shared_ptr<vaTexture> & inputNormals = nullptr );
+        vaDrawResultFlags                           Compute( vaRenderDeviceContext & renderContext, const vaCameraBase & cameraBase, bool usingTAA, const shared_ptr<vaTexture> & outputAO, const shared_ptr<vaTexture> & inputDepth, const shared_ptr<vaTexture> & inputNormals = nullptr );
         vaDrawResultFlags                           ComputeReferenceRTAO( vaRenderDeviceContext & renderContext, const vaCameraBase & cameraBase, vaSceneRaytracing * sceneRaytracing, const shared_ptr<vaTexture> & inputDepth );
 
     public:

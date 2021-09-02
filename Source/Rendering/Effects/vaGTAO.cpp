@@ -8,7 +8,7 @@
 // https://www.activision.com/cdn/research/Practical_Real_Time_Strategies_for_Accurate_Indirect_Occlusion_NEW%20VERSION_COLOR.pdf
 // 
 // Implementation:  Filip Strugar (filip.strugar@intel.com), Steve Mccalla <stephen.mccalla@intel.com>         (\_/)
-// Version:         1.00                                                                                      (='.'=)
+// Version:         (see XeGTAO.h)                                                                            (='.'=)
 // Details:         https://github.com/GameTechDev/XeGTAO                                                     (")_(")
 //
 // Version history: see XeGTAO.h
@@ -264,7 +264,7 @@ void vaGTAO::UpdateConstants( vaRenderDeviceContext & renderContext, const vaMat
     m_constantBuffer.Upload( renderContext, consts );
 }
 
-vaDrawResultFlags vaGTAO::Compute( vaRenderDeviceContext & renderContext, const vaCameraBase & cameraBase, bool usingTAA, const shared_ptr<vaTexture> & outputAO, const vaMatrix4x4 & projMatrix, const shared_ptr<vaTexture> & inputDepth, const shared_ptr<vaTexture> & inputNormals )
+vaDrawResultFlags vaGTAO::Compute( vaRenderDeviceContext & renderContext, const vaCameraBase & camera, bool usingTAA, const shared_ptr<vaTexture> & outputAO, const shared_ptr<vaTexture> & inputDepth, const shared_ptr<vaTexture> & inputNormals )
 {
     assert( outputAO->GetSize( ) == inputDepth->GetSize( ) );
     assert( inputDepth->GetSampleCount( ) == 1 ); // MSAA no longer supported!
@@ -285,7 +285,7 @@ vaDrawResultFlags vaGTAO::Compute( vaRenderDeviceContext & renderContext, const 
     }
     assert( !m_shadersDirty ); if( m_shadersDirty ) return vaDrawResultFlags::UnspecifiedError;
 
-    UpdateConstants( renderContext, projMatrix, usingTAA );
+    UpdateConstants( renderContext, camera.GetProjMatrix(), usingTAA );
 
     vaComputeItem computeItem;
     // UAV barriers not required in current setup because UAV<->SRV barriers are automatically inserted; this however might not
@@ -297,7 +297,7 @@ vaDrawResultFlags vaGTAO::Compute( vaRenderDeviceContext & renderContext, const 
     computeItem.ConstantBuffers[0]      = m_constantBuffer;
 
     // needed only for shader debugging viz
-    vaDrawAttributes drawAttributes(cameraBase); 
+    vaDrawAttributes drawAttributes(camera); 
 
     {
         VA_TRACE_CPUGPU_SCOPE( PrefilterDepths, renderContext );

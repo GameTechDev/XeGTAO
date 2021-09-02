@@ -8,11 +8,12 @@
 // https://www.activision.com/cdn/research/Practical_Real_Time_Strategies_for_Accurate_Indirect_Occlusion_NEW%20VERSION_COLOR.pdf
 // 
 // Implementation:  Filip Strugar (filip.strugar@intel.com), Steve Mccalla <stephen.mccalla@intel.com>         (\_/)
-// Version:         1.00                                                                                      (='.'=)
+// Version:         1.01                                                                                      (='.'=)
 // Details:         https://github.com/GameTechDev/XeGTAO                                                     (")_(")
 //
 // Version history:
 // 1.00 (2021-08-09): Initial release
+// 1.01 (2021-09-09): Fix for depth going to inf for 'far' depth buffer values that are out of fp16 range
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef __XE_GTAO_TYPES_H__

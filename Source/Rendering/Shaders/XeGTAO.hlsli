@@ -8,7 +8,7 @@
 // https://www.activision.com/cdn/research/Practical_Real_Time_Strategies_for_Accurate_Indirect_Occlusion_NEW%20VERSION_COLOR.pdf
 // 
 // Implementation:  Filip Strugar (filip.strugar@intel.com), Steve Mccalla <stephen.mccalla@intel.com>         (\_/)
-// Version:         1.00                                                                                      (='.'=)
+// Version:         (see XeGTAO.h)                                                                            (='.'=)
 // Details:         https://github.com/GameTechDev/XeGTAO                                                     (")_(")
 //
 // Version history: see XeGTAO.h
@@ -480,6 +480,17 @@ lpfloat DepthMIPFilter( uint2 pos, lpfloat depth0, lpfloat depth1, lpfloat depth
 #endif
 }
 
+// This is also a good place to do non-linear depth conversion for cases where one wants the 'radius' (effectively the threshold between near-field and far-field GI), 
+// is required to be non-linear (i.e. very large outdoors environments).
+lpfloat ClampDepth( float depth )
+{
+#ifdef XE_GTAO_USE_HALF_FLOAT_PRECISION
+    return (lpfloat)clamp( depth, 0.0, 65504.0 );
+#else
+    return clamp( depth, 0.0, 3.402823466e+38 );
+#endif
+}
+
 groupshared lpfloat g_scratchDepths[8][8];
 void XeGTAO_PrefilterDepths16x16( uint2 dispatchThreadID /*: SV_DispatchThreadID*/, uint2 groupThreadID /*: SV_GroupThreadID*/, const GTAOConstants consts, Texture2D<float> sourceNDCDepth, SamplerState depthSampler, RWTexture2D<lpfloat> outDepth0, RWTexture2D<lpfloat> outDepth1, RWTexture2D<lpfloat> outDepth2, RWTexture2D<lpfloat> outDepth3, RWTexture2D<lpfloat> outDepth4 )
 {
@@ -487,10 +498,10 @@ void XeGTAO_PrefilterDepths16x16( uint2 dispatchThreadID /*: SV_DispatchThreadID
     const uint2 baseCoord = dispatchThreadID;
     const uint2 pixCoord = baseCoord * 2;
     float4 depths4 = sourceNDCDepth.GatherRed( depthSampler, float2( pixCoord * consts.ViewportPixelSize ), int2(1,1) );
-    lpfloat depth0 = (lpfloat)ScreenSpaceToViewSpaceDepth( depths4.w, consts );
-    lpfloat depth1 = (lpfloat)ScreenSpaceToViewSpaceDepth( depths4.z, consts );
-    lpfloat depth2 = (lpfloat)ScreenSpaceToViewSpaceDepth( depths4.x, consts );
-    lpfloat depth3 = (lpfloat)ScreenSpaceToViewSpaceDepth( depths4.y, consts );
+    lpfloat depth0 = ClampDepth( ScreenSpaceToViewSpaceDepth( depths4.w, consts ) );
+    lpfloat depth1 = ClampDepth( ScreenSpaceToViewSpaceDepth( depths4.z, consts ) );
+    lpfloat depth2 = ClampDepth( ScreenSpaceToViewSpaceDepth( depths4.x, consts ) );
+    lpfloat depth3 = ClampDepth( ScreenSpaceToViewSpaceDepth( depths4.y, consts ) );
     outDepth0[ pixCoord + uint2(0, 0) ] = (lpfloat)depth0;
     outDepth0[ pixCoord + uint2(1, 0) ] = (lpfloat)depth1;
     outDepth0[ pixCoord + uint2(0, 1) ] = (lpfloat)depth2;
