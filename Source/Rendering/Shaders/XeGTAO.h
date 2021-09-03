@@ -15,6 +15,7 @@
 // 1.00 (2021-08-09): Initial release
 // 1.01 (2021-09-02): Fix for depth going to inf for 'far' depth buffer values that are out of fp16 range
 // 1.02 (2021-09-03): More fast_acos use and made final horizon cos clamping optional (off by default): 3-4% perf boost
+// 1.10 (2021-09-03): Added a couple of heuristics to combat over-darkening errors in certain scenarios
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef __XE_GTAO_TYPES_H__
@@ -101,8 +102,8 @@ namespace XeGTAO
 
     // some constants reduce performance if provided as dynamic values; if these constants are not required to be dynamic and they match default values, 
     // set XE_GTAO_USE_DEFAULT_CONSTANTS and the code will compile into a more efficient shader
-    #define XE_GTAO_DEFAULT_RADIUS_MULTIPLIER              (1.475f  )   // allows us to use different value as compared to ground truth radius to counter inherent screen space biases
-    #define XE_GTAO_DEFAULT_FALLOFF_RANGE                  (0.657f  )   // distant samples contribute less
+    #define XE_GTAO_DEFAULT_RADIUS_MULTIPLIER              (1.457f  )   // allows us to use different value as compared to ground truth radius to counter inherent screen space biases
+    #define XE_GTAO_DEFAULT_FALLOFF_RANGE                  (0.615f  )   // distant samples contribute less
     #define XE_GTAO_DEFAULT_SAMPLE_DISTRIBUTION_POWER      (2.0f    )   // small crevices more important than big surfaces
     #define XE_GTAO_DEFAULT_THIN_OCCLUDER_COMPENSATION     (0.0f    )   // the new 'thickness heuristic' approach
     #define XE_GTAO_DEFAULT_FINAL_VALUE_POWER              (2.2f    )   // modifies the final ambient occlusion value using power function - this allows some of the above heuristics to do different things

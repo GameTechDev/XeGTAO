@@ -210,19 +210,34 @@ GTAOResult XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat st
     const lpfloat falloffMul        = (lpfloat)-1.0 / ( falloffRange );
     const lpfloat falloffAdd        = falloffFrom / ( falloffRange ) + (lpfloat)1.0;
 
-    lpfloat visibility = 0;
+    GTAOResult res;
+    res.Visibility      = 0;
+    res.PackedEdgesLRTB = PackEdges(edgesLRTB);
+
     // see "Algorithm 1" in https://www.activision.com/cdn/research/Practical_Real_Time_Strategies_for_Accurate_Indirect_Occlusion_NEW%20VERSION_COLOR.pdf
     {
         const lpfloat noiseSlice  = (lpfloat)localNoise.x;
         const lpfloat noiseSample = (lpfloat)localNoise.y;
 
         // quality settings / tweaks / hacks
-        const lpfloat pixelTooCloseThreshold  = 1.2;      // if the offset is under approx pixel size (pixelTooCloseThreshold), push it out to the minimum distance
+        const lpfloat pixelTooCloseThreshold  = 1.3;      // if the offset is under approx pixel size (pixelTooCloseThreshold), push it out to the minimum distance
 
         // approx viewspace pixel size at pixCoord; approximation of NDCToViewspace( normalizedScreenPos.xy + consts.ViewportPixelSize.xy, pixCenterPos.z ).xy - pixCenterPos.xy;
         const float2 pixelDirRBViewspaceSizeAtCenterZ = viewspaceZ.xx * consts.NDCToViewMul_x_PixelSize;
 
         lpfloat screenspaceRadius   = effectRadius / (lpfloat)pixelDirRBViewspaceSizeAtCenterZ.x;
+
+        // fade out for small screen radii 
+        res.Visibility += saturate((10 - screenspaceRadius)/100)*0.5;
+
+#if 0   // sensible early-out for even more performance; disabled because not yet tested
+        [branch]
+        if( screenspaceRadius < pixelTooCloseThreshold )
+        {
+            res.Visibility = 1.0;
+            return res;
+        }
+#endif
 
 #ifdef XE_GTAO_SHOW_DEBUG_VIZ
         const uint2 pixCoord        = normalizedScreenPos / consts.ViewportPixelSize;
@@ -407,6 +422,10 @@ GTAOResult XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat st
 #endif
             }
 
+#if 1       // I can't figure out the slight overdarkening on high slopes, so I'm adding this fudge - in the training set, 0.05 is close (PSNR 21.34) to disabled (PSNR 21.45)
+            projectedNormalVecLength = lerp( projectedNormalVecLength, 1, 0.05 );
+#endif
+
             // line ~27, unrolled
             lpfloat h0 = -fast_acos((lpfloat)horizonCos1);
             lpfloat h1 = fast_acos((lpfloat)horizonCos0);
@@ -416,15 +435,11 @@ GTAOResult XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat st
 #endif
             lpfloat iarc0 = ((lpfloat)cosNorm + (lpfloat)2 * (lpfloat)h0 * (lpfloat)sin(n)-(lpfloat)cos((lpfloat)2 * (lpfloat)h0-n))/(lpfloat)4;
             lpfloat iarc1 = ((lpfloat)cosNorm + (lpfloat)2 * (lpfloat)h1 * (lpfloat)sin(n)-(lpfloat)cos((lpfloat)2 * (lpfloat)h1-n))/(lpfloat)4;
-            visibility += (lpfloat)projectedNormalVecLength * (lpfloat)(iarc0+iarc1);
+            res.Visibility += (lpfloat)projectedNormalVecLength * (lpfloat)(iarc0+iarc1);
         }
-        visibility /= (lpfloat)sliceCount;
-        visibility = (lpfloat)pow( visibility, consts.FinalValuePower );
+        res.Visibility /= (lpfloat)sliceCount;
+        res.Visibility = (lpfloat)max( 0, pow( res.Visibility, consts.FinalValuePower ) );
     }
-
-    GTAOResult res;
-    res.Visibility      = max( 0, visibility );
-    res.PackedEdgesLRTB = PackEdges(edgesLRTB);
 
     return res;
 }

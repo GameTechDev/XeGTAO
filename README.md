@@ -139,8 +139,7 @@ _left: ASSAO Medium (~0.72ms*), right: XeGTAO High (~0.56ms*) (*as measured on R
 
 ## Version log
 
-#### 1.0 - 2021-07-13
-* Initial release
+See [vaGTAO.h](/Source/Rendering/Effects/vaGTAO.h#L14)
 
 ## Authors
 
