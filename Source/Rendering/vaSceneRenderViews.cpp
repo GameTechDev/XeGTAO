@@ -488,7 +488,7 @@ void vaSceneMainRenderView::RenderTickInternal( vaRenderDeviceContext & renderCo
         if( m_GTAO->RequiresRaytracing() && m_renderDevice.GetCapabilities().Raytracing.Supported )
             drawResults |= m_GTAO->ComputeReferenceRTAO( renderContext, *m_camera, raytracer.get(), m_workingDepth );
 
-        drawResults |= m_GTAO->Compute( renderContext, *m_camera, m_TAA != nullptr, ssaoBuffer, m_camera->GetProjMatrix( ), m_workingDepth, m_workingNormals );
+        drawResults |= m_GTAO->Compute( renderContext, *m_camera, m_TAA != nullptr, ssaoBuffer, m_workingDepth, m_workingNormals );
     }
 
     vaRenderOutputs preTonemapOutputs = vaRenderOutputs::FromRTDepth( m_workingPreTonemapColor, m_workingDepth );
