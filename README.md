@@ -3,7 +3,7 @@
 
 ## Introduction
 
-XeGTAO is an open source, MIT licensed, DirectX/HLSL implementation of the  _Practical Realtime Strategies for Accurate Indirect Occlusion, GTAO_ [\[Jimenez et al., 2016\]](https://www.activision.com/cdn/research/Practical_Real_Time_Strategies_for_Accurate_Indirect_Occlusion_NEW%20VERSION_COLOR.pdf), suitable for use on a wide range of modern PC integrated and discrete GPUs. The main benefit of GTAO over other screen space algorithms is that it uses a radiometrically-correct ambient occlusion equation, providing more physically correct AO term.
+XeGTAO is an open source, MIT licensed, DirectX/HLSL implementation of the  _Practical Realtime Strategies for Accurate Indirect Occlusion, GTAO_ [\[Jimenez et al., 2016\]](https://www.activision.com/cdn/research/Practical_Real_Time_Strategies_for_Accurate_Indirect_Occlusion_NEW%20VERSION_COLOR.pdf), a screen space effect suitable for use on a wide range of modern PC integrated and discrete GPUs. The main benefit of GTAO over other screen space algorithms is that it uses a radiometrically-correct ambient occlusion equation, providing more physically correct AO term.
 
 We have implemented and tested the core algorithm that computes and spatially filters the ambient occlusion integral. Implementing the Directional GTAO component (bent normals) is the next planned step.
 
@@ -139,7 +139,7 @@ _left: ASSAO Medium (~0.72ms*), right: XeGTAO High (~0.56ms*) (*as measured on R
 
 ## Version log
 
-See [vaGTAO.h](/Source/Rendering/Effects/vaGTAO.h#L14)
+See [XeGTAO.h](/Source/Rendering/Shaders/XeGTAO.h#L14)
 
 ## Authors
 
