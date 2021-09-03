@@ -282,7 +282,7 @@ GTAOResult XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat st
             lpfloat cosNorm = (lpfloat)saturate(dot(projectedNormalVec, viewVec) / projectedNormalVecLength);
 
             // line 15 from the paper
-            lpfloat n = signNorm * acos(cosNorm);
+            lpfloat n = signNorm * fast_acos(cosNorm);
 
             // this is a lower weight target; not using -1 as in the original paper because it is under horizon, so a 'weight' has different meaning based on the normal
             const lpfloat lowHorizonCos0  = cos(n+XE_GTAO_PI_HALF);
@@ -327,7 +327,9 @@ GTAOResult XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat st
                     DebugDraw2DText( pixCoord, float4( 1, 0, 0, 1), pixelTooCloseThreshold );
                 [branch] if (IsUnderCursorRange(pixCoord, int2(1, 1)))
                 {
-                    DebugDraw2DText( (normalizedScreenPos + sampleOffset) * consts.ViewportSize, mipColor, mipLevelU );
+                    //DebugDraw2DText( (normalizedScreenPos + sampleOffset) * consts.ViewportSize, mipColor, mipLevelU );
+                    DebugDraw2DText( (normalizedScreenPos + sampleOffset) * consts.ViewportSize, mipColor, (uint)slice );
+                    DebugDraw2DText( (normalizedScreenPos - sampleOffset) * consts.ViewportSize, mipColor, (uint)slice );
                     //DebugDraw2DText( (normalizedScreenPos - sampleOffset) * consts.ViewportSize, saturate( float4( mipLevelU>=3, mipLevelU>=1 && mipLevelU<=3, mipLevelU<=1, 1.0 ) ), mipLevelU );
                 }
 #endif
@@ -399,13 +401,19 @@ GTAOResult XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat st
                     // DebugDraw3DArrow( WS_samplePos1, WS_samplePos1 - WS_sampleHorizonVec1, 0.002, float4(1, 0, 0, 1 ) );
                     // DebugDraw3DText( WS_samplePos0, float2(0,  0), float4( 1, 0, 0, 1), weight0 );
                     // DebugDraw3DText( WS_samplePos1, float2(0,  0), float4( 1, 0, 0, 1), weight1 );
+
+                    DebugDraw2DText( float2( 500, 94+(step+slice*3)*12 ), float4( 0, 1, 0, 1 ), float4( projectedNormalVecLength, 0, horizonCos0, horizonCos1 ) );
                 }
 #endif
             }
 
-            // line ~27, unrolled; not sure if fast_acos is worth it
-            lpfloat h0 = n + clamp( lpfloat(-1) * fast_acos((lpfloat)horizonCos1)-n, (lpfloat)-XE_GTAO_PI_HALF, (lpfloat)XE_GTAO_PI_HALF );
-            lpfloat h1 = n + clamp( lpfloat( 1) * fast_acos((lpfloat)horizonCos0)-n, (lpfloat)-XE_GTAO_PI_HALF, (lpfloat)XE_GTAO_PI_HALF );
+            // line ~27, unrolled
+            lpfloat h0 = -fast_acos((lpfloat)horizonCos1);
+            lpfloat h1 = fast_acos((lpfloat)horizonCos0);
+#if 0       // we can skip clamping for a tiny little bit more performance
+            h0 = n + clamp( h0-n, (lpfloat)-XE_GTAO_PI_HALF, (lpfloat)XE_GTAO_PI_HALF );
+            h1 = n + clamp( h1-n, (lpfloat)-XE_GTAO_PI_HALF, (lpfloat)XE_GTAO_PI_HALF );
+#endif
             lpfloat iarc0 = ((lpfloat)cosNorm + (lpfloat)2 * (lpfloat)h0 * (lpfloat)sin(n)-(lpfloat)cos((lpfloat)2 * (lpfloat)h0-n))/(lpfloat)4;
             lpfloat iarc1 = ((lpfloat)cosNorm + (lpfloat)2 * (lpfloat)h1 * (lpfloat)sin(n)-(lpfloat)cos((lpfloat)2 * (lpfloat)h1-n))/(lpfloat)4;
             visibility += (lpfloat)projectedNormalVecLength * (lpfloat)(iarc0+iarc1);
