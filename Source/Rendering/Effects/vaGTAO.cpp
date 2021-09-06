@@ -40,6 +40,7 @@ vaGTAO::vaGTAO( const vaRenderingModuleParams & params ) :
     m_CSGTAOUltra( params ),
     m_CSDenoise( params ),
     m_CSPreDenoise( params ),
+    m_CSGenerateNormals( params ),
     m_constantBuffer( params )
 {
     // Hilbert look-up texture! It's a 64 x 64 uint16 texture generated using XeGTAO::HilbertIndex
@@ -109,13 +110,11 @@ void vaGTAO::UIPanelTick( vaApplicationBase & )
         ImGui::Text( "External settings:" );
 
         ImGui::Checkbox("Generate normals from depth", &m_generateNormals );
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Viewspace normals can be either supplied (recommended) or generated from the depth buffer (lower quality and performance, 32 bit working depth buffer recommended).");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Viewspace normals can be either supplied (recommended) or generated from the depth buffer (lower performance and usually lower quality).");
 
         ImGui::Checkbox("Use 32bit working depth buffer", &m_use32bitDepth );
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("Working depth buffer can be 16 bit (faster but slightly less quality) or 32 bit (slightly higher quality, slower). 32bit buffer is recommended if generating normals from depths.");
 
-        if( m_generateNormals && !m_use32bitDepth )
-            ImGui::TextColored( {1, 0.5f, 0.5f, 1.0f }, "^^ 16bit working depth not advised when generating normals!" );
         m_use16bitMath &= !m_use32bitDepth; // FP16 math not compatible with 32bit depths.
 
         ImGui::Checkbox("Use 16bit shader math", &m_use16bitMath );
@@ -156,12 +155,13 @@ void vaGTAO::UIPanelTick( vaApplicationBase & )
 
 bool vaGTAO::UpdateTexturesAndShaders( int width, int height )
 {
+    if( !m_generateNormals )
+        m_workingNormals = nullptr;
+
     bool hadChanges = false;
     std::vector< pair< string, string > > newShaderMacros;
 
     // global shader switches - can be omitted and GTAO will default to most common use case
-    if( m_generateNormals )
-        newShaderMacros.push_back( std::pair<std::string, std::string>( "XE_GTAO_GENERATE_NORMALS", "" ) );
     if( m_use32bitDepth )
         newShaderMacros.push_back( std::pair<std::string, std::string>( "XE_GTAO_FP32_DEPTHS", "" ) );
     m_use16bitMath &= !m_use32bitDepth; // FP16 math not compatible with 32bit depths.
@@ -201,24 +201,16 @@ bool vaGTAO::UpdateTexturesAndShaders( int width, int height )
 
         // to allow parallel background compilation but still ensure they're all compiled after this function
         std::vector<shared_ptr<vaShader>> allShaders;
-        allShaders.push_back( m_CSPrefilterDepths16x16.get() );
-        allShaders.push_back( m_CSGTAOLow.get( ) );
-        allShaders.push_back( m_CSGTAOMedium.get() );
-        allShaders.push_back( m_CSGTAOHigh.get() );
-        allShaders.push_back( m_CSGTAOUltra.get() );
-        allShaders.push_back( m_CSPreDenoise.get() );
-        allShaders.push_back( m_CSDenoise.get() );
+        m_CSPrefilterDepths16x16->CreateShaderFromFile( shaderFileToUse, "CSPrefilterDepths16x16", m_staticShaderMacros, false );   allShaders.push_back( m_CSPrefilterDepths16x16.get() );
+        m_CSGTAOLow->CreateShaderFromFile(              shaderFileToUse, "CSGTAOLow", m_staticShaderMacros, false );                allShaders.push_back( m_CSGTAOLow.get( ) );
+        m_CSGTAOMedium->CreateShaderFromFile(           shaderFileToUse, "CSGTAOMedium", m_staticShaderMacros, false );             allShaders.push_back( m_CSGTAOMedium.get() );
+        m_CSGTAOHigh->CreateShaderFromFile(             shaderFileToUse, "CSGTAOHigh", m_staticShaderMacros, false );               allShaders.push_back( m_CSGTAOHigh.get() );
+        m_CSGTAOUltra->CreateShaderFromFile(            shaderFileToUse, "CSGTAOUltra", m_staticShaderMacros, false );              allShaders.push_back( m_CSGTAOUltra.get() );
+        m_CSPreDenoise->CreateShaderFromFile(           shaderFileToUse, "CSPreDenoise", m_staticShaderMacros, false );             allShaders.push_back( m_CSPreDenoise.get() );
+        m_CSDenoise->CreateShaderFromFile(              shaderFileToUse, "CSDenoise", m_staticShaderMacros, false );                allShaders.push_back( m_CSDenoise.get() );
+        m_CSGenerateNormals->CreateShaderFromFile(      shaderFileToUse, "CSGenerateNormals", m_staticShaderMacros, false );        allShaders.push_back( m_CSGenerateNormals.get() );
 
-        m_CSPrefilterDepths16x16->CreateShaderFromFile( shaderFileToUse, "CSPrefilterDepths16x16", m_staticShaderMacros, false );
-        m_CSGTAOLow->CreateShaderFromFile( shaderFileToUse, "CSGTAOLow", m_staticShaderMacros, false );
-        m_CSGTAOMedium->CreateShaderFromFile( shaderFileToUse, "CSGTAOMedium", m_staticShaderMacros, false );
-        m_CSGTAOHigh->CreateShaderFromFile( shaderFileToUse, "CSGTAOHigh", m_staticShaderMacros, false );
-        m_CSGTAOUltra->CreateShaderFromFile( shaderFileToUse, "CSGTAOUltra", m_staticShaderMacros, false );
-        m_CSPreDenoise->CreateShaderFromFile( shaderFileToUse, "CSPreDenoise", m_staticShaderMacros, false );
-        m_CSDenoise->CreateShaderFromFile( shaderFileToUse, "CSDenoise", m_staticShaderMacros, false );
-
-        // wait until shaders are compiled! this allows for parallel compilation
-        for( auto sh : allShaders ) sh->WaitFinishIfBackgroundCreateActive();
+        for( auto sh : allShaders ) sh->WaitFinishIfBackgroundCreateActive();   // wait until shaders are compiled! this allows for parallel compilation
 
         hadChanges = true;
     }
@@ -226,6 +218,7 @@ bool vaGTAO::UpdateTexturesAndShaders( int width, int height )
     bool needsUpdate = false;
 
     needsUpdate |= (m_size.x != width) || (m_size.y != height);
+    needsUpdate |= (m_workingNormals == nullptr) && m_generateNormals;
 
     vaResourceFormat requiredDepthFormat = (m_use32bitDepth)?(vaResourceFormat::R32_FLOAT):(vaResourceFormat::R16_FLOAT);
     needsUpdate |= m_workingDepths == nullptr || m_workingDepths->GetResourceFormat() != requiredDepthFormat;
@@ -244,6 +237,12 @@ bool vaGTAO::UpdateTexturesAndShaders( int width, int height )
         m_workingEdges          = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R8_UNORM, m_size.x, m_size.y, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
         m_workingVisibility     = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R16_FLOAT, m_size.x, m_size.y, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
         m_workingVisibilityPong = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R16_FLOAT, m_size.x, m_size.y, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
+
+        if( m_generateNormals )
+        {
+            m_workingNormals    = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R32_UINT, m_size.x, m_size.y, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
+            m_workingNormals->SetName( "XeGTAO_WorkingNormals" );
+        }
 
         m_debugImage->SetName( "XeGTAO_DebugImage" );
         m_workingDepths->SetName( "XeGTAO_WorkingDepths" );
@@ -293,11 +292,27 @@ vaDrawResultFlags vaGTAO::Compute( vaRenderDeviceContext & renderContext, const 
     computeItem.GlobalUAVBarrierBefore  = false;
     computeItem.GlobalUAVBarrierAfter   = false;
 
-    // constants used by all passes
+    // constants used by all/some passes
     computeItem.ConstantBuffers[0]      = m_constantBuffer;
+    // SRVs used by all/some passes
+    computeItem.ShaderResourceViews[5]  = m_hilbertLUT;
 
     // needed only for shader debugging viz
     vaDrawAttributes drawAttributes(camera); 
+
+    if( m_generateNormals )
+    {
+        VA_TRACE_CPUGPU_SCOPE( GenerateNormals, renderContext );
+
+        computeItem.ComputeShader = m_CSGenerateNormals;
+
+        // input SRVs
+        computeItem.ShaderResourceViews[0] = inputDepth;
+
+        computeItem.SetDispatch( (m_size.x + XE_GTAO_NUMTHREADS_X-1) / XE_GTAO_NUMTHREADS_X, (m_size.y + XE_GTAO_NUMTHREADS_Y-1) / XE_GTAO_NUMTHREADS_Y, 1 );
+
+        renderContext.ExecuteSingleItem( computeItem, vaRenderOutputs::FromUAVs(m_workingNormals), &drawAttributes );
+    }
 
     {
         VA_TRACE_CPUGPU_SCOPE( PrefilterDepths, renderContext );
@@ -306,7 +321,6 @@ vaDrawResultFlags vaGTAO::Compute( vaRenderDeviceContext & renderContext, const 
 
         // input SRVs
         computeItem.ShaderResourceViews[0] = inputDepth;
-        computeItem.ShaderResourceViews[5] = m_hilbertLUT;
 
         // note: in CSPrefilterDepths16x16 each is thread group handles a 16x16 block (with [numthreads(8, 8, 1)] and each logical thread handling a 2x2 block)
         computeItem.SetDispatch( (m_size.x + 16-1) / 16, (m_size.y + 16-1) / 16, 1 );
@@ -322,7 +336,7 @@ vaDrawResultFlags vaGTAO::Compute( vaRenderDeviceContext & renderContext, const 
 
         // input SRVs
         computeItem.ShaderResourceViews[0] = m_workingDepths;
-        computeItem.ShaderResourceViews[1] = inputNormals;      // if nullptr, shader is compiled with XE_GTAO_GENERATE_NORMALS
+        computeItem.ShaderResourceViews[1] = (m_generateNormals)?(m_workingNormals):(inputNormals);
 
         computeItem.SetDispatch( (m_size.x + XE_GTAO_NUMTHREADS_X-1) / XE_GTAO_NUMTHREADS_X, (m_size.y + XE_GTAO_NUMTHREADS_Y-1) / XE_GTAO_NUMTHREADS_Y, 1 );
 

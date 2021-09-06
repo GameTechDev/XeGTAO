@@ -42,6 +42,7 @@ Texture2D<uint>             g_srcNormalmap          : register( t1 );   // sourc
 Texture2D<uint>             g_srcHilbertLUT         : register( t5 );   // hilbert lookup table  (if any)
 RWTexture2D<lpfloat>        g_outWorkingVisibility  : register( u0 );   // output visibility (not denoised - warning, can be >1)
 RWTexture2D<unorm float>    g_outWorkingEdges       : register( u1 );   // output depth-based edges used by the denoiser
+RWTexture2D<uint>           g_outNormalmap          : register( u0 );   // output viewspace normals if generating from depth
 
 // input output textures for the third pass (XeGTAO_Denoise)
 Texture2D<lpfloat>          g_srcWorkingVisibility  : register( t0 );   // coming from previous pass
@@ -51,12 +52,10 @@ RWTexture2D<lpfloat>        g_outFinalVisibility    : register( u0 );   // final
 // Engine-specific normal map loader
 lpfloat3 LoadNormal( int2 pos )
 {
-#ifndef XE_GTAO_GENERATE_NORMALS
-
 #if 1
     // special decoding for external normals stored in 11_11_10 unorm - modify appropriately to support your own encoding 
     uint packedInput = g_srcNormalmap.Load( int3(pos, 0) ).x;
-    float3 unpackedOutput;
+    float3 unpackedOutput; // float3 unpackedOutput; // unpack from R11G11B10_UNORM -> [0, 1] -> [-1, 1]
     unpackedOutput.x = (float)((packedInput) & 0x000007ff) / 2047.0f;
     unpackedOutput.y = (float)((packedInput >> 11) & 0x000007ff) / 2047.0f;
     unpackedOutput.z = (float)((packedInput >> 22) & 0x000003ff) / 1023.0f;
@@ -67,11 +66,8 @@ lpfloat3 LoadNormal( int2 pos )
     float3 normal = normalize(encodedNormal * 2.0.xxx - 1.0.xxx);
 #endif
 
-    // worldspace to viewspace
+#if 0 // compute worldspace to viewspace here if your engine stores normals in worldspace; if generating normals from depth here, they're already in viewspace
     normal = mul( (float3x3)g_globals.View, normal );
-
-#else // #ifndef XE_GTAO_GENERATE_NORMALS
-    float3 normal = 0;  // <- will get generated in XeGTAO_MainPass
 #endif
 
     return (lpfloat3)normal;
@@ -171,5 +167,18 @@ void CSDenoise( uint2 groupThreadID : SV_GroupThreadID, uint2 groupID : SV_Group
     XeGTAO_Denoise( groupThreadID, groupID, g_GTAOConsts, g_srcWorkingVisibility, g_srcWorkingEdges, g_samplerPointClamp, g_outFinalVisibility, true );
 }
 
+// Optional screen space viewspace normals from depth generation
+[numthreads(XE_GTAO_NUMTHREADS_X, XE_GTAO_NUMTHREADS_Y, 1)]
+void CSGenerateNormals( const uint2 pixCoord : SV_DispatchThreadID )
+{
+    float3 viewspaceNormal = XeGTAO_ComputeViewspaceNormal( pixCoord, g_GTAOConsts, g_srcRawDepth, g_samplerPointClamp );
+
+    // pack from [-1, 1] to [0, 1] and then to R11G11B10_UNORM
+    viewspaceNormal = saturate( viewspaceNormal * 0.5 + 0.5 );
+    uint packedOutput = ( uint( saturate( viewspaceNormal.x ) * 2047 + 0.5f ) )         |
+                        ( uint( saturate( viewspaceNormal.y ) * 2047 + 0.5f ) << 11 )   |
+                        ( uint( saturate( viewspaceNormal.z ) * 1023 + 0.5f ) << 22 );
+    g_outNormalmap[ pixCoord ] = packedOutput;
+}
 ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -100,7 +100,7 @@ void PS_RichPrepass( const in ShadedVertex inVertex, const in float4 position : 
 #endif
     // get worldspace geometry normal and convert to viewspace because this is what we consume later
     const float3x3 tangentToWorld = surface.TangentToWorld( );
-#if 0 // viewspace
+#if 1 // output normals in viewspace (otherwise worldspace)
     float3 outNormal = mul( (float3x3)g_globals.View, tangentToWorld[2] );
 #else // or worldspace!
     float3 outNormal = tangentToWorld[2];

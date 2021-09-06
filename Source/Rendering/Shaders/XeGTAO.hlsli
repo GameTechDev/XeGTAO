@@ -99,18 +99,17 @@ lpfloat PackEdges( lpfloat4 edgesLRTB )
 float3 CalculateNormal( const float4 edgesLRTB, float3 pixCenterPos, float3 pixLPos, float3 pixRPos, float3 pixTPos, float3 pixBPos )
 {
     // Get this pixel's viewspace normal
-    float4 acceptedNormals  = float4( edgesLRTB.x*edgesLRTB.z, edgesLRTB.z*edgesLRTB.y, edgesLRTB.y*edgesLRTB.w, edgesLRTB.w*edgesLRTB.x );
+    float4 acceptedNormals  = saturate( float4( edgesLRTB.x*edgesLRTB.z, edgesLRTB.z*edgesLRTB.y, edgesLRTB.y*edgesLRTB.w, edgesLRTB.w*edgesLRTB.x ) + 0.01 );
 
     pixLPos = normalize(pixLPos - pixCenterPos);
     pixRPos = normalize(pixRPos - pixCenterPos);
     pixTPos = normalize(pixTPos - pixCenterPos);
     pixBPos = normalize(pixBPos - pixCenterPos);
 
-    float3 pixelNormal = float3( 0, 0, -0.00005 );
-    pixelNormal += ( acceptedNormals.x ) * cross( pixLPos, pixTPos );
-    pixelNormal += ( acceptedNormals.y ) * cross( pixTPos, pixRPos );
-    pixelNormal += ( acceptedNormals.z ) * cross( pixRPos, pixBPos );
-    pixelNormal += ( acceptedNormals.w ) * cross( pixBPos, pixLPos );
+    float3 pixelNormal =  acceptedNormals.x * cross( pixLPos, pixTPos ) +
+                        + acceptedNormals.y * cross( pixTPos, pixRPos ) +
+                        + acceptedNormals.z * cross( pixRPos, pixBPos ) +
+                        + acceptedNormals.w * cross( pixBPos, pixLPos );
     pixelNormal = normalize( pixelNormal );
 
     return pixelNormal;
@@ -148,8 +147,8 @@ GTAOResult XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat st
 {
     float2 normalizedScreenPos = (pixCoord + 0.5.xx) * consts.ViewportPixelSize;
 
-    lpfloat4 valuesUL   = sourceViewspaceDepth.GatherRed( g_samplerPointClamp, float2( pixCoord * consts.ViewportPixelSize )               );
-    lpfloat4 valuesBR   = sourceViewspaceDepth.GatherRed( g_samplerPointClamp, float2( pixCoord * consts.ViewportPixelSize ), int2( 1, 1 ) );
+    lpfloat4 valuesUL   = sourceViewspaceDepth.GatherRed( depthSampler, float2( pixCoord * consts.ViewportPixelSize )               );
+    lpfloat4 valuesBR   = sourceViewspaceDepth.GatherRed( depthSampler, float2( pixCoord * consts.ViewportPixelSize ), int2( 1, 1 ) );
 
     // viewspace Z at the center
     lpfloat viewspaceZ  = valuesUL.y; //sourceViewspaceDepth.SampleLevel( depthSampler, normalizedScreenPos, 0 ).x; 
@@ -162,7 +161,12 @@ GTAOResult XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat st
 
     lpfloat4 edgesLRTB  = CalculateEdges( (lpfloat)viewspaceZ, (lpfloat)pixLZ, (lpfloat)pixRZ, (lpfloat)pixTZ, (lpfloat)pixBZ );
 
-#ifdef XE_GTAO_GENERATE_NORMALS
+	// Generating screen space normals in-place is faster than generating normals in a separate pass but requires
+	// use of 32bit depth buffer (16bit works but visibly degrades quality) which in turn slows everything down. So to
+	// reduce complexity and allow for screen space normal reuse by other effects, we've pulled it out into a separate
+	// pass.
+	// However, we leave this code in, in case anyone has a use-case where it fits better.
+#ifdef XE_GTAO_GENERATE_NORMALS_INPLACE
     float3 CENTER   = NDCToViewspace( normalizedScreenPos, viewspaceZ, consts );
     float3 LEFT     = NDCToViewspace( normalizedScreenPos + float2(-1,  0) * consts.ViewportPixelSize, pixLZ, consts );
     float3 RIGHT    = NDCToViewspace( normalizedScreenPos + float2( 1,  0) * consts.ViewportPixelSize, pixRZ, consts );
@@ -593,7 +597,7 @@ lpfloat4 UnpackEdges( lpfloat _packedVal )
     edgesLRTB.z = lpfloat((packedVal >> 2) & 0x03) / 3.0;
     edgesLRTB.w = lpfloat((packedVal >> 0) & 0x03) / 3.0;
 
-    return saturate( edgesLRTB ); //+ g_ASSAOConsts.InvSharpness );
+    return saturate( edgesLRTB );
 }
 void AddSample( lpfloat ssaoValue, lpfloat edgeValue, inout lpfloat sum, inout lpfloat sumWeight )
 {
@@ -759,4 +763,31 @@ void XeGTAO_Denoise( uint2 groupThreadID /*: SV_GroupThreadID*/, uint2 groupID/*
             outputTexture[pixCoord.xy] = (lpfloat)finalVis;
         }
     }
+}
+
+// Generic viewspace normal generate pass
+float3 XeGTAO_ComputeViewspaceNormal( const uint2 pixCoord, const GTAOConstants consts, Texture2D<float> sourceNDCDepth, SamplerState depthSampler )
+{
+    float2 normalizedScreenPos = (pixCoord + 0.5.xx) * consts.ViewportPixelSize;
+
+    float4 valuesUL   = sourceNDCDepth.GatherRed( depthSampler, float2( pixCoord * consts.ViewportPixelSize )               );
+    float4 valuesBR   = sourceNDCDepth.GatherRed( depthSampler, float2( pixCoord * consts.ViewportPixelSize ), int2( 1, 1 ) );
+
+    // viewspace Z at the center
+    float viewspaceZ  = ScreenSpaceToViewSpaceDepth( valuesUL.y, consts ); //sourceViewspaceDepth.SampleLevel( depthSampler, normalizedScreenPos, 0 ).x; 
+
+    // viewspace Zs left top right bottom
+    const float pixLZ = ScreenSpaceToViewSpaceDepth( valuesUL.x, consts );
+    const float pixTZ = ScreenSpaceToViewSpaceDepth( valuesUL.z, consts );
+    const float pixRZ = ScreenSpaceToViewSpaceDepth( valuesBR.z, consts );
+    const float pixBZ = ScreenSpaceToViewSpaceDepth( valuesBR.x, consts );
+
+    lpfloat4 edgesLRTB  = CalculateEdges( (lpfloat)viewspaceZ, (lpfloat)pixLZ, (lpfloat)pixRZ, (lpfloat)pixTZ, (lpfloat)pixBZ );
+
+    float3 CENTER   = NDCToViewspace( normalizedScreenPos, viewspaceZ, consts );
+    float3 LEFT     = NDCToViewspace( normalizedScreenPos + float2(-1,  0) * consts.ViewportPixelSize, pixLZ, consts );
+    float3 RIGHT    = NDCToViewspace( normalizedScreenPos + float2( 1,  0) * consts.ViewportPixelSize, pixRZ, consts );
+    float3 TOP      = NDCToViewspace( normalizedScreenPos + float2( 0, -1) * consts.ViewportPixelSize, pixTZ, consts );
+    float3 BOTTOM   = NDCToViewspace( normalizedScreenPos + float2( 0,  1) * consts.ViewportPixelSize, pixBZ, consts );
+    return CalculateNormal( edgesLRTB, CENTER, LEFT, RIGHT, TOP, BOTTOM );
 }

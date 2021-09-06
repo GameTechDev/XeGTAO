@@ -50,6 +50,7 @@ namespace Vanilla
         shared_ptr<vaTexture>                       m_workingVisibilityPong;                    // only required to support "blurry" denoise level 
         shared_ptr<vaTexture>                       m_workingEdges;
         shared_ptr<vaTexture>                       m_debugImage;
+        shared_ptr<vaTexture>                       m_workingNormals;
 
         shared_ptr<vaTexture>                       m_hilbertLUT;
 
@@ -58,6 +59,7 @@ namespace Vanilla
         bool                                        m_constantsMatchDefaults    = false;        // just an optimization thing - see XE_GTAO_USE_DEFAULT_CONSTANTS
 
         // MSAA versions include 1-sample for non-MSAA
+        vaAutoRMI<vaComputeShader>                  m_CSGenerateNormals;                        // optional screen space normal generation from depth (and results could be reused elsewhere)
         vaAutoRMI<vaComputeShader>                  m_CSPrefilterDepths16x16;                   // pass 1
         vaAutoRMI<vaComputeShader>                  m_CSGTAOLow;                                // pass 2 - low quality
         vaAutoRMI<vaComputeShader>                  m_CSGTAOMedium;                             // pass 2 - medium quality

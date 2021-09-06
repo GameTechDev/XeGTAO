@@ -16,6 +16,8 @@
 // 1.01 (2021-09-02): Fix for depth going to inf for 'far' depth buffer values that are out of fp16 range
 // 1.02 (2021-09-03): More fast_acos use and made final horizon cos clamping optional (off by default): 3-4% perf boost
 // 1.10 (2021-09-03): Added a couple of heuristics to combat over-darkening errors in certain scenarios
+// 1.20 (2021-09-06): Optional normal from depth generation is now a standalone pass: no longer integrated into 
+//                    main XeGTAO pass to reduce complexity and allow reuse; also quality of generated normals improved
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef __XE_GTAO_TYPES_H__
