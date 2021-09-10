@@ -218,6 +218,9 @@ void vaCore::DebugOutput( const wstring & message )
 
 void vaCore::Error( const wstring & messageFormat, const char * fileName, int lineIndex, ... )
 {
+    if( vaSplashScreen::GetInstancePtr( ) != nullptr )
+        vaSplashScreen::GetInstancePtr( )->FadeOut( true );
+
     va_list args;
     va_start( args, lineIndex );
     std::wstring ret = vaStringTools::SimpleWiden( vaStringTools::Format( "%s:%d : ", fileName, lineIndex ) ) + vaStringTools::Format( messageFormat.c_str(), args );
@@ -232,6 +235,9 @@ void vaCore::Error( const wstring & messageFormat, const char * fileName, int li
 
 void vaCore::Error( const string & messageFormat, const char * fileName, int lineIndex, ... )
 {
+    if( vaSplashScreen::GetInstancePtr() != nullptr ) 
+        vaSplashScreen::GetInstancePtr()->FadeOut( true );
+
     va_list args;
     va_start( args, lineIndex );
     std::string ret = vaStringTools::Format( "%s:%d : ", fileName, lineIndex ) + vaStringTools::Format( messageFormat.c_str(), args );

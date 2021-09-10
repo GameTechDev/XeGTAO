@@ -974,9 +974,11 @@ void vaApplicationWin::Run( const vaApplicationWin::Settings & settings, const v
             }
             //////////////////////////////////////////////////////////////////////////
 
-            shared_ptr<vaApplicationWin> application = std::shared_ptr<vaApplicationWin>( new vaApplicationWin( settings, renderDevice, callback ) );
-
-            application->Run();
+            if( renderDevice->IsValid() )    // device can get created but in a broken state, in which case we should just exit
+            {
+                shared_ptr<vaApplicationWin> application = std::shared_ptr<vaApplicationWin>( new vaApplicationWin( settings, renderDevice, callback ) );
+                application->Run();
+            }
         }
 
         if( !vaCore::GetAppQuitButRestartingFlag() )

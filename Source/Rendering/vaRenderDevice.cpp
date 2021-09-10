@@ -315,7 +315,7 @@ vaRenderDevice::~vaRenderDevice( )
 { 
     assert( IsRenderThread() );
     assert( !m_frameStarted );
-    assert( m_disabled );
+    assert( m_disabled || !m_valid );
     assert( m_renderGlobals == nullptr );   // forgot to call DeinitializeBase()?
 }
 

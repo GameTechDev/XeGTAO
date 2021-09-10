@@ -82,7 +82,7 @@ void vaPlatformBase::Error( const wchar_t * messageString )
     ::MessageBoxW( NULL, messageString, L"Fatal error", MB_ICONERROR | MB_OK );
     VA_LOG_ERROR( messageString );
     evilg_inOtherMessageLoop_PreventTick = false;
-    assert( false );
+    // assert( false );
     // exit( 1 );
 }
 

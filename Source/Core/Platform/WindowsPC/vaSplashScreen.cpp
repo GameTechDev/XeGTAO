@@ -110,7 +110,7 @@ vaSplashScreen::~vaSplashScreen( )
         ::DeleteObject( m_hbitmap );
 }
 
-bool vaSplashScreen::FadeOut( )
+bool vaSplashScreen::FadeOut( bool immediateClose )
 {
     vaSplashScreen * instance = vaSplashScreen::GetInstancePtr( );
     if( instance == nullptr )
@@ -120,7 +120,7 @@ bool vaSplashScreen::FadeOut( )
     ::SetLayeredWindowAttributes( instance->m_hwnd, 0, alpha, LWA_ALPHA);
 
     instance->m_fadeoutTickCurrent--;
-    if( instance->m_fadeoutTickCurrent < 0 )
+    if( instance->m_fadeoutTickCurrent < 0 || immediateClose )
     {
         delete instance;
         return true;

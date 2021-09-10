@@ -79,7 +79,9 @@ namespace Vanilla
         }
         //
         // Let's stick to SM6.3 for now!
-        virtual const char *            GetSMVersion( ) override                    { return "6_3"; }
+        static const char *             GetSMVersionStatic( )                       { return "6_3"; }
+        //
+        virtual const char *            GetSMVersion( ) override                    { return GetSMVersionStatic(); }
         //
         // D3D12_SHADER_BYTECODE           GetBytecode( )          { if( IsCreated() ) return CD3DX12_SHADER_BYTECODE( m_shaderBlob.Get() ); else return { nullptr, 0 }; }
         //

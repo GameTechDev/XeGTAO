@@ -129,8 +129,10 @@ vaRenderDeviceDX12::vaRenderDeviceDX12( const string & preferredAdapterNameID, c
         RegisterModules( );
     }
 
-    Initialize( shaderSearchPaths );
+    if( !Initialize( shaderSearchPaths ) )
+        return;
     InitializeBase( );
+    m_valid = true;
 
     // handle initialization callbacks - the only issue is that frame has not really been started and there's no swap chain 
     // so we might get in trouble potentially with something but so far looks ok
@@ -166,6 +168,9 @@ vaRenderDeviceDX12::~vaRenderDeviceDX12( void )
     assert( !m_frameStarted );
 
     vaFramePtrStatic::Cleanup( );
+
+    if( !m_valid )
+        return;
 
     // did we miss to call these? some logic could be broken but lambdas shouldn't hold any references anyway so it might be safe!
     { std::unique_lock mutexLock( m_beginFrameCallbacksMutex ); assert( m_beginFrameCallbacks.size() == 0 ); }
@@ -448,6 +453,18 @@ bool vaRenderDeviceDX12::Initialize( const std::vector<wstring> & shaderSearchPa
     {
         // reset
         m_caps = vaRenderDeviceCapabilities();
+
+        // this figures out shader model required
+        string shaderModelRequiredString = vaShaderDX12::GetSMVersionStatic();
+        assert( shaderModelRequiredString == "6_3" ); // did this change? change the test below!
+        D3D12_FEATURE_DATA_SHADER_MODEL shaderModelRequired = {D3D_SHADER_MODEL_6_3};
+        D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = shaderModelRequired;
+        if( FAILED( m_device->CheckFeatureSupport( D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof( shaderModel ) ) ) 
+            || (shaderModel.HighestShaderModel != shaderModelRequired.HighestShaderModel ) )
+        {
+            VA_ERROR( "Sorry, this application requires a GPU that supports shader model %s", shaderModelRequiredString.c_str() );
+            return false;
+        }
 
         // Check Barycentrics support
         D3D12_FEATURE_DATA_D3D12_OPTIONS3 options3;

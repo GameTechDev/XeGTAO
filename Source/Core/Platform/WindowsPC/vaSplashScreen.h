@@ -28,7 +28,7 @@ namespace Vanilla
         vaSplashScreen( );
         virtual ~vaSplashScreen();
 
-        static bool FadeOut( );
+        static bool FadeOut( bool immediateClose = false );
     };
 
 }

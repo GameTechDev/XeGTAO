@@ -11,7 +11,7 @@ Our implementation relies on an integrated spatial denoising filter and will lev
 
 High quality preset, computed at full resolution, costs roughly 1.4ms at 3840x2160 on RTX 3070, 0.56ms at 1920x1080 on RTX 2060 and 2.39ms at 1920x1080 on 11th Gen Intel(R) Core(TM) i7-1195G7 integrated graphics. Faster but lower quality preset is also available.
 
-This sample project ([Vanilla.sln](VisualStudio/Vanilla.sln)) was tested with Visual Studio 2019 16.10.3, DirectX 12 GPU, Windows version 10.0.19041. 
+This sample project ([Vanilla.sln](VisualStudio/Vanilla.sln)) was tested with Visual Studio 2019 16.10.3, DirectX 12 GPU (Shader Model 6_3), Windows version 10.0.19041. 
 
 
 XeGTAO OFF/ON comparison in Amazon Lumberyard Bistro; click on image to embiggen:  

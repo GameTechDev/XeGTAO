@@ -261,6 +261,9 @@ namespace Vanilla
         // set when window is destroyed, presents and additional rendering is no longer possible but device is still not destroyed
         bool                                    m_disabled                  = false;
 
+        // set when properly initialized
+        bool                                    m_valid                     = false;
+
         vaRenderDeviceCapabilities              m_caps;
 
         static thread_local vaRenderDeviceThreadLocal  s_threadLocal;
@@ -302,7 +305,6 @@ namespace Vanilla
         virtual void                        SetWindowed( )                                                              = 0;    // disable fullscreen
         virtual vaFullscreenState           GetFullscreenState( ) const                                                 { return m_fullscreenState; }
 
-       
         virtual void                        BeginFrame( float deltaTime )              ;
         virtual void                        EndAndPresentFrame( int vsyncInterval = 0 );
 
@@ -312,6 +314,7 @@ namespace Vanilla
         // and re-starting it, with everything set up as it was. Should work in our out of BeginItems/EndItems scope.
         // virtual void                        SyncAndFlush( ) = 0;
 
+        bool                                IsValid( ) const                                                            { return m_valid; }
         
         bool                                IsCreationThread( ) const                                                   { return m_threadID == std::this_thread::get_id(); }
         //bool                                IsRenderThread( ) const                                                     { return s_threadLocal.RenderThread || s_threadLocal.RenderThreadSynced; }
