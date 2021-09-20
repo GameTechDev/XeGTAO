@@ -462,7 +462,7 @@ bool vaRenderDeviceDX12::Initialize( const std::vector<wstring> & shaderSearchPa
         if( FAILED( m_device->CheckFeatureSupport( D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof( shaderModel ) ) ) 
             || (shaderModel.HighestShaderModel != shaderModelRequired.HighestShaderModel ) )
         {
-            VA_ERROR( "Sorry, this application requires a GPU that supports shader model %s", shaderModelRequiredString.c_str() );
+            VA_ERROR( "Sorry, this application requires a GPU/driver that supports shader model %s - it is possible that a driver update could fix this.", shaderModelRequiredString.c_str() );
             return false;
         }
 
@@ -513,6 +513,7 @@ bool vaRenderDeviceDX12::Initialize( const std::vector<wstring> & shaderSearchPa
             {
                 D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
                 D3D12_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE,
+                D3D12_MESSAGE_ID_EXECUTECOMMANDLISTS_GPU_WRITTEN_READBACK_RESOURCE_MAPPED,  // not sure why this even exists since the use case is totally legit (see https://docs.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12resource-map#advanced-usage-models, or comments in https://docs.microsoft.com/en-us/windows/win32/direct3d12/readback-data-using-heaps)
                 // D3D12_MESSAGE_ID_COPY_DESCRIPTORS_INVALID_RANGES,                   // <- false positives; remove once bug in debugging layer gets fixed
                 // D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,                             // for the following warning (that happens in DirectXTexD3D12.cpp line 743 for example): D3D12 WARNING: ID3D12Resource1::ID3D12Resource::Map: pReadRange is NULL and the heap page property is WRITE_BACK. This can be an indicator of inefficiencies that will result on mobile systems, as the range should be as tight as possible. But, it is also possible the range must encompass the whole subresource.A NULL pReadRange parameter indicates all resource memory will be read by the CPU.  [ EXECUTION WARNING #930: MAP_INVALID_NULLRANGE]
                 //D3D12_MESSAGE_ID_COMMAND_LIST_STATIC_DESCRIPTOR_RESOURCE_DIMENSION_MISMATCH // for mapping null descriptors 

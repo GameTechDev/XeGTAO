@@ -64,7 +64,7 @@ Original GTAO implementation runs at half-resolution with one slice per pixel, 1
 In order to better capture thin crevices and similar small features, we use x = pow( x, 2 ) distribution for samples along the slice direction, where x is a normalized screen space distance from the evaluated pixel's center to the maximum distance (representing the worldspace 'Effect radius'). This is another setting where we used auto-tune to find the most optimal value, which was around 2.1. We decided to round it down to 2 for simplicity and performance reasons. 
 
 ![denoising](Images/sample-distribution-power.png)  
-_different sample power distribution settings; left: setting of 1.0; right: setting of 2.0, clumping more samples around the center_
+_different sample power distribution settings; left: setting of 1.0; right: setting of 2.0, clumping more samples around the center gives more detail to small feature shadows_
 
 
 ### Near-field bounding
