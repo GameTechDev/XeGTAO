@@ -236,6 +236,24 @@ float3 GTAOMultiBounce(float visibility, float3 albedo)
     return max(x, ((x * a + b) * x + c) * x);
 }
 //
+uint EncodeVisibilityBentNormal( float visibility, float3 bentNormal )
+{
+    return FLOAT4_to_R8G8B8A8_UNORM( float4( bentNormal * 0.5 + 0.5, visibility ) );
+}
+
+void DecodeVisibilityBentNormal( const uint packedValue, out float visibility, out float3 bentNormal )
+{
+    float4 decoded = R8G8B8A8_UNORM_to_FLOAT4( packedValue );
+    bentNormal = decoded.xyz * 2.0.xxx - 1.0.xxx;   // could normalize - don't want to since it's done so many times, better to do it at the final step only
+    visibility = decoded.w;
+}
+
+float DecodeVisibilityBentNormal_VisibilityOnly( const uint packedValue )
+{
+    float visibility; float3 bentNormal;
+    DecodeVisibilityBentNormal( packedValue, visibility, bentNormal );
+    return visibility;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Various filters

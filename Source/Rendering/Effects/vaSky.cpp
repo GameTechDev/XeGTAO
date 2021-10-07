@@ -10,6 +10,12 @@
 
 #include "Rendering/Effects/vaSky.h"
 
+#include "Rendering/vaRenderingIncludes.h"
+
+#ifndef __INTELLISENSE__
+#include "Rendering/Shaders/vaSky.hlsl"
+#endif
+
 using namespace Vanilla;
 
 vaSky::vaSky( const vaRenderingModuleParams & params ) : vaRenderingModule( params.RenderDevice ),
@@ -17,7 +23,7 @@ m_vertexShader( params.RenderDevice ),
 m_pixelShader( params.RenderDevice ),
 // m_screenTriangleVertexBuffer( params.RenderDevice ),
 // m_screenTriangleVertexBufferReversedZ( params.RenderDevice ),
-m_constantsBuffer( params.RenderDevice )
+m_constantBuffer( vaConstantBuffer::Create<SimpleSkyConstants>( params.RenderDevice, "SimpleSkyConstants" ) )
 { 
 //    assert( vaRenderingCore::IsInitialized() );
 
@@ -45,8 +51,8 @@ m_constantsBuffer( params.RenderDevice )
     std::vector<vaVertexInputElementDesc> inputElements;
     inputElements.push_back( { "SV_Position", 0, vaResourceFormat::R32G32B32_FLOAT, 0, vaVertexInputElementDesc::AppendAlignedElement, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } );
 
-    m_vertexShader->CreateShaderAndILFromFile( "vaSky.hlsl", "SimpleSkyboxVS", inputElements, vaShaderMacroContaner{}, false );
-    m_pixelShader->CreateShaderFromFile( "vaSky.hlsl", "SimpleSkyboxPS", vaShaderMacroContaner{}, false );
+    m_vertexShader->CompileVSAndILFromFile( "vaSky.hlsl", "SimpleSkyboxVS", inputElements, vaShaderMacroContaner{}, false );
+    m_pixelShader->CompileFromFile( "vaSky.hlsl", "SimpleSkyboxPS", vaShaderMacroContaner{}, false );
 
     /*
     // Create screen triangle vertex buffer

@@ -284,7 +284,7 @@ namespace Vanilla
     // Use examples:
     //  - Iterating over the packed array:
     //    > for( uint32 i : container.PackedArray() )
-    //    >     container.At(i)->SetInputsDirty();
+    //    >     container.At(container.PackedArray()[i])->SetInputsDirty();
     //  - Iterating over the packed array in reverse order:
     //    > for( int32 i = (int32)container.PackedArray().size()-1; i>=0; i-- )
     //    >     container.At(container.PackedArray()[i])->UIDObject_Untrack();
@@ -301,8 +301,8 @@ namespace Vanilla
         uint32                          m_nextFree                          = c_invalidIndex;
 
     public:
-        vaSparseArray( )                { }
-        ~vaSparseArray( )               { Clear(); }
+        vaSparseArray( )                { Validate( ); }
+        ~vaSparseArray( )               { Validate( ); Clear(); }
 
         // sparse array size
         uint32                          Size( ) const                       { return (uint32)m_sparseArray.size();  }
@@ -333,6 +333,9 @@ namespace Vanilla
                 m_packedArray.push_back( retVal );
                 // store packed array index to the dual purpose list - used for fast removal
                 m_sparseDualPurposeList.push_back( (uint32)m_packedArray.size()-1 );
+
+                assert( Has( retVal ) );
+                Validate( );
             }
             else
             {
@@ -345,6 +348,9 @@ namespace Vanilla
                 m_packedArray.push_back( retVal );
                 // store packed array index to the dual purpose list - used for fast removal
                 m_sparseDualPurposeList[retVal] = (uint32)m_packedArray.size()-1;
+
+                assert( Has( retVal ) );
+                Validate( );
             }
             return retVal;
         }
@@ -352,14 +358,22 @@ namespace Vanilla
         void                            Remove( uint32 sparseIndex )
         {
             assert( Has( sparseIndex ) );
+            Validate( );
+
             uint32 packedIndex = m_sparseDualPurposeList[sparseIndex];
-            
+
             // remove from packed array; if not last, swap with last and patch the last's index to its new location
             if( packedIndex != m_packedArray.size()-1 )
             {
-                assert( m_sparseDualPurposeList[ m_packedArray.back() ] == m_packedArray.size()-1 );
-                m_sparseDualPurposeList[ m_packedArray.back() ] = packedIndex;
-                std::swap( m_packedArray.back(), m_packedArray[packedIndex] );
+                uint32 packedArrayBack = m_packedArray.back();
+
+                // make sure everything's healthy
+                assert( (int)m_sparseDualPurposeList[ packedArrayBack ] == (int)m_packedArray.size()-1 );
+                
+                // update sparse array's value (reverse index) that we're moving to fill the packed array hole left by packedIndex
+                m_sparseDualPurposeList[ packedArrayBack ] = packedIndex;
+                // move the last to the hole
+                m_packedArray[packedIndex] = packedArrayBack;
             }
             m_packedArray.pop_back();
             
@@ -367,6 +381,8 @@ namespace Vanilla
             m_sparseDualPurposeList[sparseIndex] = m_nextFree;
             // set m_nextFree head to the newly freed
             m_nextFree = sparseIndex | c_unusedBit;
+
+            Validate( );
         }
 
         void                            Clear( )
@@ -386,6 +402,41 @@ namespace Vanilla
             m_sparseDualPurposeList.clear();
             m_packedArray.clear();
             m_nextFree = c_invalidIndex;
+
+            Validate( );
+        }
+
+        void                            Validate( )
+        {
+            // enable for thorough validation
+#if 0 && defined(_DEBUG)
+            for( uint32 i = 0; i < m_packedArray.size( ); i++ )
+            {
+                int sparseArrayIndex = m_packedArray[i];
+                assert( m_sparseDualPurposeList[sparseArrayIndex] == i );
+            }
+
+            int countPacked = 0;
+            for( int i = 0; i < m_sparseDualPurposeList.size( ); i++ )
+            {
+                int sparseVal = m_sparseDualPurposeList[i];
+                if( ( sparseVal & c_unusedBit ) == 0 )
+                {
+                    countPacked++;
+                }
+            }
+            assert( countPacked == m_packedArray.size() );
+
+            int countEmpty = 0;
+            uint32 jumper = m_nextFree;
+            while( jumper != c_invalidIndex )
+            {
+                assert( (jumper & c_unusedBit) != 0 );
+                countEmpty++; assert( countEmpty > 0 ); // overflow means we're infinite looping
+                jumper = m_sparseDualPurposeList[ jumper & ~c_unusedBit ];
+            }
+            assert( countEmpty == (m_sparseArray.size() - m_packedArray.size()) );
+#endif
         }
     };
 

@@ -10,20 +10,9 @@
 
 #pragma once
 
-#include "Rendering/Shaders/vaShaderCore.h"
-
-#include "Rendering/vaRendering.h"
-
-#include "Rendering/vaShader.h"
-#include "Rendering/vaRenderBuffers.h"
-
-#include "Rendering/vaTexture.h"
-
 #include "Core/vaUI.h"
 
-#include "IntegratedExternals/vaImguiIntegration.h"
-
-#include "Rendering/Shaders/vaTAAShared.h"
+#include "Rendering/vaRendering.h"
 
 namespace Vanilla
 {
@@ -58,8 +47,7 @@ namespace Vanilla
 
         bool                                        m_resetHistory                  = true;
 
-        vaTypedConstantBufferWrapper< TAAConstants, true >
-                                                    m_constantBuffer;
+        shared_ptr<vaConstantBuffer>                m_constantBuffer;
 
         std::vector< pair< string, string > >       m_staticShaderMacros;
 

@@ -16,6 +16,12 @@
 
 #include "Rendering/vaRenderMaterial.h"
 
+#include "Rendering/Shaders/vaSharedTypes.h"
+
+#include "Rendering/vaTriangleMesh.h"
+#include "Rendering/vaTexture.h"
+
+
 #ifdef VA_GTS_INTEGRATION_ENABLED
 #define USE_MULTITHREADED_PARTICLES_WITH_GTS
 #endif
@@ -44,7 +50,7 @@ using namespace Vanilla;
 vaSimpleParticleSystem::vaSimpleParticleSystem( const vaRenderingModuleParams & params ) : 
     vaRenderingModule( params ),
     m_vertexShader( params ),
-    m_shaderConstants( params )
+    m_constantBuffer( vaConstantBuffer::Create<ShaderInstanceConstants>( params.RenderDevice, "ShaderInstanceConstants" ) )
 
 { 
     delegate_particlesTickShader.AddWithToken( m_aliveToken, this, &vaSimpleParticleSystem::DefaultParticlesTickShader );
@@ -77,7 +83,7 @@ vaSimpleParticleSystem::vaSimpleParticleSystem( const vaRenderingModuleParams & 
 
         matSettings.FaceCull                = vaFaceCull::None;
         matSettings.AdvancedSpecularShader  = false;
-        matSettings.ReceiveShadows          = false; //?
+        //matSettings.ReceiveShadows          = false; //?
         matSettings.LayerMode = vaLayerMode::Transparent;
         matSettings.AlphaTestThreshold      = 0.005f;
 
@@ -637,7 +643,7 @@ vaDrawResultFlags vaSimpleParticleSystem::Draw( vaRenderDeviceContext & renderCo
             "    return input;                                                                              \n"
             "}                                                                                              \n";
 
-        m_vertexShader->CreateShaderAndILFromBuffer( shaderCode, "SimpleParticleVS", inputElements, m_staticShaderMacros, true );
+        m_vertexShader->CompileVSAndILFromBuffer( shaderCode, "SimpleParticleVS", inputElements, m_staticShaderMacros, true );
     }
 
     if( m_particles.size() == 0 )

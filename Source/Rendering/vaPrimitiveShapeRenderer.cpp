@@ -11,6 +11,8 @@
 
 #include "vaPrimitiveShapeRenderer.h"
 
+#if 0 // this is probably going out forever
+
 #include "Rendering/vaStandardShapes.h"
 
 #include "Rendering/vaRenderDeviceContext.h"
@@ -20,7 +22,7 @@ using namespace Vanilla;
 
 vaPrimitiveShapeRenderer::vaPrimitiveShapeRenderer( const vaRenderingModuleParams & params )
     : vaRenderingModule( params ), m_vertexBufferGPU( params, c_totalVertexCount ), m_shapeInfoBufferGPU( params, c_totalShapeBufferSize ),
-    m_constantsBuffer( params ), m_vertexShader( params ), m_pixelShader( params )
+    m_constantBuffer( params ), m_vertexShader( params ), m_pixelShader( params )
 {                                
     m_buffersDirty = false;
     m_verticesToDraw = 0;
@@ -28,8 +30,8 @@ vaPrimitiveShapeRenderer::vaPrimitiveShapeRenderer( const vaRenderingModuleParam
     std::vector<vaVertexInputElementDesc> inputElements;
     inputElements.push_back( { "SV_Position", 0,    vaResourceFormat::R32G32_UINT,    0, 0, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } );
 
-    m_vertexShader->CreateShaderAndILFromFile( L"vaPrimitiveShapeRenderer.hlsl", "vs_5_0", "VSMain", inputElements, vaShaderMacroContaner(), true );
-    m_pixelShader->CreateShaderFromFile( L"vaPrimitiveShapeRenderer.hlsl", "ps_5_0", "PSMain", vaShaderMacroContaner(), true );
+    m_vertexShader->CompileVSAndILFromFile( L"vaPrimitiveShapeRenderer.hlsl", "vs_5_0", "VSMain", inputElements, vaShaderMacroContaner(), true );
+    m_pixelShader->CompileFromFile( L"vaPrimitiveShapeRenderer.hlsl", "ps_5_0", "PSMain", vaShaderMacroContaner(), true );
 }
 
 //static void PushUint32( std::vector< uint32 > & outBuffer, uint32 val )
@@ -70,7 +72,7 @@ void vaPrimitiveShapeRenderer::UpdateConstants( vaRenderDeviceContext & renderCo
 
         consts.ColorMul = drawSettings.ColorMultiplier;
 
-        m_constantsBuffer.Update( renderContext, consts );
+        m_constantBuffer.Update( renderContext, consts );
     }
 
 }
@@ -208,7 +210,7 @@ void vaPrimitiveShapeRenderer::Draw( vaRenderDeviceContext & renderContext, cons
     
     vaGraphicsItem renderItem;
 
-    renderItem.ConstantBuffers[PRIMITIVESHAPERENDERER_CONSTANTSBUFFERSLOT] = m_constantsBuffer;
+    renderItem.ConstantBuffers[PRIMITIVESHAPERENDERER_CONSTANTSBUFFERSLOT] = m_constantBuffer;
     renderItem.ShaderResourceViews[PRIMITIVESHAPERENDERER_SHAPEINFO_SRV]    = m_shapeInfoBufferGPU.GetBuffer();
     renderItem.VertexBuffer     = m_vertexBufferGPU;
     renderItem.VertexShader     = m_vertexShader;
@@ -231,3 +233,5 @@ void vaPrimitiveShapeRenderer::Draw( vaRenderDeviceContext & renderContext, cons
         m_buffersDirty = true;
     }
 }
+
+#endif

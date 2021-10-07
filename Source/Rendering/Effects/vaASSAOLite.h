@@ -67,8 +67,7 @@ namespace Vanilla
 
         bool                                        m_shadersDirty                  = true;
 
-        vaTypedConstantBufferWrapper< ASSAO::ASSAOConstants, true >
-                                                    m_constantBuffer;
+        shared_ptr<vaConstantBuffer>                m_constantBuffer;
 
         std::vector< pair< string, string > >       m_staticShaderMacros;
         pair< string, string >                      m_specialShaderMacro;

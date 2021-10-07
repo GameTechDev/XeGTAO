@@ -272,9 +272,6 @@ namespace Vanilla
         static vaVector3        LinearToSRGB( const vaVector3 & colour );
         static vaVector3        SRGBToLinear( const vaVector3 & colour );
         
-        // https://en.wikipedia.org/wiki/Relative_luminance
-        static float            LinearToLuminance( const vaVector3 & colour )   { return colour.x * 0.2126f + colour.y * 0.7152f + colour.z * 0.0722f; }
-
         static vaVector3        DegreeToRadian( const vaVector3 & degree )      { return { vaMath::DegreeToRadian(degree.x), vaMath::DegreeToRadian(degree.y), vaMath::DegreeToRadian(degree.z) }; }
         static vaVector3        RadianToDegree( const vaVector3 & radian )      { return { vaMath::RadianToDegree(radian.x), vaMath::RadianToDegree(radian.y), vaMath::RadianToDegree(radian.z) }; }
 
@@ -866,6 +863,9 @@ namespace Vanilla
         vaBoundingSphere( ) { }
         vaBoundingSphere( const vaVector3 & center, float radius ) : Center( center ), Radius( radius )                 { }
 
+        bool operator ==                ( const vaBoundingSphere & other ) const                                        { return Center == other.Center && Radius == other.Radius; }
+        bool operator !=                ( const vaBoundingSphere & other ) const                                        { return Center != other.Center || Radius != other.Radius; }
+
         vaVector3                       RandomPointOnSurface( vaRandom & randomGeneratorToUse = vaRandom::Singleton )   { return vaVector3::RandomNormal( randomGeneratorToUse ) * Radius + Center; }
         vaVector3                       RandomPointInside( vaRandom & randomGeneratorToUse = vaRandom::Singleton )      { return vaVector3::RandomNormal( randomGeneratorToUse ) * ( vaMath::Pow( randomGeneratorToUse.NextFloat( ), 1.0f / 3.0f ) * Radius ) + Center; }
 
@@ -877,6 +877,9 @@ namespace Vanilla
         static vaBoundingSphere         FromAABB( const class vaBoundingBox & aabb );
 
         static vaBoundingSphere         Transform( const vaBoundingSphere & bs, const vaMatrix4x4 & transform );
+
+        // Compute smallest enclosing sphere
+        static vaBoundingSphere         Merge( const vaBoundingSphere & s0, const vaBoundingSphere & s1 );
     };
 
     class vaBoundingBox
@@ -985,6 +988,36 @@ namespace Vanilla
         bool            operator != ( const vaVector2i & ) const;
 
         vaVector2i      operator * ( int value ) const  { return vaVector2i( this->x * value, this->y * value ); }
+
+        // cast operators
+        explicit operator vaVector2 ( ) { return vaVector2( (float)x, (float)y ); }
+    };
+
+    class vaVector2ui
+    {
+    public:
+        uint32 x, y;
+
+    public:
+        vaVector2ui( ) { };
+        vaVector2ui( uint32 x, uint32 y ) : x( x ), y( y ) { };
+        explicit vaVector2ui( const vaVector2 & v ) : x( (uint32)v.x ), y( (uint32)v.y ) { };
+
+        // assignment operators
+        vaVector2ui &   operator += ( const vaVector2ui & );
+        vaVector2ui &   operator -= ( const vaVector2ui & );
+
+        // unary operators
+        vaVector2ui     operator + ( ) const;
+        vaVector2ui     operator - ( ) const;
+
+        // binary operators
+        vaVector2ui     operator + ( const vaVector2ui & ) const;
+        vaVector2ui     operator - ( const vaVector2ui & ) const;
+        bool            operator == ( const vaVector2ui & ) const;
+        bool            operator != ( const vaVector2ui & ) const;
+
+        vaVector2ui     operator * ( int value ) const  { return vaVector2ui( this->x * value, this->y * value ); }
 
         // cast operators
         explicit operator vaVector2 ( ) { return vaVector2( (float)x, (float)y ); }
@@ -1138,6 +1171,7 @@ namespace Vanilla
         static inline bool      NearEqual( const vaVector2 & a, const vaVector2 & b, float epsilon = VA_EPSf );
         static inline bool      NearEqual( const vaVector3 & a, const vaVector3 & b, float epsilon = VA_EPSf );
         static inline bool      NearEqual( const vaVector4 & a, const vaVector4 & b, float epsilon = VA_EPSf );
+        static inline bool      NearEqual( const vaBoundingSphere & a, const vaBoundingSphere & b, float epsilon = VA_EPSf );
 
         static inline bool      IntersectSegments2D( const vaVector2 & p1, const vaVector2 & p2, const vaVector2 & p3, const vaVector2 & p4, vaVector2 & outPt );
 
@@ -1158,6 +1192,9 @@ namespace Vanilla
 
         static inline float     LinearToSRGB( float val );
         static inline float     SRGBToLinear( float val );
+
+        // https://en.wikipedia.org/wiki/Relative_luminance
+        static float            LinearToLuminance( const vaVector3 & colour )   { return colour.x * 0.2126f + colour.y * 0.7152f + colour.z * 0.0722f; }
 
         static void             NormalizeLuminance( vaVector3 & inoutColor, float & inoutIntensity );
     };
@@ -1194,14 +1231,19 @@ namespace Vanilla
                                                                 { Create(copy.GetWidth(), copy.GetHeight()); memcpy( m_data, copy.GetData(), sizeof(T) * m_width * m_height ); return *this; }
     };
 
-    inline float vaComponentMin( float a, float b )                                 { return std::min(a, b); }
-    inline vaVector2 vaComponentMin( const vaVector2 & a, const vaVector2 & b )     { return vaVector2::ComponentMin(a,b); }
-    inline vaVector3 vaComponentMin( const vaVector3 & a, const vaVector3 & b )     { return vaVector3::ComponentMin(a,b); }
-    inline vaVector4 vaComponentMin( const vaVector4 & a, const vaVector4 & b )     { return vaVector4::ComponentMin(a,b); }
-    inline float vaComponentMax( float a, float b )                                 { return std::min(a, b); }
-    inline vaVector2 vaComponentMax( const vaVector2 & a, const vaVector2 & b )     { return vaVector2::ComponentMax(a,b); }
-    inline vaVector3 vaComponentMax( const vaVector3 & a, const vaVector3 & b )     { return vaVector3::ComponentMax(a,b); }
-    inline vaVector4 vaComponentMax( const vaVector4 & a, const vaVector4 & b )     { return vaVector4::ComponentMax(a,b); }
+    template< typename T >
+    inline T            vaComponentMin( T a, T b )                                      { return std::min(a, b); }
+    inline vaVector2    vaComponentMin( const vaVector2 & a, const vaVector2 & b )      { return vaVector2::ComponentMin(a,b); }
+    inline vaVector3    vaComponentMin( const vaVector3 & a, const vaVector3 & b )      { return vaVector3::ComponentMin(a,b); }
+    inline vaVector4    vaComponentMin( const vaVector4 & a, const vaVector4 & b )      { return vaVector4::ComponentMin(a,b); }
+    template< typename T >
+    inline float        vaComponentMax( T a, T b )                                      { return std::max(a, b); }
+    inline vaVector2    vaComponentMax( const vaVector2 & a, const vaVector2 & b )      { return vaVector2::ComponentMax(a,b); }
+    inline vaVector3    vaComponentMax( const vaVector3 & a, const vaVector3 & b )      { return vaVector3::ComponentMax(a,b); }
+    inline vaVector4    vaComponentMax( const vaVector4 & a, const vaVector4 & b )      { return vaVector4::ComponentMax(a,b); }
+    inline float        vaLength( const vaVector2 & a )                                 { return a.Length(); }
+    inline float        vaLength( const vaVector3 & a )                                 { return a.Length(); }
+    inline float        vaLength( const vaVector4 & a )                                 { return a.Length(); }
 
 #include "vaGeometry.inl"
 

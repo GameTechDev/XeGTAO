@@ -39,11 +39,11 @@ namespace Vanilla
         uint64                              m_size                  = 0;
 
     private:
-        void Construct( uint64 sizeInBytes, const string & resourceName );
+        void Construct( uint64 sizeInBytes, const wstring & resourceName );
 
     public:
-        vaUploadBufferDX12( vaRenderDeviceDX12 & device, uint64 sizeInBytes, const string & resourceName = "vaUploadBufferDX12" );
-        vaUploadBufferDX12( vaRenderDeviceDX12 & device, const void * initialContents, uint64 sizeInBytes, const string & resourceName = "vaUploadBufferDX12" );
+        vaUploadBufferDX12( vaRenderDeviceDX12 & device, uint64 sizeInBytes, const wstring & resourceName );
+        vaUploadBufferDX12( vaRenderDeviceDX12 & device, const void * initialContents, uint64 sizeInBytes, const wstring & resourceName );
         ~vaUploadBufferDX12( );
 
         ID3D12Resource *                    GetResource( ) const    { return m_resource.Get(); }
@@ -88,6 +88,8 @@ namespace Vanilla
         // this gets set and re-set on every Create - used to track deferred initial Update fired from a Create; if there's another Create call before its Update gets called, the Update will get orphaned by looking at m_createdThis
         shared_ptr<vaConstantBufferDX12*>   m_createdThis                           = nullptr;
 
+        wstring                             m_resourceName;
+
         // mutex                               m_mutex;        // fairly global mutex - proper multithreading not yet supported though
 
         uint64                              m_actualSizeInBytes     = 0;            // when aligned
@@ -106,7 +108,7 @@ namespace Vanilla
         virtual                             ~vaConstantBufferDX12( );
 
         virtual void                        Upload( vaRenderDeviceContext & renderContext, const void * data, uint32 dataSize ) override;
-        virtual bool                        Create( int bufferSize, const void * initialData, bool dynamic, int deviceContextIndex ) override;
+        virtual bool                        Create( int bufferSize, const string & name, const void * initialData, bool dynamic, int deviceContextIndex ) override;
         virtual void                        Destroy( ) override;
 
     public:
@@ -154,7 +156,7 @@ namespace Vanilla
         // this gets set and re-set on every Create - used to track deferred initial Update fired from a Create; if there's another Create call before its Update gets called, the Update will get orphaned by looking at m_createdThis
         shared_ptr<vaVertIndBufferDX12*>    m_createdThis                           = nullptr;
 
-        string                              m_resourceName;
+        wstring                             m_resourceName;
 
         // mutable mutex                       m_mutex;        // fairly global mutex - proper multithreading not yet supported though
 
@@ -162,7 +164,7 @@ namespace Vanilla
                                             vaVertIndBufferDX12( vaRenderDeviceDX12 & device );
         virtual                             ~vaVertIndBufferDX12( );
 
-        void                                Create( int elementCount, int elementSize, const void * initialData, const string & resourceName );
+        void                                Create( int elementCount, int elementSize, const wstring & resourceName, const void * initialData );
         void                                Destroy( );
         bool                                IsCreated( ) const              { return m_buffer != nullptr; }
 
@@ -194,7 +196,7 @@ namespace Vanilla
         explicit                            vaDynamicVertexBufferDX12( const vaRenderingModuleParams & params );
         virtual                             ~vaDynamicVertexBufferDX12( )  { }
 
-        virtual bool                        Create( int vertexCount, int vertexSize, const void * initialData, const string & resourceName ) override   { m_buffer.Create( vertexCount, vertexSize, initialData, resourceName ); if( IsCreated() ) { m_vertexSize = vertexSize; m_vertexCount = vertexCount; m_dataSize = vertexSize*vertexCount; }; return IsCreated(); }
+        virtual bool                        Create( int vertexCount, int vertexSize, const string & name, const void * initialData ) override   { m_buffer.Create( vertexCount, vertexSize, vaStringTools::SimpleWiden(name), initialData ); if( IsCreated() ) { m_vertexSize = vertexSize; m_vertexCount = vertexCount; m_dataSize = vertexSize*vertexCount; }; return IsCreated(); }
         virtual void                        Destroy( ) override                                                                                 { m_vertexSize = 0; m_vertexCount = 0; m_dataSize = 0; return m_buffer.Destroy(); }
         virtual bool                        IsCreated( ) const override                                                                         { return m_buffer.IsCreated(); }
 
@@ -225,6 +227,8 @@ namespace Vanilla
         vaShaderResourceViewDX12            m_srv;
         vaUnorderedAccessViewDX12           m_uav;
         vaUnorderedAccessViewDX12           m_uavSimple;       // always hold a simple non-raw non-structured buffer for clears
+
+        wstring                             m_resourceName;
 
     public:
         vaRenderBufferDX12( const vaRenderingModuleParams & params );

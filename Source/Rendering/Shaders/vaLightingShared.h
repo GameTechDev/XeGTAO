@@ -9,6 +9,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "vaSharedTypes.h"
+#include "vaConversions.h"
 
 #ifndef VA_LIGHTING_SHARED_H
 #define VA_LIGHTING_SHARED_H
@@ -26,6 +27,11 @@
 
 #define IBL_IRRADIANCE_SOURCE                       IBL_IRRADIANCE_CUBEMAP
 
+#ifdef VA_COMPILED_AS_SHADER_CODE
+#define VA_SHADERCOMPATIBLE_REF
+#else
+#define VA_SHADERCOMPATIBLE_REF &
+#endif
 
 #ifndef VA_COMPILED_AS_SHADER_CODE
 namespace Vanilla
@@ -58,13 +64,34 @@ struct ShaderLightPoint
 
     // can be compressed to 32bit
     vaVector3           Direction;
-    float               Size;                           // distance from which to start attenuating or compute umbra/penumbra/antumbra / compute specular (making this into a 'sphere' light) - useful to avoid near-infinities for when close-to-point lights
+    float               Size;                           // useful to avoid near-infinities for when close-to-point lights, should be set to biggest acceptable value. see https://youtu.be/wzIcjzKQ2BE?t=884
     // can be compressed to 8/16bit
     float               SpotInnerAngle;                 // angle from Direction below which the spot light has the full intensity (a.k.a. inner cone angle)
     float               SpotOuterAngle;                 // angle from Direction below which the spot light intensity starts dropping (a.k.a. outer cone angle)
     
     float               CubeShadowIndex;                // if used, index of cubemap shadow in the cubemap array texture; otherwise -1
     float               RTSizeModifier;                 // this is used to multiply .Size for RT shadow ray testing - it is temporary and just Size will be used once emissive materials start being done differently (independent from Size)
+};
+
+struct ShaderLightTreeNode
+{
+    // a lot of this could be compressible to fp16
+    vaVector3           Center;                         // bounding sphere around Center with (Uncertainty)Radius that contains all nodes below
+    float               UncertaintyRadius;              // bounding sphere around Center with (Uncertainty)Radius that contains all nodes below
+    float               IntensitySum;                   // light intensity sum for all nodes below
+    float               RangeAvg;                       // intensity-weighted avg of ShaderLightPoint::Range for all nodes below
+    float               SizeAvg;                        // min of ShaderLightPoint::Size
+
+    VA_INLINE void      SetDummy( )                     // set as bogus node - doesn't do anything, should return 0 by any weight functions
+    {
+        Center.x = 0; Center.y = 0; Center.z = 0;
+        UncertaintyRadius = 0; IntensitySum = 0; RangeAvg = -1; SizeAvg = 1;
+    }
+    VA_INLINE bool      IsDummy( ) VA_CONST             { return RangeAvg == -1; }
+
+    // This returns diffuse only weight; use MaterialLightWeight for more accurate material-specific weight
+    VA_INLINE float     Weight( const vaVector3 VA_REFERENCE pos ) VA_CONST;
+
 };
 
 struct IBLProbeConstants
@@ -89,7 +116,7 @@ struct ShaderLightingConstants
 {
     static const int        MaxShadowCubes                  = 10;   // so the number of cube faces is x6 this - lots of RAM
 
-    vaVector4               AmbientLightIntensity;                  // TODO: remove this
+    vaVector4               AmbientLightFromDistantIBL;         // a hack.
 
     // See vaFogSphere for descriptions
     vaVector3               FogCenter;
@@ -119,25 +146,43 @@ struct ShaderLightingConstants
     int                     AOMapEnabled;
     uint                    LightCountPoint;
 
-
-    // ShaderLightDirectional  LightsDirectional[ShaderLightDirectional::MaxLights];
-    
-    //ShaderLightPoint        LightsPoint[ShaderLightPoint::MaxLights];
-    //ShaderLightPoint        LightsSpotAndPoint[ShaderLightPoint::MaxLights];
-
-    //ShaderLightPoint        LightsSimplePoint[ShaderLightPoint::MaxSimpleLights];
-
     IBLProbeConstants       LocalIBL;
     IBLProbeConstants       DistantIBL;
 
-    int                     SLC_TLASLeafStartIndex;
-    float                   SLC_ErrorLimit;
-    float                   SLC_SceneRadius;
-    int                     SLC_Dummy2;
-
-    //
-    // vaVector4               ShadowCubes[MaxShadowCubes];    // .xyz is cube center and .w is unused at the moment
+    int                     LightTreeTotalElements;             // all levels together; should be LightTreeBottomLevelSize/2
+    int                     LightTreeDepth;
+    int                     LightTreeBottomLevelSize;
+    int                     LightTreeBottomLevelOffset;
 };
+
+    VA_INLINE float ShaderLightRangeAttenuation( float distanceSquare, float range )
+    {
+        // falloff looks like this: https://www.desmos.com/calculator/uboytsdeyt
+        float falloff = 1.0f / (range * range);
+        float factor = distanceSquare * falloff;
+        float smoothFactor = VA_SATURATE(1.0f - factor * factor * factor);
+        return smoothFactor * smoothFactor;
+    }
+
+    VA_INLINE float ShaderLightDistanceAttenuation( float distance, float distanceSquare, float size )
+    {   // from http://www.cemyuksel.com/research/pointlightattenuation/ 
+        float sizeSquare = size*size;
+        return 2.0f / (distanceSquare + sizeSquare + distance * sqrt(distanceSquare+sizeSquare) );
+    }
+
+    VA_INLINE float ShaderLightAttenuation( float distance, float range, float size )
+    {
+        float distanceSquare = distance*distance;
+        return ShaderLightRangeAttenuation( distanceSquare, range ) * ShaderLightDistanceAttenuation( distance, distanceSquare, size );
+    }
+
+    VA_INLINE float ShaderLightTreeNode::Weight( const vaVector3 VA_REFERENCE pos ) VA_CONST
+    {
+        vaVector3 delta = Center - pos;
+        float distance = VA_MAX( UncertaintyRadius, (VA_LENGTH(delta)-UncertaintyRadius) );    // this is distance to node sphere
+        return IntensitySum * ShaderLightAttenuation( distance, RangeAvg, SizeAvg );
+    };
+
 
 #ifndef VA_COMPILED_AS_SHADER_CODE
 } // namespace Vanilla

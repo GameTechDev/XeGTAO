@@ -65,11 +65,12 @@ float snoise(float2 v)
 // Hash functions from https://www.shadertoy.com/view/lt2yDm / https://www.shadertoy.com/view/4djSRW
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
+// nicely get 'next' [0, 1) float random! this isn't a good uniform distribution quasi-random
 float Rand1D( float u )
 {
     return frac(sin(u) * 1e4); 
 }
-// Expect (roughly) [0, 1] inputs
+// Expect (roughly) [0, 1) inputs
 float Rand2D( float2 uv )
 {
     const float HASHSCALE1 = 443.8975;

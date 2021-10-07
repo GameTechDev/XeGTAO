@@ -1785,7 +1785,7 @@ void vaRaytracePSODescDX12::CleanPointers( )
 uint32 vaRaytracePSODescDX12::FillKeyFast( uint8 * __restrict buffer ) const
 {
     size_t dbgSizeOfThis = sizeof( *this ); dbgSizeOfThis;
-    assert( dbgSizeOfThis == 360 ); // size of the structure changed, did you change the key creation too?
+    assert( dbgSizeOfThis == 400 ); // size of the structure changed, did you change the key creation too?
 
     struct Data
     {
@@ -1800,11 +1800,13 @@ uint32 vaRaytracePSODescDX12::FillKeyFast( uint8 * __restrict buffer ) const
         wchar_t     ItemMaterialAnyHit[c_maxNameBufferSize];
         wchar_t     ItemMaterialClosestHit[c_maxNameBufferSize];
         wchar_t     ItemMaterialCallable[c_maxNameBufferSize];
+        wchar_t     ItemMaterialMissCallable[c_maxNameBufferSize];
 
         uint32      MaxRecursionDepth;
+        uint32      MaxPayloadSize;
 
         // Last member is padded with the number of bytes required so that the total size of the structure should be a multiple of the largest alignment of any structure member
-        uint32      Padding0;
+        // uint32      Padding0;
         // uint32      Padding1;
     };
 
@@ -1821,6 +1823,7 @@ uint32 vaRaytracePSODescDX12::FillKeyFast( uint8 * __restrict buffer ) const
     memset( data.ItemMaterialAnyHit,        0,  sizeof(data.ItemMaterialAnyHit    ) );
     memset( data.ItemMaterialClosestHit,    0,  sizeof(data.ItemMaterialClosestHit) );
     memset( data.ItemMaterialCallable,      0,  sizeof(data.ItemMaterialCallable  ) );
+    memset( data.ItemMaterialMissCallable,  0,  sizeof(data.ItemMaterialMissCallable  ) );
     ItemSLEntryRayGen       .copy( data.ItemSLEntryRayGen       , std::string::npos );
     ItemSLEntryAnyHit       .copy( data.ItemSLEntryAnyHit       , std::string::npos );
     ItemSLEntryClosestHit   .copy( data.ItemSLEntryClosestHit   , std::string::npos );
@@ -1829,9 +1832,13 @@ uint32 vaRaytracePSODescDX12::FillKeyFast( uint8 * __restrict buffer ) const
     ItemMaterialAnyHit      .copy( data.ItemMaterialAnyHit      , std::string::npos );
     ItemMaterialClosestHit  .copy( data.ItemMaterialClosestHit  , std::string::npos );
     ItemMaterialCallable    .copy( data.ItemMaterialCallable    , std::string::npos );
+    ItemMaterialMissCallable.copy( data.ItemMaterialMissCallable, std::string::npos );
+
+    data.MaxRecursionDepth                  = MaxRecursionDepth;
+    data.MaxPayloadSize                     = MaxPayloadSize;
 
     int sizeofData = sizeof( Data ); 
-    assert( sizeofData == 800 );
+    assert( sizeofData == 896 );
     assert( sizeofData < vaRaytracePSODX12::c_keyStorageSize );
     data.HashKey = vaXXHash64::Compute( buffer + sizeof( uint64 ), sizeofData - sizeof( uint64 ), 0 );
     return sizeofData;
@@ -1850,6 +1857,7 @@ bool vaRaytracePSODescDX12::FillPipelineStateDesc( CD3DX12_STATE_OBJECT_DESC & o
     assert( ItemMaterialAnyHit      .size() < vaRaytracePSODescDX12::c_maxNameBufferSize );
     assert( ItemMaterialClosestHit  .size() < vaRaytracePSODescDX12::c_maxNameBufferSize );
     assert( ItemMaterialCallable    .size() < vaRaytracePSODescDX12::c_maxNameBufferSize );
+    assert( ItemMaterialMissCallable.size() < vaRaytracePSODescDX12::c_maxNameBufferSize );
 
     const std::vector<vaRenderMaterialManagerDX12::CallableShaders> & materialCallablesTable = materialManager12.GetCallablesTable( );              // this is per-material
     const std::unordered_map<vaFramePtr<vaShaderDataDX12>, uint32> & uniqueCallableLibraries = materialManager12.GetUniqueCallableLibraries( );     // this is per-material-shader - some materials share the same set of shaders
@@ -1919,6 +1927,8 @@ bool vaRaytracePSODescDX12::FillPipelineStateDesc( CD3DX12_STATE_OBJECT_DESC & o
             libSubObj->DefineExport( (ItemMaterialClosestHit+materialCallables.UniqueIDString).c_str(), ItemMaterialClosestHit.c_str(), D3D12_EXPORT_FLAG_NONE );
         if( ItemMaterialCallable != L"" )
             libSubObj->DefineExport( (ItemMaterialCallable+materialCallables.UniqueIDString).c_str(), ItemMaterialCallable.c_str(), D3D12_EXPORT_FLAG_NONE );
+        if( ItemMaterialMissCallable != L"" )
+            libSubObj->DefineExport( (ItemMaterialMissCallable+materialCallables.UniqueIDString).c_str(), ItemMaterialMissCallable.c_str(), D3D12_EXPORT_FLAG_NONE );
 
         // and now define the hit group! also name it so it's per material-shader unique
         {
@@ -1948,8 +1958,8 @@ bool vaRaytracePSODescDX12::FillPipelineStateDesc( CD3DX12_STATE_OBJECT_DESC & o
     // Some additional shader config
     // Maximum sizes in bytes for the ray payload and attribute structure is hacked in here but this could/should be a parameter in vaRaytraceItem
     auto shaderConfig = outDesc.CreateSubobject<CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT>( );
-    UINT payloadSize = (UINT)std::max( std::max( sizeof(ShaderRayPayloadBase), sizeof(ShaderCallablePayload) ), sizeof(ShaderPathTracerRayPayload) );
-    UINT attributeSize = 2 * sizeof( float ); // float2 barycentrics 
+    UINT payloadSize    = MaxPayloadSize; assert( MaxPayloadSize > 0 );
+    UINT attributeSize  = 2 * sizeof( float ); // float2 barycentrics 
     shaderConfig->Config( payloadSize, attributeSize );
 
     // Local root signature and shader association - a root signature that enables a shader to have unique arguments that come from shader tables. We don't use them at the moment!!
@@ -2018,6 +2028,8 @@ void vaRaytracePSODX12::CreatePSO( vaRenderDeviceDX12 & device, ID3D12RootSignat
         assert( m_desc.MaterialsSLUniqueContentsID == materialManager12.GetCallablesTableID( ) );
         UINT shaderIdentifierSize = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
 
+        const std::vector<vaRenderMaterialManagerDX12::CallableShaders> & materialCallablesTable = materialManager12.GetCallablesTable( );
+
         {
             void * rayGenShaderIdentifier           = stateObjectProperties->GetShaderIdentifier( m_desc.ItemSLEntryRayGen.c_str() );
             void * missShaderIdentifier             = stateObjectProperties->GetShaderIdentifier( m_desc.ItemSLEntryMiss.c_str() );
@@ -2047,18 +2059,41 @@ void vaRaytracePSODX12::CreatePSO( vaRenderDeviceDX12 & device, ID3D12RootSignat
 
             // Miss shader table
             {
-                UINT numShaderRecords = (missShaderSecondaryIdentifier==nullptr)?(1):(2);
+                UINT numShaderRecords = (m_desc.ItemMaterialMissCallable != L"")?(2+(UINT)materialCallablesTable.size() * vaRenderMaterialManagerDX12::CallableShaders::CallablesPerMaterial):(2); //(missShaderSecondaryIdentifier==nullptr)?(1):(2);
                 UINT shaderRecordSize = shaderIdentifierSize;
                 ShaderTable missShaderTable( device, numShaderRecords, shaderRecordSize, "MissShaderTable" );
                 missShaderTable.PushBack( ShaderRecord( missShaderIdentifier, shaderIdentifierSize ) );
                 if( missShaderSecondaryIdentifier != nullptr )
                     missShaderTable.PushBack( ShaderRecord( missShaderSecondaryIdentifier, shaderIdentifierSize ) );
+                else
+                    missShaderTable.PushBack( ShaderRecord( nullptr, shaderIdentifierSize ) );  // need to insert empty one for correct VA_RAYTRACING_SHADER_MISS_CALLABLES_SHADE_OFFSET
+                static_assert( VA_RAYTRACING_SHADER_MISS_CALLABLES_SHADE_OFFSET == 2 );
+
+                // optional Miss-Callables
+                if( m_desc.ItemMaterialMissCallable != L"" )
+                {
+                    for( uint32 index = 0; index < materialCallablesTable.size(); index++ ) 
+                    {
+                        const vaRenderMaterialManagerDX12::CallableShaders & materialCallables = materialCallablesTable[index];
+                        if( materialCallables.LibraryBlob == nullptr )
+                        {
+                            inner->Incomplete = true;
+                            for( int i = 0; i < vaRenderMaterialManagerDX12::CallableShaders::CallablesPerMaterial; i++ )
+                                missShaderTable.PushBack( ShaderRecord( nullptr, shaderIdentifierSize ) );
+                        }
+                        else
+                        {
+                            void * shaderIdentifier     = stateObjectProperties->GetShaderIdentifier( (m_desc.ItemMaterialMissCallable+materialCallables.UniqueIDString).c_str() );
+                            assert( shaderIdentifier     != nullptr );
+                            missShaderTable.PushBack( ShaderRecord( shaderIdentifier, shaderIdentifierSize ) );
+                        }
+                    }
+                }
+
                 inner->MissShaderTable = missShaderTable.GetBuffer( );
                 inner->MissShaderTableStride = shaderRecordSize;
             }
         }
-
-        const std::vector<vaRenderMaterialManagerDX12::CallableShaders> & materialCallablesTable = materialManager12.GetCallablesTable( );
 
         // Hit groups shader table
         {

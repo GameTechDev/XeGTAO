@@ -22,8 +22,9 @@
 #endif
 
 // #define VA_SAMPLE_BUILD_FOR_LAB
+// #define VA_SAMPLE_DEMO_BUILD
 
-#if defined(VA_SAMPLE_BUILD_FOR_LAB) && !defined(VA_MINIMAL_UI)
+#if (defined(VA_SAMPLE_BUILD_FOR_LAB) || defined(VA_SAMPLE_DEMO_BUILD)) && !defined(VA_MINIMAL_UI)
 #define VA_MINIMAL_UI
 #endif
 

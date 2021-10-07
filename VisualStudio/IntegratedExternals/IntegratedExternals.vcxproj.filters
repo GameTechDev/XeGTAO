@@ -100,6 +100,9 @@
     <Filter Include="IntegratedExternals\entt\Poly">
       <UniqueIdentifier>{4beb00f7-fd8c-4b05-bd0b-8c903d9d2cb8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="IntegratedExternals\cgltf">
+      <UniqueIdentifier>{5f8baa84-fc60-440e-ad89-aeacc94e1c95}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Source\IntegratedExternals\imgui\imgui.cpp">
@@ -2218,6 +2221,12 @@
     </ClInclude>
     <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\utility\uuid.hpp">
       <Filter>IntegratedExternals\taskflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\cgltf\cgltf.h">
+      <Filter>IntegratedExternals\cgltf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\cgltf\cgltf_write.h">
+      <Filter>IntegratedExternals\cgltf</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

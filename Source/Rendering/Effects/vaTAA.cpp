@@ -10,14 +10,19 @@
 
 #include "vaTAA.h"
 
+#include "Rendering/vaRenderDevice.h"
+#include "Rendering/vaRenderGlobals.h"
+#include "Rendering/Shaders/vaShaderCore.h"
+#include "Rendering/vaShader.h"
+#include "Rendering/vaRenderBuffers.h"
+#include "Rendering/vaTexture.h"
+#include "Rendering/Shaders/vaTAAShared.h"
+
 #include "Core/vaInput.h"
 
 #include "IntegratedExternals/vaImguiIntegration.h"
 
 #include "Rendering/vaRenderDeviceContext.h"
-
-#include "Rendering/vaRenderDevice.h"
-#include "Rendering/vaRenderGlobals.h"
 
 #include "Rendering/vaTextureHelpers.h"
 
@@ -30,7 +35,7 @@ vaTAA::vaTAA( const vaRenderingModuleParams & params ) :
     m_CSGenerateMotionVectors( params ),
     m_CSTAA( params ),
     m_CSFinalApply( params ),
-    m_constantBuffer( params )
+    m_constantBuffer( vaConstantBuffer::Create<TAAConstants>( params.RenderDevice, "TAAConstants" ) )
 { 
 }
 
@@ -87,9 +92,9 @@ bool vaTAA::UpdateTexturesAndShaders( int width, int height )
         allShaders.push_back( m_CSTAA.get() );
         allShaders.push_back( m_CSFinalApply.get() );
 
-        m_CSGenerateMotionVectors->CreateShaderFromFile( shaderFileToUse, "CSGenerateMotionVectors", m_staticShaderMacros, false );
-        m_CSTAA->CreateShaderFromFile( shaderFileToUse, "CSTAA", m_staticShaderMacros, false );
-        m_CSFinalApply->CreateShaderFromFile( shaderFileToUse, "CSFinalApply", m_staticShaderMacros, false );
+        m_CSGenerateMotionVectors->CompileFromFile( shaderFileToUse, "CSGenerateMotionVectors", m_staticShaderMacros, false );
+        m_CSTAA->CompileFromFile( shaderFileToUse, "CSTAA", m_staticShaderMacros, false );
+        m_CSFinalApply->CompileFromFile( shaderFileToUse, "CSFinalApply", m_staticShaderMacros, false );
 
         // wait until shaders are compiled! this allows for parallel compilation
         for( auto sh : allShaders ) sh->WaitFinishIfBackgroundCreateActive();
@@ -189,7 +194,7 @@ void vaTAA::UpdateConstants( vaRenderDeviceContext & renderContext, const vaCame
     //    m_resetHistory = false;
     //}
 
-    m_constantBuffer.Upload( renderContext, consts );
+    m_constantBuffer->Upload( renderContext, consts );
 }
 
 vaDrawResultFlags vaTAA::Apply( vaRenderDeviceContext & renderContext, const vaCameraBase & cameraBase, const shared_ptr<vaTexture> & inoutColor, const shared_ptr<vaTexture> & inputDepth, const vaMatrix4x4 & reprojectionMatrix )

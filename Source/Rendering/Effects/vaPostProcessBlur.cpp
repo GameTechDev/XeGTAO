@@ -12,6 +12,12 @@
 
 #include "Rendering/vaRenderDeviceContext.h"
 
+#include "Rendering/vaRenderBuffers.h"
+#include "Rendering/vaTexture.h"
+#include "Rendering/Shaders/vaSharedTypes.h"
+#include "Rendering/Shaders/vaPostProcessShared.h"
+#include "Rendering/vaShader.h"
+
 #include "Core/Misc/stack_container.h"
 
 using namespace Vanilla;
@@ -46,7 +52,7 @@ static void GenerateSeparableGaussKernel( float sigma, int kernelSize, std::vect
 vaPostProcessBlur::vaPostProcessBlur( const vaRenderingModuleParams & params )
  : vaRenderingModule( params ), 
     m_textureSize( vaVector2i( 0, 0 ) ),
-    m_constantsBuffer( params.RenderDevice ),
+    m_constantBuffer( vaConstantBuffer::Create<PostProcessBlurConstants>( params.RenderDevice, "PostProcessBlurConstants" ) ),
     m_CSGaussHorizontal( params ),
     m_CSGaussVertical( params )
 {
@@ -56,8 +62,8 @@ vaPostProcessBlur::vaPostProcessBlur( const vaRenderingModuleParams & params )
 
     m_constantsBufferNeedsUpdate = true;
 
-    m_CSGaussHorizontal->CreateShaderFromFile( "vaPostProcessBlur.hlsl", "CSGaussHorizontal", m_staticShaderMacros, false );
-    m_CSGaussVertical->CreateShaderFromFile( "vaPostProcessBlur.hlsl", "CSGaussVertical", m_staticShaderMacros, false );
+    m_CSGaussHorizontal->CompileFromFile( "vaPostProcessBlur.hlsl", "CSGaussHorizontal", m_staticShaderMacros, false );
+    m_CSGaussVertical->CompileFromFile( "vaPostProcessBlur.hlsl", "CSGaussVertical", m_staticShaderMacros, false );
 }
 
 vaPostProcessBlur::~vaPostProcessBlur( )
@@ -78,8 +84,8 @@ void vaPostProcessBlur::UpdateShaders( vaRenderDeviceContext & renderContext )
     {
         m_shadersDirty = false;
 
-        // m_PSBlurA.CreateShaderFromFile( L"vaPostProcessBlur.hlsl", "ps_5_0", "PSBlurA", m_staticShaderMacros );
-        // m_PSBlurB.CreateShaderFromFile( L"vaPostProcessBlur.hlsl", "ps_5_0", "PSBlurB", m_staticShaderMacros );
+        // m_PSBlurA.CompileFromFile( L"vaPostProcessBlur.hlsl", "ps_5_0", "PSBlurA", m_staticShaderMacros );
+        // m_PSBlurB.CompileFromFile( L"vaPostProcessBlur.hlsl", "ps_5_0", "PSBlurB", m_staticShaderMacros );
     }
 }
 
@@ -110,7 +116,7 @@ void vaPostProcessBlur::UpdateGPUConstants( vaRenderDeviceContext & renderContex
                 consts.GaussOffsetsWeights[i] = vaVector4( 0.0f, 0.0f, 0.0f, 0.0f );
         }
 
-        m_constantsBuffer.Upload( renderContext, consts );
+        m_constantBuffer->Upload( renderContext, consts );
     }
 }
 
@@ -311,7 +317,7 @@ vaDrawResultFlags vaPostProcessBlur::BlurInternal( vaRenderDeviceContext & rende
 
     vaComputeItem computeItem;
 
-    computeItem.ConstantBuffers[ POSTPROCESS_BLUR_CONSTANTSBUFFERSLOT ]     = m_constantsBuffer;
+    computeItem.ConstantBuffers[ POSTPROCESS_BLUR_CONSTANTSBUFFERSLOT ]     = m_constantBuffer;
 
     computeItem.SetDispatch( ( dstTexture->GetWidth() + 8 - 1 ) / 8, ( dstTexture->GetHeight() + 8 - 1 ) / 8 );
 

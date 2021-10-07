@@ -7,11 +7,7 @@
 
 #include "Core/vaCoreIncludes.h"
 
-#include "Rendering/vaRenderingIncludes.h"
-
-#ifndef __INTELLISENSE__
-#include "Rendering/Shaders/vaSkybox.hlsl"
-#endif
+#include "Rendering/vaRendering.h"
 
 namespace Vanilla
 {
@@ -33,8 +29,7 @@ namespace Vanilla
 
         Settings                    m_settings;
 
-        vaTypedConstantBufferWrapper<ShaderSkyboxConstants>
-                                    m_constantsBuffer;
+        shared_ptr<vaConstantBuffer> m_constantBuffer;
 
         vaAutoRMI<vaVertexShader>   m_vertexShader;
         vaAutoRMI<vaPixelShader>    m_pixelShader;

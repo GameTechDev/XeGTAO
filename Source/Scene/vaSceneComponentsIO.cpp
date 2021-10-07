@@ -152,10 +152,11 @@ bool LightPoint::Serialize( vaSerializer & serializer )
     return true;
 }
 
-bool MaterialPicksLightEmissive::Serialize( vaSerializer & serializer )
+bool EmissiveMaterialDriver::Serialize( SerializeArgs & args, vaSerializer & serializer )
 {
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "IntensityMultiplier" , IntensityMultiplier ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "OriginalMultiplier"  , OriginalMultiplier  ) );
+    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<vaVector3>( "EmissiveMultiplier" , EmissiveMultiplier ) );
+    VERIFY_TRUE_RETURN_ON_FALSE( ReferenceLightEntity.Serialize( args, serializer, "ReferenceLightEntity" ) );
+    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "ReferenceLightMultiplier"  , ReferenceLightMultiplier ) );
 
     return true;
 }

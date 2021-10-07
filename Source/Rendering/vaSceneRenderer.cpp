@@ -159,7 +159,7 @@ void vaSceneRenderer::UpdateSettingsDependencies( )
 void vaSceneRenderer::OnNewScene( )
 {
     m_instanceProcessor.SetScene( m_scene );
-    m_lighting->Reset();
+    m_lighting->SetScene( m_scene );
     //m_shadowsStable = false;
     //m_IBLsStable = false;
     //m_ui_contextReset = true;
@@ -213,10 +213,11 @@ void vaSceneRenderer::OnSceneTickBegin( vaScene & scene, float deltaTime, int64 
 
     //m_worldBase = m_LODReferenceView.position?
     m_worldBase = {0,0,0};  // use m_LOD`cessor.Parameters.Reference
-    if( m_scene )
-    {
-        m_lighting->UpdateFromScene( m_worldBase, *m_scene, deltaTime, applicationTickIndex );
-    }
+    m_lighting->SetWorldBase( m_worldBase );
+    
+    // in the future all these below can be ran from the vaScene::Async
+    if( m_scene != nullptr )
+        m_lighting->UpdateFromScene( *m_scene, deltaTime, applicationTickIndex );
    
     shared_ptr<vaShadowmap> nextShadowMap = GetLighting( )->GetNextHighestPriorityShadowmapForRendering( );
     pair<shared_ptr<vaIBLProbe>, Scene::IBLProbe> nextIBLProbe = GetLighting( )->GetNextHighestPriorityIBLProbeForRendering( );

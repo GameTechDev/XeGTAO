@@ -138,7 +138,7 @@ vec3 surfaceShading(const PixelParams pixel, const Light light, float occlusion)
 
     // Early exit to avoid the extra multiplication by NoL
     return (color * light.colorIntensity.rgb) *
-            (light.colorIntensity.w * light.attenuation * occlusion);
+            (light.attenuation * occlusion);
 #else
     color *= attenuation;
     color += clearCoat;
@@ -146,5 +146,5 @@ vec3 surfaceShading(const PixelParams pixel, const Light light, float occlusion)
 #endif
 
     return (color * light.colorIntensity.rgb) *
-            (light.colorIntensity.w * light.attenuation * NoL * occlusion);
+            (light.attenuation * NoL * occlusion);
 }

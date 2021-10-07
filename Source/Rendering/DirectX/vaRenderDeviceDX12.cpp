@@ -717,26 +717,16 @@ bool vaRenderDeviceDX12::Initialize( const std::vector<wstring> & shaderSearchPa
 
         rootParameters[DefaultRootSignatureParams::InstanceIndexDirectUINT32].InitAsConstants( 1, SHADER_INSTANCE_INDEX_ROOT_CONSTANT_SLOT, 0 );
 
+        rootParameters[DefaultRootSignatureParams::GenericRootConstDirectUINT32].InitAsConstants( 1, SHADER_GENERIC_ROOT_CONSTANT_SLOT, 0 );
+
         rootRanges[DefaultRootSignatureParams::Bindless1SRVBase].Init( D3D12_DESCRIPTOR_RANGE_TYPE_SRV, UINT_MAX, DefaultRootSignatureParams::Bindless1SRVSlotBase, DefaultRootSignatureParams::Bindless1SRVRegSpace, descRangeFlags );
         rootParameters[DefaultRootSignatureParams::Bindless1SRVBase].InitAsDescriptorTable( 1, &rootRanges[DefaultRootSignatureParams::Bindless1SRVBase], D3D12_SHADER_VISIBILITY_ALL );
         rootRanges[DefaultRootSignatureParams::Bindless2SRVBase].Init( D3D12_DESCRIPTOR_RANGE_TYPE_SRV, UINT_MAX, DefaultRootSignatureParams::Bindless2SRVSlotBase, DefaultRootSignatureParams::Bindless2SRVRegSpace, descRangeFlags );
         rootParameters[DefaultRootSignatureParams::Bindless2SRVBase].InitAsDescriptorTable( 1, &rootRanges[DefaultRootSignatureParams::Bindless2SRVBase], D3D12_SHADER_VISIBILITY_ALL );
 
-// IntelExt
-#ifdef VA_INTEL_GRADFILTER_ENABLED
-        // Intel extension requires special root parameter - not actually used
-        CD3DX12_DESCRIPTOR_RANGE1 rootRangeIntelExt[1];
-        rootRangeIntelExt[0].Init( D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 63, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC );
-
-        CD3DX12_ROOT_PARAMETER1 rootParameterIntelExt;
-        rootParameterIntelExt.InitAsDescriptorTable( 1, &rootRangeIntelExt[0], D3D12_SHADER_VISIBILITY_PIXEL );
-#error this no longer works - convert it to direct descriptor uav
-        rootParameters[ ExtendedRootSignatureIndexRanges::RootParameterIndexSRVCBVUAV+1 ] = rootParameterIntelExt;
-#endif
-
         // root constants - not used at the moment except for padding 
         for( int i = 0; i < padding; i++ )
-            rootParameters[i+DefaultRootSignatureParams::TotalParameters].InitAsConstants( 4, SHADER_INSTANCE_INDEX_ROOT_CONSTANT_SLOT+1+i, 0, D3D12_SHADER_VISIBILITY_ALL );
+            rootParameters[i+DefaultRootSignatureParams::TotalParameters].InitAsConstants( 4, SHADER_GENERIC_ROOT_CONSTANT_SLOT+1+i, 0, D3D12_SHADER_VISIBILITY_ALL );
 
         D3D12_STATIC_SAMPLER_DESC defaultSamplers[7];
         vaDirectXTools12::FillSamplerStatePointClamp(         defaultSamplers[0] );

@@ -1768,6 +1768,11 @@ inline bool vaGeometry::NearEqual( const vaVector4 & a, const vaVector4 & b, con
    return ( vaMath::Abs( a.x - b.x ) < fEps ) && ( vaMath::Abs( a.y - b.y ) < fEps ) && ( vaMath::Abs( a.z - b.z ) < fEps ) && ( vaMath::Abs( a.w - b.w ) < fEps );
 }
 
+inline bool vaGeometry::NearEqual( const vaBoundingSphere & a, const vaBoundingSphere & b, const float fEps )
+{
+    return ( vaMath::Abs( a.Center.x - b.Center.x ) < fEps ) && ( vaMath::Abs( a.Center.y - b.Center.y ) < fEps ) && ( vaMath::Abs( a.Center.z - b.Center.z ) < fEps ) && ( vaMath::Abs( a.Radius - b.Radius ) < fEps );
+}
+
 inline bool vaGeometry::IntersectSegments2D( const vaVector2 & p1, const vaVector2 & p2, const vaVector2 & p3, const vaVector2 & p4, vaVector2 & outPt )
 {
    // Store the values for fast access and easy

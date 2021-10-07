@@ -49,7 +49,8 @@
     </CustomBuildBeforeTargets>
     <OutDir>$(SolutionDir).intermediate\.lib\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir).intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <NMakeCleanCommandLine>del "$(ProjectDir)..\..\Source\EmbeddedMedia.inc"</NMakeCleanCommandLine>
+    <NMakeCleanCommandLine>del "$(ProjectDir)..\..\Source\EmbeddedMedia.inc"
+rmdir /q /s "$(ProjectDir)..\..\Build\.cache"</NMakeCleanCommandLine>
     <NMakeBuildCommandLine>"$(ProjectDir)..\..\Source\EmbedMedia.bat" "$(ProjectDir)..\..\Source\
 "</NMakeBuildCommandLine>
     <NMakeReBuildCommandLine>"$(ProjectDir)..\..\Source\EmbedMedia.bat" "$(ProjectDir)..\..\Source\
@@ -61,7 +62,8 @@
     </CustomBuildBeforeTargets>
     <OutDir>$(SolutionDir).intermediate\.lib\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir).intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <NMakeCleanCommandLine>del "$(ProjectDir)..\..\Source\EmbeddedMedia.inc"</NMakeCleanCommandLine>
+    <NMakeCleanCommandLine>del "$(ProjectDir)..\..\Source\EmbeddedMedia.inc"
+rmdir /q /s "$(ProjectDir)..\..\Build\.cache"</NMakeCleanCommandLine>
     <NMakeBuildCommandLine>"$(ProjectDir)..\..\Source\EmbedMedia.bat" "$(ProjectDir)..\..\Source\
 "</NMakeBuildCommandLine>
     <NMakeReBuildCommandLine>"$(ProjectDir)..\..\Source\EmbedMedia.bat" "$(ProjectDir)..\..\Source\

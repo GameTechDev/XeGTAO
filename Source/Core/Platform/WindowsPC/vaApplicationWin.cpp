@@ -513,9 +513,17 @@ void vaApplicationWin::UpdateDeviceSizeOnWindowResize( )
 {
     ReleaseMouse( );
     //Event_BeforeWindowResized.Invoke( );
-    if( !m_renderDevice->ResizeSwapChain( m_currentWindowClientSize.x, m_currentWindowClientSize.y, m_currentFullscreenState ) )
+    if( m_currentWindowClientSize.x == 0 || m_currentWindowClientSize.y == 0 )
     {
-        VA_WARN( "Swap chain resize failed!" );
+        // this happens when the app is minimized - no need to really do anything here other than chill
+        vaThreading::Sleep( 100 );
+    }
+    else
+    {
+        if( !m_renderDevice->ResizeSwapChain( m_currentWindowClientSize.x, m_currentWindowClientSize.y, m_currentFullscreenState ) )
+        {
+            VA_WARN( "Swap chain resize failed!" );
+        }
     }
     // can be downgraded from Fullscreen to FullscreenBorderless or Windowed for a number of reasons
     m_currentFullscreenState = m_renderDevice->GetFullscreenState( );

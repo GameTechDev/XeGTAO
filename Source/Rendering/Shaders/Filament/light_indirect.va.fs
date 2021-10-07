@@ -115,12 +115,12 @@ vec3 prefilteredRadiance( const ShadingParams shading, vec3 r, float perceptualR
 
     float3 local = 0, distant = 0;
 
-    [branch] if( shading.IBL.UseLocal && useLocalIBL )
+    [branch] if( useLocalIBL )
     {
         float lod = min( g_lighting.LocalIBL.MaxReflMipLevel.x * perceptualRoughness, g_lighting.LocalIBL.ReflMipLevelClamp );
         local   = g_lighting.LocalIBL.PreExposedLuminance * decodeDataForIBL( g_LocalIBLReflectionsMap.SampleLevel( g_samplerLinearClamp, ComputeIBLDirection( shading.Position, g_lighting.LocalIBL, r ), lod ) );
     }
-    [branch] if( shading.IBL.UseDistant && useDistantIBL )
+    [branch] if( useDistantIBL )
     {
         float lod = min( g_lighting.DistantIBL.MaxReflMipLevel.x * perceptualRoughness, g_lighting.DistantIBL.ReflMipLevelClamp );
         distant = g_lighting.DistantIBL.PreExposedLuminance * decodeDataForIBL( g_DistantIBLReflectionsMap.SampleLevel( g_samplerLinearClamp, ComputeIBLDirection( shading.Position, g_lighting.DistantIBL, r ), lod ) );
@@ -522,23 +522,21 @@ void combineDiffuseAndSpecular(const PixelParams pixel,
 void evaluateIBL( const ShadingParams shading, const MaterialInputs material, const PixelParams pixel, inout float3 color, bool useLocalIBL, bool useDistantIBL )
 {
     // Apply transform here if we wanted to rotate the IBL
-    vec3 n = shading.Normal;
+    float3 normal       = shading.Normal;
+    float3 bentNormal   = shading.BentNormal; //shading.Normal;
 
     float diffuseAO = shading.DiffuseAmbientOcclusion;
-    float specularAO = computeSpecularAO( shading.NoV, diffuseAO, pixel.Roughness );
-
-    // temp hack - I don't like that it gets all black <shrug>
-    specularAO = saturate(specularAO) * 0.97 + 0.03;
+    float specularAO = computeSpecularAO( shading, diffuseAO, pixel.Roughness );
 
     // specular layer
     vec3 Fr;
 #if IBL_INTEGRATION_ALGORITHM == IBL_INTEGRATION_PREFILTERED_CUBEMAP
     vec3 E = specularDFG( pixel );
-    vec3 r = getReflectedVector( shading, pixel, n );
+    vec3 r = getReflectedVector( shading, pixel, normal );
     Fr = E * prefilteredRadiance( shading, r, pixel.PerceptualRoughness, useLocalIBL, useDistantIBL );
 #elif IBL_INTEGRATION_ALGORITHM == IBL_INTEGRATION_IMPORTANCE_SAMPLING
     vec3 E = vec3(0.0.xxx); // TODO: fix for importance sampling
-    Fr = isEvaluateIBL( pixel, shading.Normal, shading.View, shading.NoV, useLocalIBL, useDistantIBL );
+    Fr = isEvaluateIBL( pixel, normal, shading.View, shading.NoV, useLocalIBL, useDistantIBL );
 #endif
     Fr *= singleBounceAO(specularAO) * pixel.EnergyCompensation;
 
@@ -546,7 +544,7 @@ void evaluateIBL( const ShadingParams shading, const MaterialInputs material, co
     float diffuseBRDF = singleBounceAO( diffuseAO ); // Fd_Lambert() is baked in the SH below
     evaluateClothIndirectDiffuseBRDF( shading, pixel, diffuseBRDF );
 
-    vec3 diffuseIrradiance = DiffuseIrradiance( shading, n, useLocalIBL, useDistantIBL );
+    vec3 diffuseIrradiance = DiffuseIrradiance( shading, normalize(normal+bentNormal), useLocalIBL, useDistantIBL );
     vec3 Fd = pixel.DiffuseColor * diffuseIrradiance * (1.0 - E) * diffuseBRDF;
 
     // clear coat layer
@@ -560,5 +558,5 @@ void evaluateIBL( const ShadingParams shading, const MaterialInputs material, co
     multiBounceSpecularAO(specularAO, pixel.F0, Fr);
 
     // Note: iblLuminance is already premultiplied by the exposure
-    combineDiffuseAndSpecular(pixel, n, E, Fd, Fr, color);
+    combineDiffuseAndSpecular(pixel, normal, E, Fd, Fr, color);
 }

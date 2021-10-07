@@ -665,6 +665,20 @@ namespace Vanilla
             vaTracer::LocalThreadContext( )->OnBegin( mappedName, 0 );
         }
 
+        vaScopeTrace( const string & customName, vaRenderDeviceContext * renderDeviceContext ) : 
+#ifdef _DEBUG
+            m_name( vaCore::MapString( customName.c_str() ) ), 
+#endif
+            m_renderDeviceContext(renderDeviceContext)
+        {
+            vaMappedString mappedName = vaCore::MapString( customName.c_str() );
+#ifdef _DEBUG
+            assert( mappedName == m_name );
+#endif
+            vaTracer::LocalThreadContext( )->OnBegin( mappedName, 0 );
+            BeginGPUTrace( mappedName, 0 );
+        }
+
         vaScopeTrace( vaScopeTraceStaticPart & info ) 
 #ifdef _DEBUG
             : m_name( info.MappedName )
@@ -709,15 +723,21 @@ namespace Vanilla
         void                                EndExternalCPUTrace();
     };
     #define VA_TRACE_CPU_SCOPE( name )                                          thread_local static vaScopeTraceStaticPart scopestatic_##name( #name, false ); vaScopeTrace scope_##name( scopestatic_##name );
-    #define VA_TRACE_CPU_SCOPE_CUSTOMNAME( nameVar, customName )                vaScopeTrace scope_##nameVar( customName );
     #define VA_TRACE_CPUGPU_SCOPE( name, apiContext )                           thread_local static vaScopeTraceStaticPart scopestatic_##name( #name, false ); vaScopeTrace scope_##name( scopestatic_##name, &apiContext );
     #define VA_TRACE_CPUGPU_SCOPE_SELECT_BY_DEFAULT( name, apiContext )         thread_local static vaScopeTraceStaticPart scopestatic_##name( #name, true ); vaScopeTrace scope_##name( scopestatic_##name, &apiContext );
+
+    // _CUSTOMNAME versions are slower due to string management
+    #define VA_TRACE_CPU_SCOPE_CUSTOMNAME( nameVar, customName )                vaScopeTrace scope_##nameVar( customName );
+    #define VA_TRACE_CPUGPU_SCOPE_CUSTOMNAME( nameVar, customName, apiContext ) vaScopeTrace scope_##nameVar( customName, &apiContext );
 #else
     #define VA_TRACE_CPU_SCOPE( name )                             
-    #define VA_TRACE_CPU_SCOPE_CUSTOMNAME( nameVar, customName )   
     #define VA_TRACE_CPUGPU_SCOPE( name, apiContext )              
     #define VA_TRACE_CPUGPU_SCOPE_CUSTOMNAME( nameVar, customName )
     #define VA_TRACE_CPUGPU_SCOPE_SELECT_BY_DEFAULT( name, apiContext )
+
+    // _CUSTOMNAME versions are slower due to string management
+    #define VA_TRACE_CPU_SCOPE_CUSTOMNAME( nameVar, customName )   
+    #define VA_TRACE_CPUGPU_SCOPE_CUSTOMNAME( nameVar, customName, apiContext )
 #endif
 
 }

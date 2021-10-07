@@ -18,7 +18,7 @@ using namespace Vanilla;
 
 vaDepthOfField::vaDepthOfField( const vaRenderingModuleParams & params ) : 
     vaRenderingModule( params ), 
-    m_constantsBuffer( params ),
+    m_constantBuffer( vaConstantBuffer::Create<DepthOfFieldShaderConstants>( params.RenderDevice, "DepthOfFieldShaderConstants" ) ),
     m_CSResolve( params ),
     m_CSSplitPlanes( params ),
     m_CSFarBlur {params,params,params},
@@ -27,14 +27,14 @@ vaDepthOfField::vaDepthOfField( const vaRenderingModuleParams & params ) :
 { 
 //    assert( vaRenderingCore::IsInitialized() );
 
-    m_CSSplitPlanes->CreateShaderFromFile( "vaDepthOfField.hlsl", "CSSplitPlanes", { {"DOF_SPLIT_PLANES","1"} }, false );
-    m_CSResolve->CreateShaderFromFile( "vaDepthOfField.hlsl", "CSResolve", { {"DOF_RESOLVE","1"} } , false );
+    m_CSSplitPlanes->CompileFromFile( "vaDepthOfField.hlsl", "CSSplitPlanes", { {"DOF_SPLIT_PLANES","1"} }, false );
+    m_CSResolve->CompileFromFile( "vaDepthOfField.hlsl", "CSResolve", { {"DOF_RESOLVE","1"} } , false );
 
     for( int i = 0; i < 3; i++ )
     {
         std::pair<string, string> blurTypeMacro = { "DOF_BLUR_TYPE", std::to_string(i) };
-        m_CSFarBlur[i]->CreateShaderFromFile( "vaDepthOfField.hlsl", "CSFarBlur", { blurTypeMacro, {"DOF_FAR_BLUR", "1"} }, false );
-        m_CSNearBlur[i]->CreateShaderFromFile( "vaDepthOfField.hlsl", "CSNearBlur", { blurTypeMacro, {"DOF_NEAR_BLUR", "1"} }, false );
+        m_CSFarBlur[i]->CompileFromFile( "vaDepthOfField.hlsl", "CSFarBlur", { blurTypeMacro, {"DOF_FAR_BLUR", "1"} }, false );
+        m_CSNearBlur[i]->CompileFromFile( "vaDepthOfField.hlsl", "CSNearBlur", { blurTypeMacro, {"DOF_NEAR_BLUR", "1"} }, false );
     }
 }
 
@@ -79,7 +79,7 @@ vaDrawResultFlags vaDepthOfField::Draw( vaRenderDeviceContext & renderContext, c
         vaComputeItem computeItem;
         vaRenderOutputs outputs;
 
-        computeItem.ConstantBuffers[DOF_CB] = m_constantsBuffer;
+        computeItem.ConstantBuffers[DOF_CB] = m_constantBuffer;
         computeItem.ShaderResourceViews[DOF_SPLIT_PLANES_SRV_DEPTH] = inDepth;
         computeItem.ShaderResourceViews[DOF_SPLIT_PLANES_SRV_COLOR] = inOutColor;
         outputs.UnorderedAccessViews[DOF_SPLIT_PLANES_UAV_NEAR] = m_offscreenColorNearA;
@@ -95,7 +95,7 @@ vaDrawResultFlags vaDepthOfField::Draw( vaRenderDeviceContext & renderContext, c
     {
         vaComputeItem computeItem;
         vaRenderOutputs outputs;
-        computeItem.ConstantBuffers[DOF_CB] = m_constantsBuffer;
+        computeItem.ConstantBuffers[DOF_CB] = m_constantBuffer;
         int threadGroupCountX = ( m_offscreenColorFarA->GetSizeX( ) + 8 - 1 ) / 8;
         int threadGroupCountY = ( m_offscreenColorFarA->GetSizeY( ) + 8 - 1 ) / 8;
         computeItem.SetDispatch( threadGroupCountX, threadGroupCountY, 1 );
@@ -129,7 +129,7 @@ vaDrawResultFlags vaDepthOfField::Draw( vaRenderDeviceContext & renderContext, c
             VA_TRACE_CPUGPU_SCOPE( DoF_NearBlur, renderContext );
             for( int i = 0; i < 3; i++ )
             {
-                computeItem.ConstantBuffers[DOF_CB] = m_constantsBuffer;
+                computeItem.ConstantBuffers[DOF_CB] = m_constantBuffer;
                 computeItem.ShaderResourceViews[DOF_NEAR_BLUR_SRV_COLOR] = (i & 0x1) == 0 ? m_offscreenColorNearA : m_offscreenColorNearB;
                 outputs.UnorderedAccessViews[DOF_NEAR_BLUR_UAV_COLOR] = (i & 0x1) == 0 ? m_offscreenColorNearB : m_offscreenColorNearA;
                 computeItem.ComputeShader = m_CSNearBlur[i];
@@ -145,7 +145,7 @@ vaDrawResultFlags vaDepthOfField::Draw( vaRenderDeviceContext & renderContext, c
         vaComputeItem computeItem;
         vaRenderOutputs outputs;
 
-        computeItem.ConstantBuffers[DOF_CB] = m_constantsBuffer;
+        computeItem.ConstantBuffers[DOF_CB] = m_constantBuffer;
         computeItem.ShaderResourceViews[DOF_RESOLVE_SRV_COC] = m_offscreenCoc;
         computeItem.ShaderResourceViews[DOF_RESOLVE_SRV_FAR] = m_offscreenColorFarB;
         computeItem.ShaderResourceViews[DOF_RESOLVE_SRV_NEAR] = m_offscreenColorNearB;
@@ -191,7 +191,7 @@ void vaDepthOfField::UpdateConstants( vaRenderDeviceContext & renderContext, flo
     consts.nearBlend    = m_settings.NearTransitionRange;
     consts.cocRamp      = m_settings.FarTransitionRange;
 
-    m_constantsBuffer.Upload( renderContext, consts );
+    m_constantBuffer->Upload<DepthOfFieldShaderConstants>( renderContext, consts );
 }
 
 float vaDepthOfField::ComputeConservativeBlurFactor( const vaCameraBase & camera, const vaOrientedBoundingBox & obbWorldSpace )

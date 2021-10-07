@@ -10,20 +10,8 @@
 
 #pragma once
 
-#include "Core/vaCoreIncludes.h"
-
-#include "Rendering/vaRenderBuffers.h"
-
 #include "Rendering/vaRendering.h"
-
-#include "Rendering/vaTexture.h"
-
-#include "Rendering/Shaders/vaSharedTypes.h"
-
-#include "Rendering/Shaders/vaPostProcessShared.h"
-
-#include "Rendering/vaShader.h"
-
+#include "Core/Misc/vaResourceFormats.h"
 
 //////////////////////////////////////////////////////////////////////////
 // read:
@@ -55,8 +43,7 @@ namespace Vanilla
         std::vector<float>                      m_currentGaussWeights;
         std::vector<float>                      m_currentGaussOffsets;
 
-        vaTypedConstantBufferWrapper< PostProcessBlurConstants, true >
-                                                m_constantsBuffer;
+        shared_ptr<vaConstantBuffer>            m_constantBuffer;
         bool                                    m_constantsBufferNeedsUpdate;
 
         vaAutoRMI< vaComputeShader >            m_CSGaussHorizontal;

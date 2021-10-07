@@ -1,14 +1,12 @@
 // Decide if we can skip lighting when dot(n, l) <= 0.0
 #if defined(SHADING_MODEL_CLOTH)
-#if !defined(MATERIAL_HAS_SUBSURFACE_COLOR) && (VA_RM_SPECIAL_EMISSIVE_LIGHT == 0)
+#if !defined(MATERIAL_HAS_SUBSURFACE_COLOR)
     #define MATERIAL_CAN_SKIP_LIGHTING
 #endif
 #elif defined(SHADING_MODEL_SUBSURFACE)
     // Cannot skip lighting
 #else
-#if (VA_RM_SPECIAL_EMISSIVE_LIGHT == 0)
     #define MATERIAL_CAN_SKIP_LIGHTING
-#endif
 #endif
 
 struct MaterialInputs
@@ -26,8 +24,7 @@ struct MaterialInputs
 #endif
     float   AmbientOcclusion;           // Defines how much of the ambient light is accessible to a surface point. It is a per-pixel shadowing factor between 0.0 and 1.0. This is a static value in contrast to dynamic such as SSAO.
 #if defined(MATERIAL_HAS_EMISSIVE)
-    float3  EmissiveColor;              // Simulates additional light emitted by the surface. .rgb is linear color (but should be edited as a sRGB in the UI)
-    float   EmissiveIntensity;          // Intensity for the Emissive: same logic as regular lights.
+    float3  EmissiveColorIntensity;     // Simulates additional light emitted by the surface. .rgb is linear color (but should be edited as a sRGB in the UI) multiplied by Intensity
 #endif
 
     float   ClearCoat;                  // Strength of the clear coat layer on top of a base dielectric or conductor layer. The clear coat layer will commonly be set to 0.0 or 1.0. This layer has a fixed index of refraction of 1.5.
@@ -112,8 +109,7 @@ MaterialInputs InitMaterial()
     material.AmbientOcclusion       = 1.0;
 
 #if defined(MATERIAL_HAS_EMISSIVE)
-    material.EmissiveColor          = float3( 1.0, 1.0, 1.0 );
-    material.EmissiveIntensity      = 0.0;
+    material.EmissiveColorIntensity = float3( 1.0, 1.0, 1.0 );
 #endif
 
 #if defined(MATERIAL_HAS_CLEAR_COAT)

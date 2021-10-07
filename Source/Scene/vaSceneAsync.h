@@ -19,6 +19,7 @@
 #include "Core/vaProfiler.h"
 
 // Define this to serialize all vaSceneAsync calls for performance testing and/or threaded debugging
+// (one could add option to only serialize async nodes themselves for more granular debugging)
 // #define VA_SCENE_ASYNC_FORCE_SINGLETHREADED
 
 #ifdef VA_TASKFLOW_INTEGRATION_ENABLED
@@ -214,7 +215,7 @@ namespace Vanilla
         if( pass == 0 )
         {   // first pass: start
             DestList.StartAppending( (uint32)Scene.Registry().size( ) );
-            return std::make_pair( (uint32)View.size(), vaTF::c_chunkBaseSize * 8 );    // <- is this safe use of the entt View?
+            return std::make_pair( (uint32)View.size(), VA_GOOD_PARALLEL_FOR_CHUNK_SIZE * 4 );    // <- is this safe use of the entt View?
         }
         else if( pass == 1 )
         {

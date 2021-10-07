@@ -245,3 +245,24 @@ vaLODSettings vaRenderCamera::GetLODSettings( ) const
     ret.Scale *= m_settings.LODSettings.Multiplier;
     return ret;
 }
+
+void vaRenderCamera::FromOther( const vaCameraBase & other )
+{
+    m_YFOV              = other.GetYFOV( );
+    m_XFOV              = other.GetXFOV( );
+    m_YFOVMain          = other.GetYFOVMain( );
+    m_aspect            = other.GetAspect( );
+    m_nearPlane         = other.GetNearPlaneDistance( );
+    m_farPlane          = other.GetFarPlaneDistance( );
+    m_viewport          = other.GetViewport( );
+    m_useReversedZ      = other.GetUseReversedZ( );
+    m_position          = other.GetPosition( );
+    m_orientation       = other.GetOrientation( );
+    m_worldTrans        = other.GetWorldMatrix( );
+    m_viewTrans         = other.GetViewMatrix( );
+    m_projTrans         = other.GetProjMatrix( );
+    m_direction         = other.GetDirection( );
+    m_subpixelOffset    = other.GetSubpixelOffset( );
+    m_defaultEV100      = other.GetEV100( true );
+    m_defaultHDRClamp   = other.GetHDRClamp( );
+}

@@ -39,7 +39,7 @@ namespace Vanilla
         int                                 m_sessionID         = -1;
 
 #ifdef VA_TASKFLOW_INTEGRATION_ENABLED
-        //tf::Taskflow                        m_tf;
+        tf::Taskflow                        m_sortTaskFlow;
         std::future<void>                   m_sortFuture;
 #endif
         bool                                m_finished = false;
@@ -59,6 +59,7 @@ namespace Vanilla
             if( !m_finished && m_sortFuture.valid() )
                 m_sortFuture.wait( );
             m_sortFuture = std::future<void>();
+            m_sortTaskFlow.clear();
 #endif
             m_finished = false;
             m_sessionID = -1; 
@@ -96,11 +97,24 @@ bool vaRenderInstanceListSorterInstance::Start(  )
     assert( !m_sortFuture.valid() );
 #endif
 
-    auto sortCallback = [ drawList, renderInstances = m_parent.GetGlobalInstanceArray(), &sortedIndices = m_sortedIndices, &sortDistances = m_sortDistances, &settings = m_settings ] ()
+    // data sizes!
+    m_sortDistances.resize( drawList.second );
+    m_sortedIndices.resize( drawList.second );
+
+    auto sortComp = [ This = this ] ( int ia, int ib ) -> bool
     {
-        VA_TRACE_CPU_SCOPE( RenderSelectionSort );
-        sortDistances.resize( drawList.second );
-        sortedIndices.resize( drawList.second );
+        // first sort by special type
+        if( This->m_sortDistances[ia].first != This->m_sortDistances[ib].first )
+            return This->m_sortDistances[ia].first < This->m_sortDistances[ib].first;
+        else // then by distance
+            return ( This->m_settings.FrontToBack ) ? ( This->m_sortDistances[ia].second < This->m_sortDistances[ib].second ) : ( This->m_sortDistances[ia].second > This->m_sortDistances[ib].second );
+    };
+
+    auto sortCallback = [ drawList, renderInstances = m_parent.GetGlobalInstanceArray(), &sortedIndices = m_sortedIndices, &sortDistances = m_sortDistances, &settings = m_settings]( )
+    {
+#ifndef VA_TASKFLOW_INTEGRATION_ENABLED
+        VA_TRACE_CPU_SCOPE( RenderSelectionSort_Prepare );
+#endif
         for( uint32 i = 0; i < drawList.second; i++ )
         {
             // auto & itemLocal    = drawList.first[i];
@@ -116,27 +130,24 @@ bool vaRenderInstanceListSorterInstance::Start(  )
             //else if( settings.SortByVRSType )
             //    sortGroup = (int)item.Properties.ShadingRate;
             //assert( itemA.Transform == itemLocal.Transform );
-            
+
             //sortDistances[i] = { sortGroup, ( vaVector3::TransformCoord( itemGlobal.Mesh->GetAABB( ).Center( ), itemGlobal.Transform ) - settings.ReferencePoint ).Length( ) };
             sortDistances[i] = { sortGroup, itemGlobal.DistanceFromRef };
             sortedIndices[i] = i;
         }
-
-        std::sort( sortedIndices.begin( ), sortedIndices.end( ),
-            [&sortedIndices, &sortDistances, &settings ]( const int ia, const int ib ) -> bool
-        {
-            // first sort by special type
-            if( sortDistances[ia].first != sortDistances[ib].first )
-                return sortDistances[ia].first < sortDistances[ib].first;
-            else // then by distance
-                return ( settings.FrontToBack ) ? ( sortDistances[ia].second < sortDistances[ib].second ) : ( sortDistances[ia].second > sortDistances[ib].second );
-        } );
     };
 
 #ifdef VA_TASKFLOW_INTEGRATION_ENABLED
-    m_sortFuture = vaTF::async( sortCallback );
+    tf::Task prepareTask = m_sortTaskFlow.emplace( sortCallback ).name( "RenderSelectionSortPrepare" );
+    tf::Task sortTask = m_sortTaskFlow.sort(  m_sortedIndices.begin( ), m_sortedIndices.end( ), std::move(sortComp) ).name( "RenderSelectionSort" );
+    prepareTask.precede(sortTask);
+    m_sortFuture = vaTF::Executor().run( m_sortTaskFlow );
 #else
     sortCallback( );
+    {
+        VA_TRACE_CPU_SCOPE( RenderSelectionSort_Sort );
+        std::sort( sortedIndices.begin( ), sortedIndices.end( ), sortComp );
+    }
 #endif
 
     return true;
@@ -152,7 +163,7 @@ int vaRenderInstanceListSorterInstance::Finish( const std::vector<int> * & sorte
 #ifdef VA_TASKFLOW_INTEGRATION_ENABLED
         assert( m_sortFuture.valid() );
         m_sortFuture.wait();
-        //m_tf.clear();
+        m_sortTaskFlow.clear();
 #endif
         m_finished = true;
     }
@@ -378,10 +389,10 @@ void vaRenderInstanceStorage::StartWriting( uint32 instanceMaxCount )
     m_started = true;
     m_stopped = false;
 
-    // do we have enough space?
-    if( (int64)m_instanceMaxCount < (int64)instanceMaxCount )
+    // do we have enough space? also, support instanceMaxCount of 0
+    if( ((int64)m_instanceMaxCount < (int64)instanceMaxCount) || (m_instanceMaxCount == 0) )
     {
-        m_instanceMaxCount = vaMath::Align( instanceMaxCount, 1024 );
+        m_instanceMaxCount = vaMath::Align( std::max( 1U, instanceMaxCount ), 1024 );
 
         m_renderConstants = vaRenderBuffer::Create<ShaderInstanceConstants>( GetRenderDevice(), m_instanceMaxCount, vaRenderBufferFlags::None, "InstancesConstantBuffer" );
         for( int i = 0; i < vaRenderDevice::c_BackbufferCount; i++ )
@@ -436,12 +447,14 @@ void vaRenderInstance::WriteToShaderConstants( ShaderInstanceConstants & outCons
 
     outConstants.OriginInfo             = OriginInfo;
 
-    //outConstants.EmissiveAdd    = EmissiveAdd;
+    outConstants.EmissiveMultiplier     = EmissiveMul;
 
     outConstants.MaterialGlobalIndex    = Material->GetGlobalIndex( );
     outConstants.MeshGlobalIndex        = Mesh->GetGlobalIndex( );
-    outConstants.Dummy0                 = 0;
     outConstants.EmissiveAddPacked      = Pack_R10G10B10FLOAT_A2_UNORM( EmissiveAdd );
+    outConstants.Flags                  = 0;
+    if( Material->IsTransparent( ) )
+        outConstants.Flags |= VA_INSTANCE_FLAG_TRANSPARENT;
 }
 
 vaRenderInstanceSimple::vaRenderInstanceSimple( const shared_ptr<vaRenderMesh> & mesh, const vaMatrix4x4 & transform ) 
@@ -454,7 +467,7 @@ vaRenderInstanceSimple::vaRenderInstanceSimple( const shared_ptr<vaRenderMesh> &
         Material = mesh->GetRenderDevice( ).GetMaterialManager( ).GetDefaultMaterial( );
 }
 
-vaRenderInstanceSimple::vaRenderInstanceSimple( const shared_ptr<vaRenderMesh> & mesh,const vaMatrix4x4 & transform, const shared_ptr<vaRenderMaterial> & overrideMaterial, vaShadingRate shadingRate, const vaVector4 & emissiveAdd, float meshLOD )
+vaRenderInstanceSimple::vaRenderInstanceSimple( const shared_ptr<vaRenderMesh> & mesh,const vaMatrix4x4 & transform, const shared_ptr<vaRenderMaterial> & overrideMaterial, vaShadingRate shadingRate, const vaVector4 & emissiveAdd, const vaVector3 & emissiveMul, float meshLOD )
 { 
     SetDefaults();
     Transform   = transform;
@@ -462,6 +475,7 @@ vaRenderInstanceSimple::vaRenderInstanceSimple( const shared_ptr<vaRenderMesh> &
     Material    = overrideMaterial;
     ShadingRate = shadingRate;
     EmissiveAdd = emissiveAdd;
+    EmissiveMul = emissiveMul;
     MeshLOD     = meshLOD;
     if( Material == nullptr )
         Material = mesh->GetRenderDevice( ).GetMaterialManager( ).GetDefaultMaterial( );
@@ -474,6 +488,7 @@ void vaRenderInstanceSimple::SetDefaults( )
     Material                    = nullptr;
     ShadingRate                 = vaShadingRate::ShadingRate1X1;        // per-draw-call shading rate
     EmissiveAdd                 = vaVector4( 0.0f, 0.0f, 0.0f, 1.0f );  // for debugging visualization (default means "do not override"); used for highlights, wireframe, lights, etc; rgb is added, alpha multiplies the original; for ex: " finalColor.rgb = finalColor.rgb * g_instance.EmissiveAdd.a + g_instance.EmissiveAdd.rgb; "
+    EmissiveMul                 = vaVector3( 1.0f, 1.0f, 1.0f );
     MeshLOD                     = 0.0f;
     OriginInfo.SceneID          = DrawOriginInfo::NullSceneRuntimeID;
     OriginInfo.EntityID         = DrawOriginInfo::NullSceneEntityID;

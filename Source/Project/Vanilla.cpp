@@ -199,10 +199,10 @@ static string CameraFileName( int index )
 }
 
 #pragma warning ( suppress: 4505 ) // unreferenced local function has been removed
-static void AddLumberyardTestLights( vaScene & scene, const vaGUID & unitSphereMeshID )
+static void AddLumberyardTestLights( vaScene & scene, const vaGUID & unitSphereMeshID, const vaGUID & emissiveMaterial )
 {
-    scene; unitSphereMeshID;
-#ifdef LIGHT_CUTS_EXPERIMENTATION
+    scene; unitSphereMeshID; emissiveMaterial;
+#if 0
 
     std::vector<vaVector3> list;
     
@@ -812,27 +812,31 @@ static void AddLumberyardTestLights( vaScene & scene, const vaGUID & unitSphereM
 
     entt::entity lightsParent = scene.CreateEntity( "TestLights" );
 
-    float lightSize = 0.02f;
-    float intensity = 0.05f;
+    float lightSize = 0.04f;
+    float intensity = 0.1f;
 
     vaRandom rand(0);
 
-    for( int i = 0; i < list.size(); i++ )
+    //for( int i = 0; i < list.size(); i++ )
+    for( int i = 0; i < list.size(); i+=2 ) // SKIP EVERY SECOND
     {
-        entt::entity lightEntity = scene.CreateEntity( vaStringTools::Format("light_%04d", i), vaMatrix4x4::FromScaleRotationTranslation( {lightSize, lightSize, lightSize}, vaMatrix3x3::Identity, list[i] ), lightsParent, 
-            unitSphereMeshID );
-            
+        entt::entity lightEntity = scene.CreateEntity( vaStringTools::Format("light_%04d", i), vaMatrix4x4::FromScaleRotationTranslation( {lightSize*0.8f, lightSize*0.8f, lightSize*0.8f}, vaMatrix3x3::Identity, list[i] ), lightsParent, 
+            unitSphereMeshID, emissiveMaterial );
+
         auto & newLight         = scene.Registry().emplace<Scene::LightPoint>( lightEntity );
         newLight.Color          = vaVector3::RandomNormal(rand).ComponentAbs( );
         newLight.Intensity      = intensity;
         newLight.FadeFactor     = 1.0f;
-        newLight.Size           = lightSize + 0.01f;    // add epsilon to ensure emissive material hack works
-        newLight.Range          = 25.0f;
+        newLight.Size           = lightSize;    // add epsilon to ensure emissive material hack works
+        newLight.Range          = 50.0f;
         newLight.SpotInnerAngle = 0.0f;
         newLight.SpotOuterAngle = 0.0f;
         newLight.CastShadows    = false;
 
-        scene.Registry().emplace<Scene::MaterialPicksLightEmissive>( lightEntity );
+        Scene::EmissiveMaterialDriver & emissiveDriver = scene.Registry().emplace<Scene::EmissiveMaterialDriver>( lightEntity );
+        emissiveDriver.EmissiveMultiplier       = {1.0f, 100.0f, 1.0f}; // this will get overridden by ReferenceLightEntity so it's for debugging only
+        emissiveDriver.ReferenceLightEntity     = Scene::EntityReference( scene.Registry(), lightEntity );
+        emissiveDriver.ReferenceLightMultiplier = 30.0f;
     }
 #endif
 }
@@ -867,21 +871,21 @@ VanillaSample::VanillaSample( vaRenderDevice & renderDevice, vaApplicationBase &
     m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( -15.027f, -3.197f, 2.179f ),   vaQuaternion( 0.480f, 0.519f, 0.519f, 0.480f ),     keyTime,    13.5f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 0
     m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( -8.101f, 2.689f, 1.289f ),     vaQuaternion( 0.564f, 0.427f, 0.427f, 0.564f ),     keyTime,     3.0f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 8
     m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( -4.239f, 4.076f, 1.621f ),     vaQuaternion( 0.626f, 0.329f, 0.329f, 0.626f ),     keyTime,     6.0f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 16
-    m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 2.922f, 5.273f, 1.520f ),      vaQuaternion( 0.660f, 0.255f, 0.255f, 0.660f ),     keyTime,     3.0f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 24
-    m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 6.134f, 5.170f, 1.328f ),      vaQuaternion( 0.680f, 0.195f, 0.195f, 0.680f ),     keyTime,     7.0f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 32
-    m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 7.658f, 4.902f, 1.616f ),      vaQuaternion( 0.703f, 0.078f, 0.078f, 0.703f ),     keyTime,     6.5f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 40
-    m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 8.318f, 3.589f, 2.072f ),      vaQuaternion( 0.886f, -0.331f, -0.114f, 0.304f ),   keyTime,    14.0f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 48
-    m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 8.396f, 3.647f, 2.072f ),      vaQuaternion( 0.615f, 0.262f, 0.291f, 0.684f ),     keyTime,     3.0f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 56
-    m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 9.750f, 0.866f, 2.131f ),      vaQuaternion( 0.747f, -0.131f, -0.113f, 0.642f ),   keyTime,     3.0f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 64
+    m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 2.922f, 4.273f, 1.820f ),      vaQuaternion( 0.660f, 0.255f, 0.255f, -0.660f ),     keyTime,     8.0f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 24
+    m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 4.922f, 4.273f, 1.820f ),      vaQuaternion( 0.660f, 0.255f, 0.255f, -0.660f ),     keyTime,     8.0f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 24
+    //m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 7.658f, 4.902f, 1.616f ),      vaQuaternion( 0.703f, 0.078f, 0.078f, 0.703f ),     keyTime,     6.5f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 40
+    //m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 8.318f, 3.589f, 2.072f ),      vaQuaternion( 0.886f, -0.331f, -0.114f, 0.304f ),   keyTime,    14.0f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 48
+    m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 8.396f, 3.647f, 2.072f ),      vaQuaternion( 0.615f, 0.262f, 0.291f, 0.684f ),     keyTime,     3.0f, defaultDoFRange ) ); keyTime+=keyTimeStep*1.5f;   // 56
+    //m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 9.750f, 0.866f, 2.131f ),      vaQuaternion( 0.747f, -0.131f, -0.113f, 0.642f ),   keyTime,     3.0f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 64
     m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 11.496f, -0.826f, 2.429f ),    vaQuaternion( 0.602f, -0.510f, -0.397f, 0.468f ),   keyTime,    10.0f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 72
-    m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 10.943f, -1.467f, 2.883f ),    vaQuaternion( 0.704f, 0.183f, 0.173f, 0.664f ),     keyTime,     1.2f, 1.8f*defaultDoFRange ) ); keyTime+=keyTimeStep;   // 80
+    //m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 10.943f, -1.467f, 2.883f ),    vaQuaternion( 0.704f, 0.183f, 0.173f, 0.664f ),     keyTime,     1.2f, 1.8f*defaultDoFRange ) ); keyTime+=keyTimeStep;   // 80
     m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 7.312f, -3.135f, 2.869f ),     vaQuaternion( 0.692f, 0.159f, 0.158f, 0.686f ),     keyTime,     1.5f, 2.0f*defaultDoFRange ) ); keyTime+=keyTimeStep;   // 88
-    m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 7.559f, -3.795f, 2.027f ),     vaQuaternion( 0.695f, 0.116f, 0.117f, 0.700f ),     keyTime,     1.0f, 1.8f*defaultDoFRange ) ); keyTime+=keyTimeStep;   // 96
+    //m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 7.559f, -3.795f, 2.027f ),     vaQuaternion( 0.695f, 0.116f, 0.117f, 0.700f ),     keyTime,     1.0f, 1.8f*defaultDoFRange ) ); keyTime+=keyTimeStep;   // 96
     m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 6.359f, -4.580f, 1.856f ),     vaQuaternion( 0.749f, -0.320f, -0.228f, 0.533f ),   keyTime,     4.0f, 1.2f*defaultDoFRange ) ); keyTime+=keyTimeStep;   // 104
     m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 5.105f, -6.682f, 0.937f ),     vaQuaternion( 0.559f, -0.421f, -0.429f, 0.570f ),   keyTime,     2.0f, 1.2f*defaultDoFRange ) ); keyTime+=keyTimeStep;   // 112
     m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 3.612f, -5.566f, 1.724f ),     vaQuaternion( 0.771f, -0.024f, -0.020f, 0.636f ),   keyTime,     2.0f, 1.2f*defaultDoFRange ) ); keyTime+=keyTimeStep;   // 120
-    m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 2.977f, -5.532f, 1.757f ),     vaQuaternion( 0.698f, -0.313f, -0.263f, 0.587f ),   keyTime,    12.0f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 128
-    m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 1.206f, -1.865f, 1.757f ),     vaQuaternion( 0.701f, -0.204f, -0.191f, 0.657f ),   keyTime,     2.0f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 136
+    //m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 2.977f, -5.532f, 1.757f ),     vaQuaternion( 0.698f, -0.313f, -0.263f, 0.587f ),   keyTime,    12.0f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 128
+    //m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 1.206f, -1.865f, 1.757f ),     vaQuaternion( 0.701f, -0.204f, -0.191f, 0.657f ),   keyTime,     2.0f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 136
     m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( 0.105f, -1.202f, 1.969f ),     vaQuaternion( 0.539f, 0.558f, 0.453f, 0.439f ),     keyTime,     9.0f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 144
     m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( -6.314f, -1.144f, 1.417f ),    vaQuaternion( 0.385f, 0.672f, 0.549f, 0.314f ),     keyTime,    13.0f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 152
     m_cameraFlythroughController->AddKey( vaCameraControllerFlythrough::Keyframe( vaVector3( -15.027f, -3.197f, 2.179f ),   vaQuaternion( 0.480f, 0.519f, 0.519f, 0.480f ), keyTime+0.01f,  13.0f, defaultDoFRange ) ); keyTime+=keyTimeStep;   // 160
@@ -894,9 +898,10 @@ VanillaSample::VanillaSample( vaRenderDevice & renderDevice, vaApplicationBase &
         auto & bloomSettings    = m_sceneMainView->Camera()->BloomSettings();
         exposureSettings.ExposureCompensation       = -0.4f;
         exposureSettings.UseAutoExposure            = true;     // disable for easier before/after comparisons
+        exposureSettings.Exposure                   = 0.0f;
         exposureSettings.AutoExposureKeyValue       = 0.5f;
-        exposureSettings.ExposureMax                = 4.0f;
-        exposureSettings.ExposureMin                = -4.0f;
+        exposureSettings.ExposureMax                = 4.5f;
+        exposureSettings.ExposureMin                = -4.5f;
         //exposureSettings.AutoExposureAdaptationSpeed = std::numeric_limits<float>::infinity();   // for testing purposes we're setting this to infinity
         
         tonemapSettings;
@@ -938,7 +943,7 @@ VanillaSample::VanillaSample( vaRenderDevice & renderDevice, vaApplicationBase &
 
     m_lastDeltaTime     = 0.0f;
 
-#ifndef VA_SAMPLE_BUILD_FOR_LAB
+#if !defined( VA_SAMPLE_BUILD_FOR_LAB ) && !defined( VA_SAMPLE_DEMO_BUILD )
     m_zoomTool          = std::make_shared<vaZoomTool>( GetRenderDevice() );
     m_imageCompareTool  = std::make_shared<vaImageCompareTool>(GetRenderDevice());
 #endif
@@ -1190,18 +1195,12 @@ void VanillaSample::OnTick( float deltaTime )
 
         if( prevScene != m_currentScene )
         {
-#if 0
-            m_currentSceneNew = m_currentScene->ToNew( );
-            m_currentSceneNew->SaveJSON( vaCore::GetMediaRootDirectoryNarrow( ) + m_currentSceneNew->Name() + ".vaScene" );
-
-            if( m_currentSceneNew->Name() == "LumberyardBistro" )
-            {
-                AddLumberyardTestLights( *m_currentSceneNew, GetRenderDevice().GetMeshManager().UnitSphere()->UIDObject_GetUID() /*, GetRenderDevice().GetMaterialManager().GetDefaultEmissiveLightMaterial()->UIDObject_GetUID()*/ );
-            }
-            m_sceneRenderer->SetScene( m_currentSceneNew );
-#else
-            m_sceneRenderer->SetScene( m_currentScene );
+#if 1
+            if( m_currentScene->Name() == "AmazonLumberyardBistro" )
+                AddLumberyardTestLights( *m_currentScene, GetRenderDevice().GetMeshManager().UnitSphere()->UIDObject_GetUID(), GetRenderDevice().GetMaterialManager().GetDefaultEmissiveLightMaterial()->UIDObject_GetUID() );
 #endif
+
+            m_sceneRenderer->SetScene( m_currentScene );
             m_presetCamerasDirty = true;
         }
 
@@ -1405,7 +1404,7 @@ void VanillaSample::UIPanelTick( vaApplicationBase & application )
         return;
     }
 
-#ifndef VA_SAMPLE_BUILD_FOR_LAB
+#if !defined( VA_SAMPLE_BUILD_FOR_LAB ) && !defined( VA_SAMPLE_DEMO_BUILD )
 
 #ifndef VA_GTAO_SAMPLE
     ImGui::Text( "Scene files in %s", vaCore::GetMediaRootDirectoryNarrow().c_str() );
@@ -1458,9 +1457,15 @@ void VanillaSample::UIPanelTick( vaApplicationBase & application )
     else
     // Benchmarking/scripting
     // if( m_settings.SceneChoice == VanillaSample::SceneSelectionType::LumberyardBistro )
-#endif // VA_SAMPLE_BUILD_FOR_LAB
+#endif // !defined(VA_SAMPLE_BUILD_FOR_LAB) && !defined(VA_SAMPLE_DEMO_BUILD)
     {
         ScriptedTests( application );
+    }
+
+    if( !m_allLoadedPrecomputedAndStable )
+    {
+        ImGui::TextColored( {1.0f, 0.3f, 0.3f, 1.0f}, "Scene/assets loading (or asset/shader errors)" );
+        ImGui::Separator( );
     }
 
 #endif
@@ -1606,7 +1611,7 @@ void VanillaSample::ScriptedGTAOAutoTune( vaApplicationBase & application )
             autoTune.AddSearchSetting( "FalloffRange",              &activeSettings.FalloffRange            , 0.0f, 0.95f );
             //autoTune.AddSearchSetting( "SampleDistributionPower",   &activeSettings.SampleDistributionPower , 0.8f, 2.5f );
             //autoTune.AddSearchSetting( "ThinOccluderCompensation",  &activeSettings.ThinOccluderCompensation    , 0.0f, 0.4f );
-            //autoTune.AddSearchSetting( "FinalValuePower",           &activeSettings.FinalValuePower         , 0.8f, 2.5f );
+            //autoTune.AddSearchSetting( "FinalValuePower",           &activeSettings.FinalValuePower         , 0.8f, 3.0f );
 
             VA_LOG( "Starting GTAO auto-tune..." );
 
@@ -1627,7 +1632,7 @@ void VanillaSample::ScriptedGTAOAutoTune( vaApplicationBase & application )
                 {
                     gtao->ReferenceRTAOEnabled( )       = false;
                     gtao->Settings().QualityLevel       = 2;
-                    gtao->Settings().DenoiseLevel       = 1;
+                    gtao->Settings().DenoisePasses      = 2;
                     inputsReady = true;
                 }
 
@@ -1922,6 +1927,59 @@ void VanillaSample::ScriptedAutoBench( vaApplicationBase & application )
     }
 }
 
+void VanillaSample::ScriptedDemo( vaApplicationBase & application )
+{
+    application;
+    //if( !application.IsFullscreen() )
+    //    ImGui::TextColored( {1.0f, 0.3f, 0.3f, 1.0f}, "!! app not fullscreen !!" );
+
+    bool effectEnabled = m_sceneMainView->Settings().AOOption == 3;
+    ImGui::Checkbox( "Enable XeGTAO", &effectEnabled );
+    if( effectEnabled )
+        m_sceneMainView->Settings().AOOption = 3;
+    else
+        m_sceneMainView->Settings().AOOption = 0;
+
+    VA_GENERIC_RAII_SCOPE( ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV( (float)vaMath::Frac(application.GetTimeFromStart()*0.3), 0.6f, 0.6f));, ImGui::PopStyleColor(); );
+
+    if( ImGui::Button( "RUN FLYTHROUGH ('Esc' to stop)", {-1, 0} ) )
+    {
+        m_miniScript.Start( [ thisPtr = this, &application ] (vaMiniScriptInterface & msi)
+        {
+            // this sets up some globals and also backups all the sample settings
+            AutoBenchTool autobench( *thisPtr, msi, false, false );
+
+            // animation stuff
+            autobench.SetUIStatusInfo( "Playing flythrough; hit 'F1' to show/hide UI, 'Esc' to stop" );
+
+            vaUIManager::GetInstance( ).SetVisible( false );
+            application.SetVsync( true );
+
+            thisPtr->SetFlythroughCameraEnabled( true );
+            thisPtr->GetFlythroughCameraController( )->SetPlaySpeed( 1.0f );
+
+            thisPtr->GetFlythroughCameraController( )->SetPlayTime( 0 );
+
+
+            while( true )
+            {
+                //autobench.SetUIStatusInfo( status + ", " + vaStringTools::Format( "%.1f%%", (float)testFrame/(float)(c_totalFrameCount-1)*100.0f ) );
+
+                //thisPtr->GetFlythroughCameraController( )->SetPlayTime( testFrame * c_frameDeltaTime );
+                if( !msi.YieldExecution( ) || autobench.GetShouldStop() || application.GetInputKeyboard()->IsKeyDown(KK_ESCAPE) )
+                {
+                    vaUIManager::GetInstance( ).SetVisible( true );
+                    return;
+                }
+
+                // // totalTime += msi.GetDeltaTime();
+                // if( warmupPass )
+                //     testFrame += 3;
+            }
+        } );        
+    }
+}
+
 void VanillaSample::ScriptedCameras( vaApplicationBase & application )
 {
     application;
@@ -2029,7 +2087,7 @@ void VanillaSample::ScriptedTests( vaApplicationBase & application )
     isDebug = true;
 #endif
 
-#ifndef VA_SAMPLE_BUILD_FOR_LAB
+#if !defined( VA_SAMPLE_BUILD_FOR_LAB ) && !defined( VA_SAMPLE_DEMO_BUILD )
     ImGuiTreeNodeFlags headerFlags = 0;
     // headerFlags |= ImGuiTreeNodeFlags_Framed;
     // headerFlags |= ImGuiTreeNodeFlags_DefaultOpen;
@@ -2143,6 +2201,9 @@ void VanillaSample::ScriptedTests( vaApplicationBase & application )
         ScriptedAutoBench( application );
 #endif
 
+//#if defined( VA_SAMPLE_DEMO_BUILD )
+    ScriptedDemo( application );
+//#endif
 
 }
 
@@ -2618,7 +2679,7 @@ void InitWorkspaces( )
     WORKSPACE( Sample11_Basic3DMesh );
     WORKSPACE( Sample12_PostProcess );
     WORKSPACE( Sample13_Tonemap );
-    WORKSPACE( Sample14_PointShadow );
+    WORKSPACE( Sample14_SSAO );
     WORKSPACE( Sample15_BasicScene );
     WORKSPACE( Sample16_Particles );
     WORKSPACE( Sample17_PoissonDiskGenerator );

@@ -23,7 +23,9 @@
 
 namespace Vanilla
 {
-    constexpr int VA_ALIGN_PAD = std::hardware_destructive_interference_size;
+    constexpr uint32             VA_GOOD_PARALLEL_FOR_CHUNK_SIZE = 256;
+
+    constexpr int       VA_ALIGN_PAD = std::hardware_destructive_interference_size;
 
     // this is going to replace vaThreading over time
     class vaConcurrency sealed
@@ -106,7 +108,6 @@ namespace Vanilla
 
         std::atomic_bool            m_consuming         = false;
 
-        std::mutex                  m_transitionMutex;
         std::mutex                  m_masterListMutex;
         std::vector<ElementType>    m_masterList;
 
@@ -172,7 +173,7 @@ namespace Vanilla
 
             // if full, first commit
             if( block->Counter == BlockElementCount )
-                CommitInner( *block );
+                CommitSelfLock( *block );
 
             block->Data[block->Counter++] = std::move(element);
         }
@@ -189,11 +190,9 @@ namespace Vanilla
 
         void                        Clear( )
         {
-            //assert( m_consuming.load( ) );
-            std::unique_lock transitionLock( m_transitionMutex );
             std::unique_lock masterLock( m_masterListMutex );
             for( int i = 0; i < c_localBlockCount; i++ )
-                CommitOuter( m_localBlocks[i] );
+                CommitNoLock( m_localBlocks[i] );
             m_masterList.clear(); // std::swap( m_masterList, std::vector<ElementType>{} );
         }
 
@@ -204,7 +203,7 @@ namespace Vanilla
 
         bool                        Transition( bool consuming ) noexcept
         {
-            std::unique_lock transitionLock( m_transitionMutex );
+            std::unique_lock masterLock( m_masterListMutex );
 
             bool prevVal = m_consuming.exchange( consuming );
             if( prevVal == consuming )
@@ -212,20 +211,18 @@ namespace Vanilla
 
             if( !prevVal )  // transitioning from appending to consuming
             {
-                std::unique_lock masterLock( m_masterListMutex );
                 for( int i = 0; i < c_localBlockCount; i++ )
-                    CommitOuter( m_localBlocks[i] );
+                    CommitNoLock( m_localBlocks[i] );
             }
             else
             {
                 // transitioning from consuming to appending
-                std::unique_lock masterLock( m_masterListMutex );
                 m_masterList.clear( );
             }
             return true;
         }
 
-        void                        CommitInner( LocalBlock & block ) noexcept
+        void                        CommitSelfLock( LocalBlock & block ) noexcept
         {
             std::unique_lock lock( m_masterListMutex );
             for( int i = 0; i < BlockElementCount; i++ )
@@ -233,7 +230,7 @@ namespace Vanilla
             block.Counter = 0;
         }
 
-        void                        CommitOuter( LocalBlock & block ) noexcept
+        void                        CommitNoLock( LocalBlock & block ) noexcept
         {
             for( int i = 0; i < block.Counter; i++ )
                 m_masterList.emplace_back( std::move(block.Data[i]) );
@@ -269,7 +266,6 @@ namespace Vanilla
 
         std::atomic_bool            m_consuming         = false;
 
-        std::mutex                      m_transitionMutex;
         std::mutex                      m_masterSetMutex;
         std::unordered_set<ElementType> m_masterSet;
 
@@ -301,7 +297,7 @@ namespace Vanilla
 
             // if full, first commit
             if( block->Data.size() == BlockElementCount )
-                CommitInner( *block );
+                CommitSelfLock( *block );
 
             block->Data.insert( element );
         }
@@ -309,10 +305,9 @@ namespace Vanilla
         void                        Clear( )
         {
             //assert( m_consuming.load( ) );
-            std::unique_lock transitionLock( m_transitionMutex );
             std::unique_lock masterLock( m_masterSetMutex );
             for( int i = 0; i < c_localBlockCount; i++ )
-                CommitOuter( m_localBlocks[i] );
+                CommitNoLock( m_localBlocks[i] );
             m_masterSet.clear();// std::swap( m_masterSet, std::unordered_set<ElementType>{} );
         }
 
@@ -320,7 +315,7 @@ namespace Vanilla
 
         bool                        Transition( bool consuming ) noexcept
         {
-            std::unique_lock transitionLock( m_transitionMutex );
+            std::unique_lock masterLock( m_masterSetMutex );
 
             bool prevVal = m_consuming.exchange( consuming );
             if( prevVal == consuming )
@@ -328,26 +323,24 @@ namespace Vanilla
 
             if( !prevVal )  // transitioning from appending to consuming
             {
-                std::unique_lock masterLock( m_masterSetMutex );
                 for( int i = 0; i < c_localBlockCount; i++ )
-                    CommitOuter( m_localBlocks[i] );
+                    CommitNoLock( m_localBlocks[i] );
             }
             else
             {
                 // transitioning from consuming to appending
-                std::unique_lock masterLock( m_masterSetMutex );
                 m_masterSet.clear( );
             }
             return true;
         }
 
-        void                        CommitInner( LocalBlock & block ) noexcept
+        void                        CommitSelfLock( LocalBlock & block ) noexcept
         {
             std::unique_lock lock( m_masterSetMutex );
-            CommitOuter( block );
+            CommitNoLock( block );
         }
 
-        void                        CommitOuter( LocalBlock & block ) noexcept
+        void                        CommitNoLock( LocalBlock & block ) noexcept
         {
             m_masterSet.merge( block.Data );
             block.Data.clear( );

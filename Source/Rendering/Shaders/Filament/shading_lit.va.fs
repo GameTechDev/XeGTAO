@@ -318,35 +318,35 @@ pixel.uThickness = 0.0;
  *
  * Returns a pre-exposed HDR RGBA color in linear space.
  */
-vec4 evaluateLights(const MaterialInputs material) {
-    PixelParams pixel;
-    getPixelParams(material, pixel);
-
-    // Ideally we would keep the diffuse and specular components separate
-    // until the very end but it costs more ALUs on mobile. The gains are
-    // currently not worth the extra operations
-    vec3 color = vec3(0.0);
-
-    // We always evaluate the IBL as not having one is going to be uncommon,
-    // it also saves 1 shader variant
-    evaluateIBL(material, pixel, color, true, true);
-
-#if defined(HAS_DIRECTIONAL_LIGHTING)
-    evaluateDirectionalLight(material, pixel, color);
-#endif
-
-#if defined(HAS_DYNAMIC_LIGHTING)
-    evaluatePunctualLights(pixel, color);
-#endif
-
-#if defined(BLEND_MODE_FADE) && !defined(SHADING_MODEL_UNLIT)
-    // In fade mode we un-premultiply baseColor early on, so we need to
-    // premultiply again at the end (affects diffuse and specular lighting)
-    color *= material.baseColor.a;
-#endif
-
-    return vec4(color, computeDiffuseAlpha(material.baseColor.a));
-}
+// vec4 evaluateLights(const MaterialInputs material) {
+//     PixelParams pixel;
+//     getPixelParams(material, pixel);
+// 
+//     // Ideally we would keep the diffuse and specular components separate
+//     // until the very end but it costs more ALUs on mobile. The gains are
+//     // currently not worth the extra operations
+//     vec3 color = vec3(0.0);
+// 
+//     // We always evaluate the IBL as not having one is going to be uncommon,
+//     // it also saves 1 shader variant
+//     evaluateIBL(material, pixel, color, true, true);
+// 
+// #if defined(HAS_DIRECTIONAL_LIGHTING)
+//     evaluateDirectionalLight(material, pixel, color);
+// #endif
+// 
+// #if defined(HAS_DYNAMIC_LIGHTING)
+//     evaluatePunctualLights(pixel, color);
+// #endif
+// 
+// #if defined(BLEND_MODE_FADE) && !defined(SHADING_MODEL_UNLIT)
+//     // In fade mode we un-premultiply baseColor early on, so we need to
+//     // premultiply again at the end (affects diffuse and specular lighting)
+//     color *= material.baseColor.a;
+// #endif
+// 
+//     return vec4(color, computeDiffuseAlpha(material.baseColor.a));
+// }
 
 void addEmissive(const MaterialInputs material, inout vec4 color) {
 #if defined(MATERIAL_HAS_EMISSIVE)

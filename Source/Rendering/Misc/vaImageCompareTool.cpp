@@ -16,12 +16,14 @@
 
 #include "IntegratedExternals/vaImguiIntegration.h"
 
+#include "Rendering/Shaders/vaHelperToolsShared.h"
+
 using namespace Vanilla;
 
 
 vaImageCompareTool::vaImageCompareTool( const vaRenderingModuleParams & params ) : vaRenderingModule( params ),
     m_visualizationPS( params ),
-    m_constants( params ),
+    m_constants( vaConstantBuffer::Create<ImageCompareToolShaderConstants>( params.RenderDevice, "ImageCompareToolShaderConstants" ) ),
     vaUIPanel( "CompareTool", -2, true, vaUIPanel::DockLocation::DockedLeftBottom )
 {
     m_screenshotCapturePath = L"";
@@ -31,7 +33,7 @@ vaImageCompareTool::vaImageCompareTool( const vaRenderingModuleParams & params )
     m_referencePNGTextureStoragePath = vaCore::GetExecutableDirectory() + L"reference.png";
     m_initialized = false;
 
-    m_visualizationPS->CreateShaderFromFile( "vaHelperTools.hlsl", "ImageCompareToolVisualizationPS", vaShaderMacroContaner{}, false );
+    m_visualizationPS->CompileFromFile( "vaHelperTools.hlsl", "ImageCompareToolVisualizationPS", vaShaderMacroContaner{}, false );
 }
 
 vaImageCompareTool::~vaImageCompareTool( )
@@ -185,7 +187,7 @@ void vaImageCompareTool::RenderTick( vaRenderDeviceContext & renderContext, cons
 
             ImageCompareToolShaderConstants consts; memset( &consts, 0, sizeof(consts) );
             consts.VisType = (int)m_visualizationType;
-            m_constants.Upload( renderContext, consts );
+            m_constants->Upload( renderContext, consts );
 
             vaGraphicsItem renderItem;
             m_renderDevice.FillFullscreenPassGraphicsItem( renderItem );

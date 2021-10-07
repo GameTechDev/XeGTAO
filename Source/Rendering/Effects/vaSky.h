@@ -12,11 +12,7 @@
 
 #include "Core/vaCoreIncludes.h"
 
-#include "Rendering/vaRenderingIncludes.h"
-
-#ifndef __INTELLISENSE__
-#include "Rendering/Shaders/vaSky.hlsl"
-#endif
+#include "Rendering/vaRendering.h"
 
 namespace Vanilla
 {
@@ -61,9 +57,7 @@ namespace Vanilla
         //shared_ptr<vaDynamicVertexBuffer>  m_screenTriangleVertexBuffer;
         //shared_ptr<vaDynamicVertexBuffer>  m_screenTriangleVertexBufferReversedZ;
 
-        vaTypedConstantBufferWrapper< SimpleSkyConstants >
-                                        m_constantsBuffer;
-
+        shared_ptr<vaConstantBuffer>    m_constantBuffer;
     protected:
         VA_RENDERING_MODULE_MAKE_FRIENDS();
         vaSky( const vaRenderingModuleParams & params );

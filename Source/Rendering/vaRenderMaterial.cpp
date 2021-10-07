@@ -279,14 +279,14 @@ vaRenderMaterial::vaRenderMaterial( const vaRenderingModuleParams & params ) : v
     vaAssetResource( vaSaferStaticCast< const vaRenderMaterialConstructorParams &, const vaRenderingModuleParams &>( params ).UID), 
     //m_trackee( vaSaferStaticCast< const vaRenderMaterialConstructorParams &, const vaRenderingModuleParams &>( params ).RenderMaterialManager.GetRenderMaterialTracker( ), this ), 
     m_renderMaterialManager( vaSaferStaticCast< const vaRenderMaterialConstructorParams &, const vaRenderingModuleParams &>( params ).RenderMaterialManager )
-    //,    m_constantsBuffer( params )
+    //,    m_constantBuffer( params )
 {
     m_shaderMacros.reserve( 16 );
     m_shaderMacrosDirty = true;
     m_shadersDirty = true;
 
     {
-        std::shared_lock managerLock( m_renderMaterialManager.Mutex() );
+        std::unique_lock managerLock( m_renderMaterialManager.Mutex() );
         m_globalIndex = m_renderMaterialManager.Materials().Insert( this );
     }
 
@@ -296,7 +296,7 @@ vaRenderMaterial::vaRenderMaterial( const vaRenderingModuleParams & params ) : v
 vaRenderMaterial::~vaRenderMaterial()
 {
     {
-        std::shared_lock managerLock( m_renderMaterialManager.Mutex() );
+        std::unique_lock managerLock( m_renderMaterialManager.Mutex() );
         m_renderMaterialManager.Materials().Remove( m_globalIndex );
     }
 }
@@ -504,10 +504,8 @@ void vaRenderMaterial::UpdateShaderMacros( )
     m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_DECAL",                     ( ( IsDecal()       ) ? ( "1" ) : ( "0" ) ) ) );
     m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_ALPHATEST",                 ( ( IsAlphaTested() ) ? ( "1" ) : ( "0" ) ) ) );
     //m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_ALPHATEST_THRESHOLD",       vaStringTools::Format( "(%.3f)", m_materialSettings.AlphaTestThreshold ) ) );
-    m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_ACCEPTSHADOWS",             ( ( m_materialSettings.ReceiveShadows    ) ? ( "1" ) : ( "0" ) ) ) );
     m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_WIREFRAME",                 ( ( m_materialSettings.Wireframe         ) ? ( "1" ) : ( "0" ) ) ) );
     m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_ADVANCED_SPECULAR_SHADER",  ( ( m_materialSettings.AdvancedSpecularShader ) ? ( "1" ) : ( "0" ) ) ) );
-    m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_SPECIAL_EMISSIVE_LIGHT",    ( ( m_materialSettings.SpecialEmissiveLight ) ? ( "1" ) : ( "0" ) ) ) );
 
     //if( m_materialSettings.LocalIBLNormalBasedBias != 0 )
     //    m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_LOCALIBL_NORMALBIAS",       vaStringTools::Format( "(%.3f)", m_materialSettings.LocalIBLNormalBasedBias ) ) );
@@ -694,10 +692,10 @@ bool vaRenderMaterial::SerializeUnpacked( vaXMLSerializer & serializer, const st
 
     VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<int32>( "FaceCull", (int32&)          m_materialSettings.FaceCull ) );
     VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "AlphaTestThreshold",         m_materialSettings.AlphaTestThreshold ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<bool>( "ReceiveShadows",              m_materialSettings.ReceiveShadows ) );
+    //VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<bool>( "ReceiveShadows",              m_materialSettings.ReceiveShadows ) );
     VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<bool>( "Wireframe",                   m_materialSettings.Wireframe ) );
     VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<bool>( "AdvancedSpecularShader",      m_materialSettings.AdvancedSpecularShader,  m_materialSettings.AdvancedSpecularShader ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<bool>( "SpecialEmissiveLight",        m_materialSettings.SpecialEmissiveLight,    m_materialSettings.SpecialEmissiveLight ) );
+    //VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<bool>( "SpecialEmissiveLight",        m_materialSettings.SpecialEmissiveLight,    m_materialSettings.SpecialEmissiveLight ) );
     //VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<bool>( "NoDepthPrePass",              m_materialSettings.NoDepthPrePass,          m_materialSettings.NoDepthPrePass ) );
     /*VERIFY_TRUE_RETURN_ON_FALSE*/( serializer.Serialize<float>( "LocalIBLNormalBasedBias", m_materialSettings.LocalIBLNormalBasedBias ) );
     /*VERIFY_TRUE_RETURN_ON_FALSE*/( serializer.Serialize<float>( "LocalIBLBasedBias", m_materialSettings.LocalIBLBasedBias ) );
@@ -1659,11 +1657,11 @@ bool vaRenderMaterial::UIPropertiesDraw( vaApplicationBase & application )
         else if( settings.LayerMode == vaLayerMode::AlphaTest )
             ImGui::InputFloat( " AlphaTestThreshold", &settings.AlphaTestThreshold );
         settings.AlphaTestThreshold = vaMath::Clamp( settings.AlphaTestThreshold, 0.0f, 1.0f );
-        ImGui::Checkbox( "ReceiveShadows", &settings.ReceiveShadows );
+        //ImGui::Checkbox( "ReceiveShadows", &settings.ReceiveShadows );
         ImGui::Checkbox( "CastShadows", &settings.CastShadows );
         ImGui::Checkbox( "Wireframe", &settings.Wireframe );
         ImGui::Checkbox( "AdvancedSpecularShader", &settings.AdvancedSpecularShader );
-        ImGui::Checkbox( "SpecialEmissiveLight", &settings.SpecialEmissiveLight );
+        //ImGui::Checkbox( "SpecialEmissiveLight", &settings.SpecialEmissiveLight );
         //ImGui::Checkbox( "NoDepthPrePass", &settings.NoDepthPrePass );
 
         ImGui::InputFloat( "LocalIBLNormalBasedBias", &settings.LocalIBLNormalBasedBias );
@@ -1751,13 +1749,12 @@ vaRenderMaterialManager::vaRenderMaterialManager( const vaRenderingModuleParams 
         m_defaultEmissiveLightMaterial->SetupFromPreset( c_FilamentStandard );
 
         // how bright to show the light - no direct physical relationship
-        const float intensity = 30.0f;
 
         // this is to make the material shine when it's within the 'Size' area of a light - otherwise it's just black
         m_defaultEmissiveLightMaterial->SetInputSlot( "EmissiveColor",      vaVector3( 1.0f, 1.0f, 1.0f ), true, true );
-        m_defaultEmissiveLightMaterial->SetInputSlot( "EmissiveIntensity",  intensity, false, false );
+        m_defaultEmissiveLightMaterial->SetInputSlot( "EmissiveIntensity",  1.0f, false, false );
         auto settings = m_defaultEmissiveLightMaterial->GetMaterialSettings();
-        settings.SpecialEmissiveLight = true;
+        //settings.SpecialEmissiveLight = true;
         m_defaultEmissiveLightMaterial->SetMaterialSettings(settings);
 
         m_defaultEmissiveLightMaterial->SetInputSlot( "BaseColor",          vaVector4( 0.0f, 0.0f, 0.0f, 1.0f ), true, true );
@@ -1797,7 +1794,7 @@ vaRenderMaterialManager::~vaRenderMaterialManager( )
     m_defaultEmissiveLightMaterial = nullptr;
 
     {
-        std::shared_lock managerLock( Mutex() );
+        std::unique_lock managerLock( Mutex() );
         for( int i = (int)m_materials.PackedArray().size()-1; i>=0; i-- )
             m_materials.At(m_materials.PackedArray()[i])->UIDObject_Untrack();
 
@@ -1903,15 +1900,10 @@ vaRenderMaterialManager::FindOrCreateShaders( bool alphaTest, const vaRenderMate
         m_scratchShaderMacrosStorage.push_back( std::pair<string, string>( "VA_RM_SHADER_ID",   newShaders->UniqueIDString ) );
 
         // vertex input layout is here!
-        std::vector<vaVertexInputElementDesc> inputElements;
-        inputElements.push_back( { "SV_Position", 0,    vaResourceFormat::R32G32B32_FLOAT,       0, vaVertexInputElementDesc::AppendAlignedElement, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } );
-        inputElements.push_back( { "COLOR", 0,          vaResourceFormat::R8G8B8A8_UNORM,        0, vaVertexInputElementDesc::AppendAlignedElement, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } );
-        inputElements.push_back( { "NORMAL", 0,         vaResourceFormat::R32G32B32A32_FLOAT,    0, vaVertexInputElementDesc::AppendAlignedElement, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } );
-        inputElements.push_back( { "TEXCOORD", 0,       vaResourceFormat::R32G32B32A32_FLOAT,    0, vaVertexInputElementDesc::AppendAlignedElement, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } );
-        //inputElements.push_back( { "TEXCOORD", 1,       vaResourceFormat::R32G32_FLOAT,          0, vaVertexInputElementDesc::AppendAlignedElement, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } );
+        std::vector<vaVertexInputElementDesc> inputElements = vaRenderMesh::GetStandardInputLayout( );
 
         if( shaderSettings.VS_Standard.first != "" && shaderSettings.VS_Standard.second != "" )
-            newShaders->VS_Standard->CreateShaderAndILFromFile( shaderSettings.VS_Standard.first, shaderSettings.VS_Standard.second.c_str( ), inputElements, shaderMacros, false );
+            newShaders->VS_Standard->CompileVSAndILFromFile( shaderSettings.VS_Standard.first, shaderSettings.VS_Standard.second.c_str( ), inputElements, shaderMacros, false );
 //        else
 //            vaCore::Warning( "Material has no vertex shader!" );
 
@@ -1924,31 +1916,31 @@ vaRenderMaterialManager::FindOrCreateShaders( bool alphaTest, const vaRenderMate
                 gsEntry = "GS_Standard";
             }
             if( gsFile != "" && gsEntry != "" )
-                newShaders->GS_Standard->CreateShaderFromFile( gsFile, gsEntry.c_str( ), shaderMacros, false );
+                newShaders->GS_Standard->CompileFromFile( gsFile, gsEntry.c_str( ), shaderMacros, false );
         }
 
         if( alphaTest ) 
         {
             if( shaderSettings.PS_DepthOnly.first != "" && shaderSettings.PS_DepthOnly.second != "" )
-                newShaders->PS_DepthOnly->CreateShaderFromFile( shaderSettings.PS_DepthOnly.first, shaderSettings.PS_DepthOnly.second.c_str( ), shaderMacros, false );
+                newShaders->PS_DepthOnly->CompileFromFile( shaderSettings.PS_DepthOnly.first, shaderSettings.PS_DepthOnly.second.c_str( ), shaderMacros, false );
             else
                 VA_ERROR( "Material has no depth only pixel shader but alpha test is used!" );
         }
         else
             newShaders->PS_DepthOnly->Clear( true );
         if( shaderSettings.PS_Forward.first != "" && shaderSettings.PS_Forward.second != "" )
-            newShaders->PS_Forward->CreateShaderFromFile( shaderSettings.PS_Forward.first, shaderSettings.PS_Forward.second.c_str( ), shaderMacros, false );
+            newShaders->PS_Forward->CompileFromFile( shaderSettings.PS_Forward.first, shaderSettings.PS_Forward.second.c_str( ), shaderMacros, false );
 //        else
 //            vaCore::Warning( "Material has no pixel shader!" );
 //        if( shaderSettings.PS_Deferred.first != "" && shaderSettings.PS_Deferred.second != "" )
-//            newShaders->PS_Deferred->CreateShaderFromFile( shaderSettings.PS_Deferred.first, shaderSettings.PS_Deferred.second.c_str( ), shaderMacros, false );
+//            newShaders->PS_Deferred->CompileFromFile( shaderSettings.PS_Deferred.first, shaderSettings.PS_Deferred.second.c_str( ), shaderMacros, false );
         if( shaderSettings.PS_RichPrepass.first != "" && shaderSettings.PS_RichPrepass.second != "" )
-            newShaders->PS_RichPrepass->CreateShaderFromFile( shaderSettings.PS_RichPrepass.first, shaderSettings.PS_RichPrepass.second.c_str( ), shaderMacros, false );
+            newShaders->PS_RichPrepass->CompileFromFile( shaderSettings.PS_RichPrepass.first, shaderSettings.PS_RichPrepass.second.c_str( ), shaderMacros, false );
 
         // ***RAYTRACING ONLY SHADERS BELOW***
         shaderMacros.push_back( std::pair<string, string>( "VA_RAYTRACING",   "" ) );
         if( shaderSettings.CAL_LibraryFile != "" )
-            newShaders->CAL_Library->CreateShaderFromFile( shaderSettings.CAL_LibraryFile, "", shaderMacros, false );
+            newShaders->CAL_Library->CompileFromFile( shaderSettings.CAL_LibraryFile, "", shaderMacros, false );
         
         // finally, add to cache
         m_cachedShaders.insert( std::make_pair( cacheKey, newShaders ) );

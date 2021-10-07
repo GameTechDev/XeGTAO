@@ -80,7 +80,7 @@ namespace Vanilla
         template<typename StructType>
         void                                Upload( vaRenderDeviceContext & renderContext, const StructType & data ){ assert( sizeof(StructType) <= m_dataSize ); Upload( renderContext, &data, sizeof(StructType) ); }
 
-        virtual bool                        Create( int bufferSize, const void * initialData, bool dynamicUpload, int deviceContextIndex )                  = 0;
+        virtual bool                        Create( int bufferSize, const string & name, const void * initialData, bool dynamicUpload, int deviceContextIndex ) = 0;
         virtual void                        Destroy( )                                                                                                      = 0;
 
         virtual vaResourceBindSupportFlags  GetBindSupportFlags( ) const override                                   { return vaResourceBindSupportFlags::ConstantBuffer; }
@@ -88,13 +88,14 @@ namespace Vanilla
     public:
 
         // deviceContextIndex -1 means "device.GetMainContext().GetInstanceIndex()"
-        static shared_ptr<vaConstantBuffer> Create( vaRenderDevice & device, int bufferSize, const void * initialData, bool dynamicUpload, int deviceContextIndex = - 1 );
+        static shared_ptr<vaConstantBuffer> Create( vaRenderDevice & device, int bufferSize, const string & name, const void * initialData = nullptr, bool dynamicUpload = true, int deviceContextIndex = - 1 );
         
         // deviceContextIndex -1 means "device.GetMainContext().GetInstanceIndex()"
         template<typename StructType>
-        static shared_ptr<vaConstantBuffer> Create( vaRenderDevice & device, StructType * initialData, bool dynamicUpload, int deviceContextIndex = -1 )
-                                                { return Create( device, sizeof( StructType ), initialData, dynamicUpload, deviceContextIndex ); }
+        static shared_ptr<vaConstantBuffer> Create( vaRenderDevice & device, const string & name, StructType * initialData = nullptr, bool dynamicUpload = true, int deviceContextIndex = -1 )
+                                                { return Create( device, sizeof( StructType ), name, initialData, dynamicUpload, deviceContextIndex ); }
     };
+    // used to have "template< typename StructType, bool dynamicUploadT = false > class vaTypedConstantBufferWrapper" but that's gone to speed up compile times (since it required including shader<->cpp shared types in headers)
 
     /*
     class vaIndexBuffer : public vaRenderingModule, public virtual vaShaderResource
@@ -158,7 +159,7 @@ namespace Vanilla
         uint32                              GetVertexCount( ) const                                                 { return m_vertexCount; }
         uint                                GetByteStride( ) const                                                  { return m_vertexSize; }
 
-        virtual bool                        Create( int vertexCount, int vertexSize, const void * initialData, const string & name ) = 0;
+        virtual bool                        Create( int vertexCount, int vertexSize, const string & name, const void * initialData ) = 0;
         virtual void                        Destroy( )                                                                                                      = 0;
         virtual bool                        IsCreated( ) const                                                                                              = 0;
 
@@ -166,15 +167,15 @@ namespace Vanilla
 
         // Typed helpers
         template<typename VertexType>
-        bool                                Create( int vertexCount, const void * initialData, const string & name )              { return Create( vertexCount, sizeof( StructType ), name ); }
+        bool                                Create( int vertexCount, const string & name, const void * initialData = nullptr ) { return Create( vertexCount, sizeof( StructType ), name, initialData ); }
         template<typename VertexType>
         VertexType *                        GetMappedData( )                                                        { assert(IsMapped()); assert( sizeof(VertexType) == m_vertexSize ); return static_cast<VertexType*>(m_mappedData); }
         template<typename VertexType>
         void                                Upload( const std::vector<VertexType> vertices )                        { assert( sizeof(VertexType) == m_vertexSize ); Upload( vertices.data(), vertices.size() * m_vertexSize ); }
 
-        static shared_ptr<vaDynamicVertexBuffer> Create( vaRenderDevice & device, int vertexCount, int vertexSize, const void * initialData, const string & name );
+        static shared_ptr<vaDynamicVertexBuffer> Create( vaRenderDevice & device, int vertexCount, int vertexSize, const string & name, const void * initialData = nullptr );
         template<typename VertexType>
-        static shared_ptr<vaDynamicVertexBuffer> Create( vaRenderDevice & device, int vertexCount, const void* initialData, const string& name ) { return Create( device, vertexCount, (int)sizeof( VertexType ), initialData, name ); }
+        static shared_ptr<vaDynamicVertexBuffer> Create( vaRenderDevice & device, int vertexCount, const string & name, const void * initialData = nullptr ) { return Create( device, vertexCount, (int)sizeof( VertexType ), name, initialData ); }
     };
 
     enum class vaRenderBufferFlags : int32
@@ -268,16 +269,10 @@ namespace Vanilla
 
     public:
         // static helpers
-        static shared_ptr<vaRenderBuffer>   Create( vaRenderDevice & device, uint64 elementCount, uint32 structByteSize, vaRenderBufferFlags flags, void * initialData, const string & name );
-        static shared_ptr<vaRenderBuffer>   Create( vaRenderDevice & device, uint64 elementCount, vaResourceFormat format, vaRenderBufferFlags flags, void * initialData, const string & name );
+        static shared_ptr<vaRenderBuffer>   Create( vaRenderDevice & device, uint64 elementCount, uint32 structByteSize, vaRenderBufferFlags flags, const string & name, void * initialData = nullptr );
+        static shared_ptr<vaRenderBuffer>   Create( vaRenderDevice & device, uint64 elementCount, vaResourceFormat format, vaRenderBufferFlags flags, const string & name, void * initialData = nullptr );
         template<typename StructType>
-        static shared_ptr<vaRenderBuffer>   Create( vaRenderDevice & device, uint64 elementCount, vaRenderBufferFlags flags, StructType * initialData, const string & name )     { return Create( device, elementCount, sizeof( StructType ), flags, initialData, name ); }
-
-        static shared_ptr<vaRenderBuffer>   Create( vaRenderDevice & device, uint64 elementCount, uint32 structByteSize, vaRenderBufferFlags flags, const string & name )        { return Create( device, elementCount, structByteSize, flags, nullptr, name ); }
-        static shared_ptr<vaRenderBuffer>   Create( vaRenderDevice & device, uint64 elementCount, vaResourceFormat format, vaRenderBufferFlags flags, const string & name )      { return Create( device, elementCount, format, flags, nullptr, name ); }
-        template<typename StructType>
-        static shared_ptr<vaRenderBuffer>   Create( vaRenderDevice & device, uint64 elementCount, vaRenderBufferFlags flags, const string & name )                               { return Create<StructType>( device, elementCount, flags, nullptr, name ); }
-
+        static shared_ptr<vaRenderBuffer>   Create( vaRenderDevice & device, uint64 elementCount, vaRenderBufferFlags flags, const string & name, StructType * initialData = nullptr )     { return Create( device, elementCount, sizeof( StructType ), flags, name, initialData ); }
     };
 
     template< typename ElementType >
@@ -294,43 +289,4 @@ namespace Vanilla
         assert( index * m_elementByteSize < m_dataSize );
         Upload( renderContext, &value, index * m_elementByteSize, m_elementByteSize );
     }
-
-    // Constant buffer wrapper will always initialize underlying CPU/GPU data on construction because it knows the size
-    // Set dynamicUpload to true for constant buffers updated once per use (or per few uses), otherwise false
-    template< typename T, bool dynamicUploadT = false >
-    class vaTypedConstantBufferWrapper
-    {
-        shared_ptr< vaConstantBuffer >       m_cbuffer;
-
-    public:
-        // use 'dynamicUpload' for constant buffers updated once per use
-        explicit vaTypedConstantBufferWrapper( const vaRenderingModuleParams& params, const T* initialData = nullptr, int deviceContextIndex = 0 )
-        {
-            m_cbuffer = params.RenderDevice.CreateModule< vaConstantBuffer>( );
-            m_cbuffer->Create( sizeof( T ), initialData, dynamicUploadT, deviceContextIndex );
-        }
-        explicit vaTypedConstantBufferWrapper( vaRenderDevice & renderDevice, const T* initialData = nullptr, int deviceContextIndex = 0 )
-        {
-            m_cbuffer = renderDevice.CreateModule< vaConstantBuffer>( );
-            m_cbuffer->Create( sizeof( T ), initialData, dynamicUploadT, deviceContextIndex );
-        }
-        ~vaTypedConstantBufferWrapper( )    { }
-
-        inline void                         Create( vaRenderDevice & device, const T* initialData = nullptr, int deviceContextIndex = 0 ) 
-        { 
-            m_cbuffer = renderDevice.CreateModule< vaConstantBuffer>( );
-            m_cbuffer->Create( sizeof( T ), initialData, dynamicUploadT, deviceContextIndex );
-        };
-
-        inline void                         Destroy( )              { m_cbuffer = nullptr; }
-        
-        inline uint32                       GetDataSize( ) const                                            { assert(m_cbuffer != nullptr); return m_cbuffer->GetDataSize( ); }
-        inline void                         Upload( vaRenderDeviceContext & renderContext, const T & data ) { assert(m_cbuffer != nullptr); m_cbuffer->Upload( renderContext, (void*)&data, sizeof( T ) ); }
-
-        inline const shared_ptr<vaConstantBuffer> & 
-                                            GetBuffer( ) const          { assert(m_cbuffer != nullptr);     return m_cbuffer; }
-        inline operator const shared_ptr<vaConstantBuffer> & ( ) const  { assert(m_cbuffer != nullptr);     return m_cbuffer; }
-        inline operator vaFramePtr<vaConstantBuffer> ( ) const          { assert( m_cbuffer != nullptr );   return m_cbuffer; }
-    };
-
 }

@@ -27,21 +27,15 @@
 
 #include "Rendering/vaTextureHelpers.h"
 
+#include "Rendering/Shaders/vaRaytracingShared.h"
+
 
 using namespace Vanilla;
 
 vaGTAO::vaGTAO( const vaRenderingModuleParams & params ) : 
     vaRenderingModule( params ),
     vaUIPanel( "XeGTAO", 10, !VA_MINIMAL_UI_BOOL, vaUIPanel::DockLocation::DockedLeftBottom ),
-    m_CSPrefilterDepths16x16( params ),
-    m_CSGTAOLow( params ),
-    m_CSGTAOMedium( params ),
-    m_CSGTAOHigh( params ),
-    m_CSGTAOUltra( params ),
-    m_CSDenoise( params ),
-    m_CSPreDenoise( params ),
-    m_CSGenerateNormals( params ),
-    m_constantBuffer( params )
+    m_constantBuffer( vaConstantBuffer::Create<XeGTAO::GTAOConstants>( params.RenderDevice, "GTAOConstants" ) )
 {
     // Hilbert look-up texture! It's a 64 x 64 uint16 texture generated using XeGTAO::HilbertIndex
     {
@@ -126,17 +120,36 @@ void vaGTAO::UIPanelTick( vaApplicationBase & )
         ImGui::Checkbox( "Enable raytraced AO ground truth", &m_enableReferenceRTAO );
         if( ImGui::IsItemHovered( ) ) ImGui::SetTooltip( "Raytraced reference!" );
 
+        if( m_enableReferenceRTAO && m_outputBentNormals )
+        {
+            m_enableReferenceRTAO = false;
+            VA_LOG( "Sorry, ground truth for bent normals path not implemented yet" );
+        }
+
         if( !m_enableReferenceRTAO )
         {
             ImGui::Checkbox("Debug: Show GTAO debug viz", &m_debugShowGTAODebugViz);
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("Show GTAO debug visualization");
 
             if( ImGui::Checkbox("Debug: Show normals", &m_debugShowNormals) )
+            {
                 m_debugShowEdges &= !m_debugShowNormals;
+                m_debugShowBentNormals &= !m_debugShowNormals;
+            }
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("Show screen space normals");
 
+            if( m_outputBentNormals && ImGui::Checkbox("Debug: Show output bent normals", &m_debugShowBentNormals) )
+            {
+                m_debugShowEdges &= !m_debugShowBentNormals;
+                m_debugShowNormals &= !m_debugShowBentNormals;
+            }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Show generated screen space bent normals");
+
             if( ImGui::Checkbox("Debug: Show denoising edges", &m_debugShowEdges) )
+            {
                 m_debugShowNormals &= !m_debugShowEdges;
+                m_debugShowBentNormals &= !m_debugShowEdges;
+            }
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("Show edges not crossed by denoising blur");
 
 #ifndef VA_GTAO_SAMPLE
@@ -145,7 +158,7 @@ void vaGTAO::UIPanelTick( vaApplicationBase & )
                 m_CSGTAOHigh->DumpDisassembly( "XeGTAO_MainPass.txt" );
             ImGui::SameLine();
             if( ImGui::Button("Denoise" ) )
-                m_CSDenoise->DumpDisassembly( "XeGTAO_Denoise.txt" );
+                m_CSDenoisePass->DumpDisassembly( "XeGTAO_Denoise.txt" );
 #endif
         }
     }
@@ -167,11 +180,16 @@ bool vaGTAO::UpdateTexturesAndShaders( int width, int height )
     m_use16bitMath &= !m_use32bitDepth; // FP16 math not compatible with 32bit depths.
     newShaderMacros.push_back( std::pair<std::string, std::string>( "XE_GTAO_USE_HALF_FLOAT_PRECISION", (m_use16bitMath)?("1"):("0") ) );
 
+    if( m_outputBentNormals )
+        newShaderMacros.push_back(std::pair<std::string, std::string>( "XE_GTAO_COMPUTE_BENT_NORMALS", "" ) );
+
     // debugging switches
     if( m_debugShowGTAODebugViz )
         newShaderMacros.push_back(std::pair<std::string, std::string>( "XE_GTAO_SHOW_DEBUG_VIZ", "" ) );
     if( m_debugShowNormals )
         newShaderMacros.push_back( std::pair<std::string, std::string>( "XE_GTAO_SHOW_NORMALS", "" ) );
+    if( m_debugShowBentNormals )
+        newShaderMacros.push_back( std::pair<std::string, std::string>( "XE_GTAO_SHOW_BENT_NORMALS", "" ) );
     if( m_debugShowEdges )
         newShaderMacros.push_back( std::pair<std::string, std::string>( "XE_GTAO_SHOW_EDGES", "" ) );
 
@@ -179,10 +197,11 @@ bool vaGTAO::UpdateTexturesAndShaders( int width, int height )
         newShaderMacros.push_back( std::pair<std::string, std::string>( "XE_GTAO_HILBERT_LUT_AVAILABLE", "" ) );
 
     m_constantsMatchDefaults = 
-           (m_settings.RadiusMultiplier         == XE_GTAO_DEFAULT_RADIUS_MULTIPLIER           )
-        && (m_settings.SampleDistributionPower  == XE_GTAO_DEFAULT_SAMPLE_DISTRIBUTION_POWER   )
-        && (m_settings.FalloffRange             == XE_GTAO_DEFAULT_FALLOFF_RANGE               )
-        && (m_settings.ThinOccluderCompensation == XE_GTAO_DEFAULT_THIN_OCCLUDER_COMPENSATION  )
+           ( m_settings.RadiusMultiplier         == XE_GTAO_DEFAULT_RADIUS_MULTIPLIER           )
+        && ( m_settings.SampleDistributionPower  == XE_GTAO_DEFAULT_SAMPLE_DISTRIBUTION_POWER   )
+        && ( m_settings.FalloffRange             == XE_GTAO_DEFAULT_FALLOFF_RANGE               )
+        && ( m_settings.ThinOccluderCompensation == XE_GTAO_DEFAULT_THIN_OCCLUDER_COMPENSATION  )
+        && ( m_settings.FinalValuePower          == XE_GTAO_DEFAULT_FINAL_VALUE_POWER           )
         ;
 
     newShaderMacros.push_back( std::pair<std::string, std::string>( "XE_GTAO_USE_DEFAULT_CONSTANTS", (m_constantsMatchDefaults)?("1"):("0") ) );
@@ -197,20 +216,21 @@ bool vaGTAO::UpdateTexturesAndShaders( int width, int height )
     {
         m_shadersDirty = false;
 
-        string shaderFileToUse = "vaGTAO.hlsl";
-
         // to allow parallel background compilation but still ensure they're all compiled after this function
         std::vector<shared_ptr<vaShader>> allShaders;
-        m_CSPrefilterDepths16x16->CreateShaderFromFile( shaderFileToUse, "CSPrefilterDepths16x16", m_staticShaderMacros, false );   allShaders.push_back( m_CSPrefilterDepths16x16.get() );
-        m_CSGTAOLow->CreateShaderFromFile(              shaderFileToUse, "CSGTAOLow", m_staticShaderMacros, false );                allShaders.push_back( m_CSGTAOLow.get( ) );
-        m_CSGTAOMedium->CreateShaderFromFile(           shaderFileToUse, "CSGTAOMedium", m_staticShaderMacros, false );             allShaders.push_back( m_CSGTAOMedium.get() );
-        m_CSGTAOHigh->CreateShaderFromFile(             shaderFileToUse, "CSGTAOHigh", m_staticShaderMacros, false );               allShaders.push_back( m_CSGTAOHigh.get() );
-        m_CSGTAOUltra->CreateShaderFromFile(            shaderFileToUse, "CSGTAOUltra", m_staticShaderMacros, false );              allShaders.push_back( m_CSGTAOUltra.get() );
-        m_CSPreDenoise->CreateShaderFromFile(           shaderFileToUse, "CSPreDenoise", m_staticShaderMacros, false );             allShaders.push_back( m_CSPreDenoise.get() );
-        m_CSDenoise->CreateShaderFromFile(              shaderFileToUse, "CSDenoise", m_staticShaderMacros, false );                allShaders.push_back( m_CSDenoise.get() );
-        m_CSGenerateNormals->CreateShaderFromFile(      shaderFileToUse, "CSGenerateNormals", m_staticShaderMacros, false );        allShaders.push_back( m_CSGenerateNormals.get() );
+        string shaderFileToUse = "vaGTAO.hlsl";
 
-        for( auto sh : allShaders ) sh->WaitFinishIfBackgroundCreateActive();   // wait until shaders are compiled! this allows for parallel compilation
+        allShaders.push_back( m_CSPrefilterDepths16x16  = vaComputeShader::CreateFromFile( GetRenderDevice(), shaderFileToUse, "CSPrefilterDepths16x16",   m_staticShaderMacros, false ) );
+        allShaders.push_back( m_CSGTAOLow               = vaComputeShader::CreateFromFile( GetRenderDevice(), shaderFileToUse, "CSGTAOLow",                m_staticShaderMacros, false ) );        
+        allShaders.push_back( m_CSGTAOMedium            = vaComputeShader::CreateFromFile( GetRenderDevice(), shaderFileToUse, "CSGTAOMedium",             m_staticShaderMacros, false ) );     
+        allShaders.push_back( m_CSGTAOHigh              = vaComputeShader::CreateFromFile( GetRenderDevice(), shaderFileToUse, "CSGTAOHigh",               m_staticShaderMacros, false ) );       
+        allShaders.push_back( m_CSGTAOUltra             = vaComputeShader::CreateFromFile( GetRenderDevice(), shaderFileToUse, "CSGTAOUltra",              m_staticShaderMacros, false ) );      
+        allShaders.push_back( m_CSDenoisePass           = vaComputeShader::CreateFromFile( GetRenderDevice(), shaderFileToUse, "CSDenoisePass",            m_staticShaderMacros, false ) );    
+        allShaders.push_back( m_CSDenoiseLastPass       = vaComputeShader::CreateFromFile( GetRenderDevice(), shaderFileToUse, "CSDenoiseLastPass",        m_staticShaderMacros, false ) );
+        allShaders.push_back( m_CSGenerateNormals       = vaComputeShader::CreateFromFile( GetRenderDevice(), shaderFileToUse, "CSGenerateNormals",        m_staticShaderMacros, false ) );
+
+        // wait until shaders are compiled! this allows for parallel compilation but ensures all are compiled after this point
+        for( auto sh : allShaders ) sh->WaitFinishIfBackgroundCreateActive();
 
         hadChanges = true;
     }
@@ -222,6 +242,8 @@ bool vaGTAO::UpdateTexturesAndShaders( int width, int height )
 
     vaResourceFormat requiredDepthFormat = (m_use32bitDepth)?(vaResourceFormat::R32_FLOAT):(vaResourceFormat::R16_FLOAT);
     needsUpdate |= m_workingDepths == nullptr || m_workingDepths->GetResourceFormat() != requiredDepthFormat;
+    vaResourceFormat requiredAOTermFormat = (m_outputBentNormals)?(vaResourceFormat::R32_UINT):(vaResourceFormat::R8_UINT);
+    needsUpdate |= m_workingAOTerm == nullptr || m_workingAOTerm->GetResourceFormat() != requiredAOTermFormat;
 
     m_size.x    = width;
     m_size.y    = height;
@@ -235,8 +257,8 @@ bool vaGTAO::UpdateTexturesAndShaders( int width, int height )
         for( int mip = 0; mip < XE_GTAO_DEPTH_MIP_LEVELS; mip++ )
             m_workingDepthsMIPViews[mip] = vaTexture::CreateView( m_workingDepths, m_workingDepths->GetBindSupportFlags( ), vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaTextureFlags::None, mip, 1 );
         m_workingEdges          = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R8_UNORM, m_size.x, m_size.y, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
-        m_workingVisibility     = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R16_FLOAT, m_size.x, m_size.y, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
-        m_workingVisibilityPong = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R16_FLOAT, m_size.x, m_size.y, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
+        m_workingAOTerm         = vaTexture::Create2D( GetRenderDevice(), requiredAOTermFormat, m_size.x, m_size.y, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
+        m_workingAOTermPong     = vaTexture::Create2D( GetRenderDevice(), requiredAOTermFormat, m_size.x, m_size.y, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
 
         if( m_generateNormals )
         {
@@ -247,8 +269,8 @@ bool vaGTAO::UpdateTexturesAndShaders( int width, int height )
         m_debugImage->SetName( "XeGTAO_DebugImage" );
         m_workingDepths->SetName( "XeGTAO_WorkingDepths" );
         m_workingEdges->SetName( "XeGTA_WorkingEdges" );
-        m_workingVisibility->SetName( "XeGTAO_WorkingVisibility" );
-        m_workingVisibilityPong->SetName( "XeGTAO_WorkingVisibilityPong" );
+        m_workingAOTerm->SetName( "XeGTAO_WorkingAOTerm1" );
+        m_workingAOTermPong->SetName( "XeGTAO_WorkingAOTerm2" );
     }
 
     return hadChanges;
@@ -260,15 +282,25 @@ void vaGTAO::UpdateConstants( vaRenderDeviceContext & renderContext, const vaMat
 
     XeGTAO::GTAOUpdateConstants( consts, m_size.x, m_size.y, m_settings, &projMatrix._11, true, (usingTAA)?(GetRenderDevice().GetCurrentFrameIndex()%256):(0) );
       
-    m_constantBuffer.Upload( renderContext, consts );
+    m_constantBuffer->Upload( renderContext, consts );
 }
 
-vaDrawResultFlags vaGTAO::Compute( vaRenderDeviceContext & renderContext, const vaCameraBase & camera, bool usingTAA, const shared_ptr<vaTexture> & outputAO, const shared_ptr<vaTexture> & inputDepth, const shared_ptr<vaTexture> & inputNormals )
+vaDrawResultFlags vaGTAO::Compute( vaRenderDeviceContext & renderContext, const vaCameraBase & camera, bool usingTAA, bool outputBentNormals, const shared_ptr<vaTexture> & outputAO, const shared_ptr<vaTexture> & inputDepth, const shared_ptr<vaTexture> & inputNormals )
 {
     assert( outputAO->GetSize( ) == inputDepth->GetSize( ) );
     assert( inputDepth->GetSampleCount( ) == 1 ); // MSAA no longer supported!
 
     m_generateNormals |= inputNormals == nullptr;   // if normals not provided, we must generate them ourselves
+
+    m_outputBentNormals = outputBentNormals;
+    
+    if( !m_outputBentNormals ) m_debugShowBentNormals = false;
+
+    // when using bent normals, use R32_UINT, otherwise use R8_UINT; these could be anything else as long as the shading side matches
+    if( outputBentNormals )
+    { assert( outputAO->GetResourceFormat() == vaResourceFormat::R32_UINT ); }
+    else
+    { assert( outputAO->GetResourceFormat() == vaResourceFormat::R8_UINT ); }
 
     UpdateTexturesAndShaders( inputDepth->GetSizeX( ), inputDepth->GetSizeY( ) );
 
@@ -340,35 +372,28 @@ vaDrawResultFlags vaGTAO::Compute( vaRenderDeviceContext & renderContext, const 
 
         computeItem.SetDispatch( (m_size.x + XE_GTAO_NUMTHREADS_X-1) / XE_GTAO_NUMTHREADS_X, (m_size.y + XE_GTAO_NUMTHREADS_Y-1) / XE_GTAO_NUMTHREADS_Y, 1 );
 
-        renderContext.ExecuteSingleItem( computeItem, vaRenderOutputs::FromUAVs( m_workingVisibility, m_workingEdges, m_debugImage ), &drawAttributes );
+        renderContext.ExecuteSingleItem( computeItem, vaRenderOutputs::FromUAVs( m_workingAOTerm, m_workingEdges, m_debugImage ), &drawAttributes );
     }
-    bool twoPassDenoise = m_settings.DenoiseLevel == 2;
+
     {
-        VA_TRACE_CPUGPU_SCOPE( Denoise, renderContext );
+        VA_TRACE_CPUGPU_SCOPE( Denoise, renderContext ); 
+        const int passCount = std::max(1,m_settings.DenoisePasses); // even without denoising we have to run a single last pass to output correct term into the external output texture
+        for( int i = 0; i < passCount; i++ ) 
+        {
+            const bool lastPass = i == passCount-1;
+            VA_TRACE_CPUGPU_SCOPE( DenoisePass, renderContext );
 
-        computeItem.ComputeShader = (twoPassDenoise)?(m_CSPreDenoise):(m_CSDenoise);
+            computeItem.ComputeShader = (lastPass)?(m_CSDenoiseLastPass):(m_CSDenoisePass);
 
-        // input SRVs
-        computeItem.ShaderResourceViews[0] = m_workingVisibility;
-        computeItem.ShaderResourceViews[1] = m_workingEdges;
+            // input SRVs
+            computeItem.ShaderResourceViews[0] = m_workingAOTerm;   // see std::swap below
+            computeItem.ShaderResourceViews[1] = m_workingEdges;
 
-        computeItem.SetDispatch( (m_size.x + XE_GTAO_DENOISE_INTERIOR_X-1) / XE_GTAO_DENOISE_INTERIOR_X, (m_size.y + XE_GTAO_DENOISE_INTERIOR_Y-1) / XE_GTAO_DENOISE_INTERIOR_Y, 1 );
+            computeItem.SetDispatch( (m_size.x + (XE_GTAO_NUMTHREADS_X*2)-1) / (XE_GTAO_NUMTHREADS_X*2), (m_size.y + XE_GTAO_NUMTHREADS_Y-1) / XE_GTAO_NUMTHREADS_Y, 1 );
 
-        renderContext.ExecuteSingleItem( computeItem, vaRenderOutputs::FromUAVs( (twoPassDenoise)?(m_workingVisibilityPong):(outputAO), nullptr, m_debugImage ), &drawAttributes );
-    }
-    if( twoPassDenoise )
-    {
-        VA_TRACE_CPUGPU_SCOPE( DenoisePassTwo, renderContext );
-
-        computeItem.ComputeShader = m_CSDenoise;
-
-        // input SRVs
-        computeItem.ShaderResourceViews[0] = m_workingVisibilityPong;
-        computeItem.ShaderResourceViews[1] = m_workingEdges;
-
-        computeItem.SetDispatch( (m_size.x + XE_GTAO_DENOISE_INTERIOR_X-1) / XE_GTAO_DENOISE_INTERIOR_X, (m_size.y + XE_GTAO_DENOISE_INTERIOR_Y-1) / XE_GTAO_DENOISE_INTERIOR_Y, 1 );
-
-        renderContext.ExecuteSingleItem( computeItem, vaRenderOutputs::FromUAVs( outputAO, nullptr, m_debugImage ), &drawAttributes );
+            renderContext.ExecuteSingleItem( computeItem, vaRenderOutputs::FromUAVs( (lastPass)?(outputAO):(m_workingAOTermPong), nullptr, m_debugImage ), &drawAttributes );
+            std::swap( m_workingAOTerm, m_workingAOTermPong );      // ping becomes pong, pong becomes ping.
+        }
     }
 
     return vaDrawResultFlags::None;
@@ -390,7 +415,7 @@ vaDrawResultFlags vaGTAO::ComputeReferenceRTAO( vaRenderDeviceContext & renderCo
         vaShaderMacroContaner macros = { { "VA_RAYTRACING", "" } };
 
         m_referenceRTAOShaders = GetRenderDevice().CreateModule<vaShaderLibrary>( );
-        m_referenceRTAOShaders->CreateShaderFromFile( "vaGTAO_RT.hlsl", "", macros, true ); //, { "VA_RTAO_MAX_NUM_BOUNCES", vaStringTools::Format("%d", maxNumBounces) } }, true );
+        m_referenceRTAOShaders->CompileFromFile( "vaGTAO_RT.hlsl", "", macros, true ); //, { "VA_RTAO_MAX_NUM_BOUNCES", vaStringTools::Format("%d", maxNumBounces) } }, true );
 
         m_referenceRTAOConstantsBuffer              = vaRenderBuffer::Create<XeGTAO::ReferenceRTAOConstants>( GetRenderDevice(), 1, vaRenderBufferFlags::None, "ReferenceRTAOConstantsGPU" );
         //m_referenceRTAOConstantsBufferReadback      = vaRenderBuffer::Create<XeGTAO::ReferenceRTAOConstants>( GetRenderDevice(), 1, vaRenderBufferFlags::Readback, "ReferenceRTAOConstantsReadback" );
@@ -441,11 +466,12 @@ vaDrawResultFlags vaGTAO::ComputeReferenceRTAO( vaRenderDeviceContext & renderCo
 
     vaRaytraceItem raytraceAO;
     raytraceAO.ShaderLibrary            = m_referenceRTAOShaders;
-    raytraceAO.ShaderEntryRayGen        = "AORaygen";
-    raytraceAO.ShaderEntryAnyHit        = ""; // if empty, material hit test will be used
-    raytraceAO.ShaderEntryClosestHit    = "AOClosestHit";
-    raytraceAO.ShaderEntryMiss          = "AOMiss";
+    raytraceAO.RayGen        = "AORaygen";
+    raytraceAO.AnyHit        = ""; // if empty, material hit test will be used
+    raytraceAO.ClosestHit    = "AOClosestHit";
+    raytraceAO.Miss          = "AOMiss";
     raytraceAO.MaxRecursionDepth        = 1; // <-> switched to looped path tracing approach, no recursion needed <-> REF_RTAO_MAX_BOUNCES+2;   // +2 is because first bounce is the primary camera ray (not yet computing AO)
+    raytraceAO.MaxPayloadSize           = sizeof(ShaderRayPayloadGeneric);
     raytraceAO.ConstantBuffers[0]       = m_constantBuffer;    // <- not really needed/used at the moment
     raytraceAO.SetDispatch( m_referenceRTAOBuffer->GetWidth( ), m_referenceRTAOBuffer->GetHeight( ) );
 

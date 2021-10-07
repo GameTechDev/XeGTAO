@@ -455,11 +455,12 @@ bool Scene::UniqueStaticAppendConsumeList::StartAppending( uint32 maxCount ) noe
 
 struct EntitySerializeHelper
 {
-    entt::registry *    Registry;
-    entt::entity        Entity;
+    Scene::SerializeArgs *  SerializeArgs;
+    entt::registry *        Registry;
+    entt::entity            Entity;
 
-    EntitySerializeHelper( entt::registry * registry )                      : Registry(registry), Entity(entt::null)        { }
-    EntitySerializeHelper( entt::registry * registry, entt::entity entity ) : Registry(registry), Entity(entity)            { }
+    EntitySerializeHelper( Scene::SerializeArgs * serializeArgs, entt::registry * registry )                      : SerializeArgs(serializeArgs), Registry(registry), Entity(entt::null)        { }
+    EntitySerializeHelper( Scene::SerializeArgs * serializeArgs, entt::registry * registry, entt::entity entity ) : SerializeArgs(serializeArgs), Registry(registry), Entity(entity)            { }
 
     static const char * S_Type( )                                           { return ""; }  // "Entity"; } <- could use this but it's cleaner without so since there's no real use case for having a type let's not use it
 
@@ -473,6 +474,9 @@ struct EntitySerializeHelper
             string name;
             if( serializer.Serialize( "Name", name ) )
                 Registry->emplace<Scene::Name>( Entity, name );
+            vaGUID uid;
+            if( serializer.Serialize( "UID", uid ) )
+                Registry->emplace<Scene::UID>( Entity, Scene::UID(uid) );
 
             const int componentTypeCount = Scene::Components::TypeCount( );
             for( int i = 0; i < componentTypeCount; i++ )
@@ -484,7 +488,7 @@ struct EntitySerializeHelper
                     {
                         assert( !Scene::Components::Has( i, *Registry, Entity ) ); // <- this is fine actually due to reactive nature
                         Scene::Components::EmplaceOrReplace( i, *Registry, Entity );
-                        if( !serializer.Serialize( typeName, /*typeName*/"", [i, &r=*Registry, e=Entity]( vaSerializer & snode ) { return Scene::Components::Serialize( i, r, e, snode ); } ) )
+                        if( !serializer.Serialize( typeName, /*typeName*/"", [i, &r=*Registry, args = SerializeArgs, e=Entity]( vaSerializer & snode ) { return Scene::Components::Serialize( i, r, e, *args, snode ); } ) )
                         {  
                             VA_WARN( "Error while trying to deserialize component name %s for entity name %s - skipping.", typeName.c_str(), name.c_str() );
                             Scene::Components::Remove( i, *Registry, Entity );
@@ -493,7 +497,7 @@ struct EntitySerializeHelper
                 }
             }
 
-            if( serializer.SerializeVector( "[ChildEntities]", childEntities, EntitySerializeHelper( Registry ) ) )
+            if( serializer.SerializeVector( "[ChildEntities]", childEntities, EntitySerializeHelper( SerializeArgs, Registry ) ) )
             {
                 Registry->emplace<Scene::Relationship>( Entity );
                 for( int i = 0; i < childEntities.size( ); i++ )
@@ -506,13 +510,16 @@ struct EntitySerializeHelper
             auto name = Registry->try_get<Scene::Name>( Entity );
             if( name != nullptr )
                 serializer.Serialize( "Name", *static_cast<std::string*>(name) );
+            auto uid = Registry->try_get<Scene::UID>( Entity );
+            if( uid != nullptr )
+                serializer.Serialize( "UID", *static_cast<vaGUID*>(uid) );
 
             bool hasRelationship = Registry->any_of<Scene::Relationship>( Entity );
             if( hasRelationship )
             {
-                Scene::VisitChildren( *Registry, Entity, [&](entt::entity child) { childEntities.push_back( EntitySerializeHelper(Registry, child) ); } );
+                Scene::VisitChildren( *Registry, Entity, [&](entt::entity child) { childEntities.push_back( EntitySerializeHelper( SerializeArgs, Registry, child) ); } );
                 std::reverse( childEntities.begin(), childEntities.end() ); // reverse because children get added in reverse so this preserves the original order
-                serializer.SerializeVector( "[ChildEntities]", childEntities, EntitySerializeHelper( Registry ) );
+                serializer.SerializeVector( "[ChildEntities]", childEntities, EntitySerializeHelper( SerializeArgs, Registry ) );
             }
 
             const int componentTypeCount = Scene::Components::TypeCount( );
@@ -521,7 +528,7 @@ struct EntitySerializeHelper
                 if( Scene::Components::HasSerialize( i ) && Scene::Components::Has( i, *Registry, Entity ) )
                 {
                     const string & typeName = Scene::Components::TypeName(i);
-                    if( !serializer.Serialize( typeName, /*typeName*/"", [i, &r=*Registry, e=Entity]( vaSerializer & snode ) { return Scene::Components::Serialize( i, r, e, snode ); } ) )
+                    if( !serializer.Serialize( typeName, /*typeName*/"", [i, &r=*Registry, args = SerializeArgs, e=Entity]( vaSerializer & snode ) { return Scene::Components::Serialize( i, r, e, *args, snode ); } ) )
                         { assert( false ); return false; }
                 }
             }
@@ -547,24 +554,24 @@ bool Scene::SaveJSON( entt::registry & registry, const string & filePath, std::f
 
     bool retVal = true;
 
-    // add unique IDs to all
+    SerializeArgs serializeArgs( registry.ctx<Scene::UIDRegistry>() );
 
     std::vector< EntitySerializeHelper > rootEntities, unrootEntities;
     registry.each( [&] ( entt::entity entity )
     { 
         const Scene::Relationship * relationship = registry.try_get<Scene::Relationship>( entity );
         if( relationship == nullptr )
-            unrootEntities.push_back( EntitySerializeHelper( &registry, entity ) );
+            unrootEntities.push_back( EntitySerializeHelper( &serializeArgs, &registry, entity ) );
         else if( relationship->Parent == entt::null )
-            rootEntities.push_back( EntitySerializeHelper( &registry, entity ) );
+            rootEntities.push_back( EntitySerializeHelper( &serializeArgs, &registry, entity ) );
     } );
     std::reverse( rootEntities.begin(), rootEntities.end() );       // registry.each iterates them in the reverse order, so invert that to preserve ordering
     std::reverse( unrootEntities.begin(), unrootEntities.end() );   // registry.each iterates them in the reverse order, so invert that to preserve ordering
 
     serializer.Serialize<string>( "Name", registry.ctx<Scene::Name>( ) );
 
-    retVal &= serializer.SerializeVector( "ROOT", rootEntities, EntitySerializeHelper( &registry ) );
-    retVal &= serializer.SerializeVector( "UNROOT", unrootEntities, EntitySerializeHelper( &registry ) );
+    retVal &= serializer.SerializeVector( "ROOT", rootEntities, EntitySerializeHelper( &serializeArgs, &registry ) );
+    retVal &= serializer.SerializeVector( "UNROOT", unrootEntities, EntitySerializeHelper( &serializeArgs, &registry ) );
     
     retVal &= serializer.Write( filePath );
 
@@ -575,6 +582,8 @@ bool Scene::SaveJSON( entt::registry & registry, const string & filePath, std::f
 
 bool Scene::LoadJSON( entt::registry & registry, const string & filePath )
 {
+    SerializeArgs serializeArgs( registry.ctx<Scene::UIDRegistry>() );
+
     vaSerializer serializer = vaSerializer::OpenRead( filePath, "VanillaScene" );
 
     // should sanitize name after this
@@ -584,8 +593,12 @@ bool Scene::LoadJSON( entt::registry & registry, const string & filePath )
     bool retVal = true;
 
     std::vector< EntitySerializeHelper > rootEntities, unrootEntities;
-    retVal &= serializer.SerializeVector( "ROOT", rootEntities, EntitySerializeHelper( &registry ) );
-    retVal &= serializer.SerializeVector( "UNROOT", unrootEntities, EntitySerializeHelper( &registry ) );
+    retVal &= serializer.SerializeVector( "ROOT", rootEntities, EntitySerializeHelper( &serializeArgs, &registry ) );
+    retVal &= serializer.SerializeVector( "UNROOT", unrootEntities, EntitySerializeHelper( &serializeArgs, &registry ) );
+
+    // connect references
+    for( int i = 0; i < serializeArgs.LoadedReferences.size( ); i++ )
+        (*serializeArgs.LoadedReferences[i].first) = Scene::EntityReference( serializeArgs.UIDRegistry, serializeArgs.LoadedReferences[i].second );
     
     assert( retVal );
     
@@ -609,3 +622,9 @@ entt::entity Scene::FindFirstByName( const entt::registry & registry, const stri
     } );
     return found;
 }
+
+void Scene::UIHighlight( entt::registry& registry, entt::entity entity )
+{
+    registry.set<Scene::UIHighlightRequest>( Scene::UIHighlightRequest{entity} );
+}
+

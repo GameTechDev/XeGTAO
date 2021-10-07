@@ -44,6 +44,8 @@ namespace Vanilla
 {
     // TODO: most of this is no longer needed as it's part of std::xxx, so clean up the codebase and remove it
     // (leave the stuff that makes sense to stay in for any kind of framework-wide optimization/profiling/tracking purposes)
+    // TODO: see https://www.pbr-book.org/3ed-2018/Utilities/Main_Include_File and pick up naming convention (with attribution ofc) as it's much better
+    // TODO: also see https://www.pbr-book.org/3ed-2018/Utilities/Mathematical_Routines 
     class vaMath
     {
     public:
@@ -88,9 +90,7 @@ namespace Vanilla
         static inline double        Frac( double a );
         static inline float         Frac( float a );
 
-        // handles 0 as -1 - not sure why I did that but it's used in a couple of places (if not, delete it)
-        static inline int           FloorLog2Old( unsigned int n );
-
+        // integer Log2
         static constexpr uint32     FloorLog2( uint32 n )                   { assert( n > 0 ); return n == 1 ? 0 : 1 + FloorLog2( n >> 1 ); }
         static constexpr uint32     CeilLog2( uint32 n )                    { assert( n > 0 ); return n == 1 ? 0 : FloorLog2( n - 1 ) + 1; }
 
@@ -109,6 +109,7 @@ namespace Vanilla
 
         static inline bool          IsPowOf2( int32 val );
         static inline bool          IsPowOf2( uint32 val );
+        // a.k.a smallest power of 2 that is >= val
         static inline int           PowOf2Ceil( int val );
         static inline int           Log2( int val );
 
@@ -278,6 +279,14 @@ namespace Vanilla
     }
 
     // short for clamp( a, 0, 1 )
+    template<>
+    inline float vaMath::Saturate( float const & a )
+    {
+        assert( !std::isnan(a) );
+        return Clamp( a, 0.0f, 1.0f );
+    }
+
+    // short for clamp( a, 0, 1 )
     template<class T>
     inline T vaMath::Saturate( T const& a )
     {
@@ -314,17 +323,6 @@ namespace Vanilla
     inline float vaMath::Frac( float a )
     {
         return fmodf( a, 1.0 );
-    }
-
-    inline int vaMath::FloorLog2Old( unsigned int n )
-    {
-        int pos = 0;
-        if( n >= 1 << 16 ) { n >>= 16; pos += 16; }
-        if( n >= 1 << 8 ) { n >>= 8; pos += 8; }
-        if( n >= 1 << 4 ) { n >>= 4; pos += 4; }
-        if( n >= 1 << 2 ) { n >>= 2; pos += 2; }
-        if( n >= 1 << 1 ) { pos += 1; }
-        return ( ( n == 0 ) ? ( -1 ) : pos );
     }
 
     //////////////////////////////////////////////////////////////////////////

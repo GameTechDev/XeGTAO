@@ -189,7 +189,7 @@ struct AsteroidsMotionWorkNode : vaSceneAsync::WorkNode
     virtual std::pair<uint, uint>   ExecuteNarrow( const uint32 pass, vaSceneAsync::ConcurrencyContext & ) override
     {
         if( pass == 0 && AnimateAsteroids )
-            return { (uint32)View.size( ), vaTF::c_chunkBaseSize * 2 };
+            return { (uint32)View.size( ), VA_GOOD_PARALLEL_FOR_CHUNK_SIZE };
         return { 0, 0 };
     }
     //

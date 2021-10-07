@@ -23,6 +23,8 @@ using namespace Vanilla;
 
 bool LoadFileContents_Assimp( const string & path, vaAssetImporter::ImporterContext & parameters );
 
+bool LoadFileContents_cgltf( const string & path, vaAssetImporter::ImporterContext & parameters );
+
 vaAssetImporter::vaAssetImporter( vaRenderDevice & device ) : 
     vaUIPanel( "Asset Importer", 0,
 #ifdef VA_ASSIMP_INTEGRATION_ENABLED
@@ -48,30 +50,9 @@ bool vaAssetImporter::LoadFileContents( const string & path, ImporterContext & i
     string textureSearchPath;
     vaFileTools::SplitPath( path.c_str( ), &textureSearchPath, &filename, &ext );
     ext = vaStringTools::ToLower( ext );
-    if( ext == ".sdkmesh" )
+    if( ext == ".gltf" )
     {
-        // this path doesn't work anymore, sorry :(
-        assert( false );
-
-        // std::shared_ptr<vaMemoryStream> fileContents;
-        // string usedPath;
-        // 
-        // // try asset paths
-        // if( fileContents == nullptr )
-        // {
-        //     usedPath = path;
-        //     fileContents = vaFileTools::LoadMemoryStream( usedPath.c_str( ) );
-        // }
-        // 
-        // // found? try load and return!
-        // if( fileContents == nullptr )
-        // {
-        //     vaFileTools::EmbeddedFileData embeddedFile = vaFileTools::EmbeddedFilesFind( ( "textures:\\" + path ).c_str( ) );
-        //     if( embeddedFile.HasContents( ) )
-        //         fileContents = embeddedFile.MemStream;
-        //     //
-        // }
-        // return LoadFileContents_SDKMESH( fileContents, textureSearchPath, filename, parameters, outContent );
+        return LoadFileContents_cgltf( path, importerContext );
     }
     else
     {

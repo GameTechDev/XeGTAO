@@ -42,6 +42,8 @@ void vaSceneRaytracingDX12::PostRenderCleanupInternal( )
 
 void vaSceneRaytracingDX12::PreRenderUpdateInternal( vaRenderDeviceContext & renderContext, const std::unordered_set<vaFramePtr<vaRenderMesh>> & meshes, const std::unordered_set<vaFramePtr<vaRenderMaterial>> & materials )
 {
+    VA_TRACE_CPUGPU_SCOPE( SceneRaytracingUpdate, renderContext );
+
     auto NULLBARRIER = CD3DX12_RESOURCE_BARRIER::UAV( nullptr );
 
     m_instanceDescsDX12CPU.clear();
@@ -151,7 +153,7 @@ void vaSceneRaytracingDX12::PreRenderUpdateInternal( vaRenderDeviceContext & ren
     
     // allocate instance buffer if needed!
     if( instanceUploadBuffer == nullptr || instanceUploadBuffer->Size() < instanceUploadBufferSize )
-        instanceUploadBuffer = std::make_shared<vaUploadBufferDX12>( device12, nullptr, instanceUploadBufferSize, "RT_InstanceDescs" );
+        instanceUploadBuffer = std::make_shared<vaUploadBufferDX12>( device12, nullptr, instanceUploadBufferSize, L"RT_InstanceDescs" );
 
     // copy instances to GPU-readable memory
     if( m_instanceDescsDX12CPU.size() > 0 )
@@ -160,7 +162,7 @@ void vaSceneRaytracingDX12::PreRenderUpdateInternal( vaRenderDeviceContext & ren
     // Get required sizes for an acceleration structure.
     D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS topLevelInputs = {};
     topLevelInputs.DescsLayout      = D3D12_ELEMENTS_LAYOUT_ARRAY;
-    topLevelInputs.Flags            = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD; //D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
+    topLevelInputs.Flags            = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE; // D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD; 
     topLevelInputs.NumDescs         = (UINT)m_instanceDescsDX12CPU.size();
     topLevelInputs.Type             = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
     topLevelInputs.InstanceDescs    = instanceUploadBuffer->GetGPUVirtualAddress( );
@@ -172,6 +174,9 @@ void vaSceneRaytracingDX12::PreRenderUpdateInternal( vaRenderDeviceContext & ren
     // allocate TLAS buffer if needed!
     if( TLASBuffer == nullptr || TLASBuffer->GetDataSize( ) < topLevelPrebuildInfo.ResultDataMaxSizeInBytes )
         TLASBuffer = vaRenderBuffer::Create( GetRenderDevice(), vaMath::Align( topLevelPrebuildInfo.ResultDataMaxSizeInBytes, 1024 ), 1, vaRenderBufferFlags::RaytracingAccelerationStructure, "RT_TopLevelAccelerationStructure" );
+
+    if( m_nullAccelerationStructure == nullptr )
+        m_nullAccelerationStructure = vaRenderBuffer::Create( GetRenderDevice(), 0, 1, vaRenderBufferFlags::RaytracingAccelerationStructure, "RT_NullAccelerationStructure" );
 
     // Top Level Acceleration Structure desc
     D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC topLevelBuildDesc = {};

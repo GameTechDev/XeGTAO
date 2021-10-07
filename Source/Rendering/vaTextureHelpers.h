@@ -13,12 +13,9 @@
 
 #include "Core/vaCoreIncludes.h"
 
+#include "Rendering/vaRendering.h"
+
 #include "vaTexture.h"
-
-#include "Rendering/vaRenderBuffers.h"
-#include "Rendering/vaShader.h"
-
-#include "Rendering/Shaders/vaHelperToolsShared.h"
 
 namespace Vanilla
 {
@@ -120,10 +117,9 @@ namespace Vanilla
     protected:
         shared_ptr< vaTexture >                 m_textures[(int)CommonTextureName::MaxValue];
 
-        std::vector<UITextureState>                  m_UIDrawItems;
+        std::vector<UITextureState>             m_UIDrawItems;
 
-        vaTypedConstantBufferWrapper< UITextureDrawShaderConstants >
-                                                m_UIDrawShaderConstants;
+        shared_ptr<vaConstantBuffer>            m_UIDrawShaderConstants;
 
         vaAutoRMI<vaPixelShader>                m_UIDrawTexture2DPS;
         vaAutoRMI<vaPixelShader>                m_UIDrawTexture2DArrayPS;

@@ -204,7 +204,7 @@ namespace
     };
 }
 
-#pragma warning ( suppress: 4505 ) // unreferenced local function has been removed
+//#pragma warning ( suppress: 4505 ) // unreferenced local function has been removed
 static shared_ptr<vaAssetTexture> FindOrLoadTexture( aiTexture * assimpTexture, const string & _path, LoadingTempStorage & tempStorage, vaAssetImporter::ImporterContext & importerContext, vaTextureLoadFlags textureLoadFlags, vaTextureContentsType textureContentsType, bool & createdNew )
 {
     createdNew = false;
@@ -571,7 +571,7 @@ static bool ProcessMaterials( const aiScene* loadedScene, LoadingTempStorage & t
             vaRenderMaterial::MaterialSettings matSettings = newMaterial->GetMaterialSettings( );
 
             // some defaults
-            matSettings.ReceiveShadows      = true;
+            //matSettings.ReceiveShadows      = true;
             matSettings.CastShadows         = true;
             matSettings.AlphaTestThreshold  = 0.3f; // use 0.3 instead of 0.5; 0.5 can sometimes make things almost invisible if alpha was stored in .rgb (instead of .a) and there was a linear<->sRGB mixup; can always be tweaked later
 

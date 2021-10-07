@@ -18,6 +18,10 @@
 // 1.10 (2021-09-03): Added a couple of heuristics to combat over-darkening errors in certain scenarios
 // 1.20 (2021-09-06): Optional normal from depth generation is now a standalone pass: no longer integrated into 
 //                    main XeGTAO pass to reduce complexity and allow reuse; also quality of generated normals improved
+// 1.21 (2021-09-28): Replaced 'groupshared'-based denoiser with a slightly slower multi-pass one where a 2-pass new
+//                    equals 1-pass old. However, 1-pass new is faster than the 1-pass old and enough when TAA enabled.
+// 1.22 (2021-09-28): Added 'XeGTAO_' prefix to all local functions to avoid name clashes with various user codebases.
+// 1.30 (2021-10-10): Added support for directional component (bent normals).
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef __XE_GTAO_TYPES_H__
@@ -51,11 +55,7 @@ namespace XeGTAO
     #define XE_GTAO_DEPTH_MIP_LEVELS                    5                   // this one is hard-coded to 5 for now
     #define XE_GTAO_NUMTHREADS_X                        8                   // these can be changed
     #define XE_GTAO_NUMTHREADS_Y                        8                   // these can be changed
-    #define XE_GTAO_DENOISE_EXTERIOR_THREADS_X          8                   // these can't be changed
-    #define XE_GTAO_DENOISE_EXTERIOR_THREADS_Y          16                  // these can't be changed
-    #define XE_GTAO_DENOISE_INTERIOR_X                  (XE_GTAO_DENOISE_EXTERIOR_THREADS_X*2-2)
-    #define XE_GTAO_DENOISE_INTERIOR_Y                  (XE_GTAO_DENOISE_EXTERIOR_THREADS_Y-2)
-
+    
     struct GTAOConstants
     {
         Vector2i                ViewportSize;
@@ -104,12 +104,14 @@ namespace XeGTAO
 
     // some constants reduce performance if provided as dynamic values; if these constants are not required to be dynamic and they match default values, 
     // set XE_GTAO_USE_DEFAULT_CONSTANTS and the code will compile into a more efficient shader
-    #define XE_GTAO_DEFAULT_RADIUS_MULTIPLIER              (1.457f  )   // allows us to use different value as compared to ground truth radius to counter inherent screen space biases
-    #define XE_GTAO_DEFAULT_FALLOFF_RANGE                  (0.615f  )   // distant samples contribute less
-    #define XE_GTAO_DEFAULT_SAMPLE_DISTRIBUTION_POWER      (2.0f    )   // small crevices more important than big surfaces
-    #define XE_GTAO_DEFAULT_THIN_OCCLUDER_COMPENSATION     (0.0f    )   // the new 'thickness heuristic' approach
-    #define XE_GTAO_DEFAULT_FINAL_VALUE_POWER              (2.2f    )   // modifies the final ambient occlusion value using power function - this allows some of the above heuristics to do different things
-    #define XE_GTAO_DEFAULT_DEPTH_MIP_SAMPLING_OFFSET      (3.30f   )   // main trade-off between performance (memory bandwidth) and quality (temporal stability is the first affected, thin objects next)
+    #define XE_GTAO_DEFAULT_RADIUS_MULTIPLIER               (1.457f  )  // allows us to use different value as compared to ground truth radius to counter inherent screen space biases
+    #define XE_GTAO_DEFAULT_FALLOFF_RANGE                   (0.615f  )  // distant samples contribute less
+    #define XE_GTAO_DEFAULT_SAMPLE_DISTRIBUTION_POWER       (2.0f    )  // small crevices more important than big surfaces
+    #define XE_GTAO_DEFAULT_THIN_OCCLUDER_COMPENSATION      (0.0f    )  // the new 'thickness heuristic' approach
+    #define XE_GTAO_DEFAULT_FINAL_VALUE_POWER               (2.2f    )  // modifies the final ambient occlusion value using power function - this allows some of the above heuristics to do different things
+    #define XE_GTAO_DEFAULT_DEPTH_MIP_SAMPLING_OFFSET       (3.30f   )  // main trade-off between performance (memory bandwidth) and quality (temporal stability is the first affected, thin objects next)
+
+    #define XE_GTAO_OCCLUSION_TERM_SCALE                    (1.5f)      // for packing in UNORM (because raw, pre-denoised occlusion term can overshoot 1 but will later average out to 1)
 
     // From https://www.shadertoy.com/view/3tB3z3 - except we're using R2 here
     #define XE_HILBERT_LEVEL    6U
@@ -144,7 +146,7 @@ namespace XeGTAO
     struct GTAOSettings
     {
         int         QualityLevel                        = 2;        // 0: low; 1: medium; 2: high; 3: ultra
-        int         DenoiseLevel                        = 1;        // 0: disabled; 1: standard; 2: blurry
+        int         DenoisePasses                       = 1;        // 0: disabled; 1: sharp; 2: medium; 3: soft
         float       Radius                              = 0.5f;     // [0.0,  ~ ]   World (view) space size of the occlusion sphere.
 
         // auto-tune-d settings
@@ -184,14 +186,14 @@ namespace XeGTAO
         consts.EffectRadius                 = settings.Radius;
 
         consts.EffectFalloffRange           = settings.FalloffRange;
-        consts.DenoiseBlurBeta              = (settings.DenoiseLevel==0)?(1e4f):(1.2f);    // high value disables denoise - more elegant & correct way would be do set all edges to 0
+        consts.DenoiseBlurBeta              = (settings.DenoisePasses==0)?(1e4f):(1.2f);    // high value disables denoise - more elegant & correct way would be do set all edges to 0
 
         consts.RadiusMultiplier             = settings.RadiusMultiplier;
         consts.SampleDistributionPower      = settings.SampleDistributionPower;
         consts.ThinOccluderCompensation     = settings.ThinOccluderCompensation;
         consts.FinalValuePower              = settings.FinalValuePower;
         consts.DepthMIPSamplingOffset       = settings.DepthMIPSamplingOffset;
-        consts.NoiseIndex                   = (settings.DenoiseLevel>0)?(frameCounter % 64):(0);
+        consts.NoiseIndex                   = (settings.DenoisePasses>0)?(frameCounter % 64):(0);
         consts.Padding0 = 0;
     }
 
@@ -204,13 +206,13 @@ namespace XeGTAO
 
         ImGui::Text( "Performance/quality settings:" );
 
-        ImGui::Combo( "Quality Level", &settings.QualityLevel, "Low\0Medium\0High\0Ultra\0");
+        ImGui::Combo( "Quality Level", &settings.QualityLevel, "Low\0Medium\0High\0Ultra\00");
         if( ImGui::IsItemHovered( ) ) ImGui::SetTooltip( "Higher quality settings use more samples per pixel but are slower" );
         settings.QualityLevel       = clamp( settings.QualityLevel , 0, 3 );
 
-        ImGui::Combo( "Denoising level", &settings.DenoiseLevel, "Disabled\0Standard\0Blurry\0");
+        ImGui::Combo( "Denoising level", &settings.DenoisePasses, "Disabled\0Sharp\0Medium\0Soft\00");
         if( ImGui::IsItemHovered( ) ) ImGui::SetTooltip( "The amount of edge-aware spatial denoise applied" );
-        settings.DenoiseLevel       = clamp( settings.DenoiseLevel , 0, 2 );
+        settings.DenoisePasses      = clamp( settings.DenoisePasses , 0, 3 );
 
         ImGui::Text( "Visual settings:" );
 

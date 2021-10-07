@@ -9,3 +9,8 @@
 
 # Build/assets
 /Build/*.*
+
+# Misc
+/Build/Media/imgui.ini
+/Build/Media/AsiimpLog.txt
+/Tools/BinaryToCppEmbedder/obj

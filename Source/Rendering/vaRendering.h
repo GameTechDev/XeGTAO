@@ -40,6 +40,7 @@ namespace Vanilla
     class vaPixelShader;
     class vaShaderLibrary;
     class vaConstantBuffer;
+    class vaDynamicVertexBuffer;
     // class vaVertexBuffer;
     // class vaIndexBuffer;
     class vaVertexShader;
@@ -254,6 +255,8 @@ namespace Vanilla
 
         uint32                              InstanceIndex           = 0xFFFFFFFF;   // avoids setting a whole constant buffer to send one parameter; this can be unused or can be used to sample instance constants
 
+        uint32                              GenericRootConst        = 0;            // accessible from shaders as g_genericRootConst
+
         struct DrawSimpleParams
         {
             uint32                              VertexCount         = 0;    // (DrawSimple only) Number of vertices to draw.
@@ -298,8 +301,8 @@ namespace Vanilla
 
         // these do nothing in DX11 (it's implied but can be avoided with custom IHV extensions I think) but in DX12 they
         // add a "commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV( nullptr ) )"
-        bool                                GlobalUAVBarrierBefore  = true;     // using defaults (true) can obviously be highly inefficient but it's a safe
-        bool                                GlobalUAVBarrierAfter   = true;     // using defaults (true) can obviously be highly inefficient but it's a safe
+        bool                                GlobalUAVBarrierBefore  = true; // using defaults (true) can obviously be highly inefficient but it's a safe
+        bool                                GlobalUAVBarrierAfter   = true; // using defaults (true) can obviously be highly inefficient but it's a safe
 
         struct DispatchParams
         {
@@ -314,32 +317,33 @@ namespace Vanilla
             uint32                              AlignedOffsetForArgs = 0;
         }                                   DispatchIndirectParams;
 
-        // // Callback to insert any API-specific overrides or additional tweaks
-        // std::function<bool( const vaComputeItem &, vaRenderDeviceContext & )> PreComputeHook;
+        uint32                              GenericRootConst        = 0;    // accessible from shaders as g_genericRootConst
 
         // Helpers
-        void                                SetDispatch( uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ = 1 )     { this->ComputeType = Dispatch; DispatchParams.ThreadGroupCountX = threadGroupCountX; DispatchParams.ThreadGroupCountY = threadGroupCountY; DispatchParams.ThreadGroupCountZ = threadGroupCountZ; }
+        void                                SetDispatch( uint32 threadGroupCountX, uint32 threadGroupCountY = 1, uint32 threadGroupCountZ = 1 ) { this->ComputeType = Dispatch; DispatchParams.ThreadGroupCountX = threadGroupCountX; DispatchParams.ThreadGroupCountY = threadGroupCountY; DispatchParams.ThreadGroupCountZ = threadGroupCountZ; }
         void                                SetDispatchIndirect( vaFramePtr<vaShaderResource> bufferForArgs, uint32 alignedOffsetForArgs )      { this->ComputeType = DispatchIndirect; DispatchIndirectParams.BufferForArgs = bufferForArgs; DispatchIndirectParams.AlignedOffsetForArgs = alignedOffsetForArgs; }
     };
 
     struct vaRaytraceItem
     {
-        // In the current implementation, leaving ShaderEntryAnyHit and/or ShaderEntryClosestHit undefined ("") uses material's own 
+        // In the current implementation, leaving AnyHit and/or ClosestHit undefined ("") uses material's own 
         // shaders via a shader table.
         // There is also support for callable shaders but they are currently hard-coded and not nicely exposed. This will get updated
         // if needed.
         vaFramePtr<vaShaderLibrary>         ShaderLibrary;
-        string                              ShaderEntryRayGen;          // max length 63 chars
-        string                              ShaderEntryMiss;            // max length 63 chars; miss shader index 0
-        string                              ShaderEntryMissSecondary;   // max length 63 chars; miss shader index 1 (for ex., visibility rays)
-        string                              ShaderEntryAnyHit;          // max length 63 chars; leave at "" for default ShaderEntryMaterialAnyHit to be used
-        string                              ShaderEntryClosestHit;      // max length 63 chars; leave at "" for default ShaderEntryMaterialClosestHit to be used
+        // Shader entry points from the above ShaderLibrary
+        string                              RayGen;                         // max length 63 chars
+        string                              Miss;                           // max length 63 chars; miss shader index 0
+        string                              MissSecondary;                  // max length 63 chars; miss shader index 1 (for ex., visibility rays)
+        string                              AnyHit;                         // max length 63 chars; leave at "" for default MaterialAnyHit to be used
+        string                              ClosestHit;                     // max length 63 chars; leave at "" for default MaterialClosestHit to be used
 
-        // These define entry points from material's own library entry points (per-material) which are used if ShaderEntryAnyHit and ShaderEntryClosestHit are not defined
-        string                              ShaderEntryMaterialAnyHit       = "AnyHitAlphaTest";
-        string                              ShaderEntryMaterialClosestHit; //   = "ClosestHitPathTrace";
-        // Callable can be useful when for something per-material custom; if undefined, callable table not created; only 1 per material supported for now
-        string                              ShaderEntryMaterialCallable;
+        // Shader entry points from material's own library entry points (per-material) which are used if AnyHit and ClosestHit are not defined
+        string                              MaterialAnyHit       = "AnyHitAlphaTest";
+        string                              MaterialClosestHit;
+        
+        string                              ShaderEntryMaterialCallable;        // Callable can be useful when for per-material custom shading; if undefined, callable table not created; only 1 per material supported for now
+        string                              MaterialMissCallable;    // Miss shader-based API path to allow for callables that support TraceRay; use VA_RAYTRACING_SHADER_MISSCALLABLES_SHADE_OFFSET and null acceleration structure to invoke; see https://microsoft.github.io/DirectX-Specs/d3d/Raytracing.html#callable-shaders
 
         // CONSTANT BUFFERS
         std::array<vaFramePtr<vaConstantBuffer>, array_size(vaGraphicsItem::ConstantBuffers)>
@@ -358,8 +362,11 @@ namespace Vanilla
         uint32                              DispatchDepth           = 0;
 
         uint32                              MaxRecursionDepth       = 1;
+        uint32                              MaxPayloadSize          = 0;
 
-        void                                SetDispatch( uint32 width, uint32 height, uint32 depth = 1 )         { this->DispatchWidth = width, this->DispatchHeight = height; this->DispatchDepth = depth; }
+        uint32                              GenericRootConst        = 0;            // accessible from shaders as g_genericRootConst
+
+        void                                SetDispatch( uint32 width, uint32 height = 1, uint32 depth = 1 )         { this->DispatchWidth = width, this->DispatchHeight = height; this->DispatchDepth = depth; }
     };
 
     // Used for more complex rendering when there's camera, lighting, various other settings - not needed by many systems

@@ -1437,6 +1437,55 @@ vaBoundingSphere vaBoundingSphere::Transform( const vaBoundingSphere & bs, const
     return { vaVector3::TransformCoord( bs.Center, transform ), std::max( std::max( outScale.x, outScale.y ), outScale.z ) * bs.Radius };
 }
 
+vaBoundingSphere vaBoundingSphere::Merge( const vaBoundingSphere & s0, const vaBoundingSphere & s1 )
+{
+    vaBoundingSphere s;
+#if 0
+    // approach 1
+    {
+        // from  Real-Time Collision Detection by Christer Ericson (Morgan Kaufmann, 2005) Chapter 6.5.2 Merging Two Spheres
+
+        // Compute the squared distance between the sphere centers
+        vaVector3 d = s1.Center - s0.Center;
+        float dist2 = d.LengthSq();
+
+        if( vaMath::Sq( s1.Radius - s0.Radius ) >= dist2 )
+        {
+            // The sphere with the larger radius encloses the other: just set s to be the larger of the two spheres
+            if (s1.Radius >= s0.Radius)
+                s = s1;
+            else
+                s = s0;
+        } else 
+        {
+            // Spheres partially overlapping or disjoint
+            float dist = std::sqrt( dist2 );
+            s.Radius = (dist + s0.Radius + s1.Radius) * 0.5f;
+            s.Center = s0.Center;
+            if( dist > VA_EPSf )
+                s.Center += ((s.Radius - s0.Radius) / dist) * d;
+        }
+        // return s;
+    }
+#else
+    // approach 2, very similar, based on "Analysis of Point Clouds - Using Conformal Geometric Algebra" 2008, 6.3
+    {
+        vaBoundingSphere ret;
+        vaVector3 vecRL = s0.Center-s1.Center; float distance = vecRL.Length();
+        if( distance > VA_EPSf ) 
+            vecRL /= distance;
+
+        // poles of the minimal bounding sphere
+        float qr0 = std::max( s0.Radius, s1.Radius - distance );    // this handles the case where the larger radius encloses the other
+        float qr1 = std::max( s1.Radius, s0.Radius - distance );    // this handles the case where the larger radius encloses the other
+        ret.Radius = (distance+qr0+qr1) * 0.5f; // was (q1-q0).Length() * 0.5f;
+        ret.Center = (s0.Center+s1.Center+vecRL*(qr0-qr1)) * 0.5f;
+        //assert( vaGeometry::NearEqual( s, ret, 1e-6f ) );
+        return ret;
+    }
+#endif
+}
+
 string vaOrientedBoundingBox::ToString( const vaOrientedBoundingBox & a )
 {
     char buffer[1024];
@@ -1579,7 +1628,7 @@ bool vaBoundingBox::PointInside( const vaVector3 & point ) const
 
 void vaColor::NormalizeLuminance( vaVector3 & inoutColor, float & inoutIntensity )
 {
-    float luminance = vaVector3::LinearToLuminance( inoutColor );
+    float luminance = vaColor::LinearToLuminance( inoutColor );
     if( luminance < VA_EPSf )
     {
         inoutColor = { 1,1,1 };

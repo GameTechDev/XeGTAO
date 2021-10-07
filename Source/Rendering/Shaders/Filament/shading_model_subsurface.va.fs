@@ -42,6 +42,6 @@ void surfaceShading( const ShadingParams shading, const PixelParams pixel, const
 
     // TODO: apply occlusion to the transmitted light
     // color = (color * light.ColorIntensity.rgb) * (light.ColorIntensity.w * light.Attenuation);
-    float3 lightColor = light.ColorIntensity.rgb * (light.ColorIntensity.w * light.Attenuation);
+    float3 lightColor = light.ColorIntensity.rgb * (light.Attenuation);
     inoutColor  += (diffuseColor+specularColor) * lightColor;
 }

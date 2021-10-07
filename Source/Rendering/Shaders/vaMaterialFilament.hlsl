@@ -63,7 +63,7 @@
 // These are the defines that I haven't ported/connected yet!
 //
 // #define MATERIAL_HAS_ANISOTROPY         1
-#define SPECULAR_AMBIENT_OCCLUSION      SPECULAR_AO_SIMPLE  // SPECULAR_AO_OFF / SPECULAR_AO_SIMPLE / SPECULAR_AO_BENT_NORMALS
+#define SPECULAR_AMBIENT_OCCLUSION      SPECULAR_AO_BENT_NORMALS  // SPECULAR_AO_OFF / SPECULAR_AO_SIMPLE / SPECULAR_AO_BENT_NORMALS
 #define MULTI_BOUNCE_AMBIENT_OCCLUSION  1
 #define DIRECT_LIGHTING_AO_MICROSHADOWS 1
 // #define TARGET_MOBILE
@@ -135,7 +135,6 @@
 //
 // includes of filament or ported filament headers!
 //
-#include "Filament\ambient_occlusion.va.fs"
 #include "Filament\common_math.fs"
 #include "Filament\brdf.va.fs"
 #include "Filament\common_getters.va.fs"
@@ -143,6 +142,7 @@
 #include "Filament\common_lighting.va.fs"
 #include "Filament\common_shading.va.fs"
 #include "Filament\common_material.fs"
+#include "Filament\ambient_occlusion.va.fs"
 #include "Filament\conversion_functions.va.fs"
 // "Filament\depth_main.fs"                     - handled in PS_DepthOnly
 // "Filament\dithering.fs"                      - not needed ATM
@@ -188,12 +188,14 @@ MaterialInputs LoadMaterial( const in ShaderInstanceConstants instance, const Su
 #endif
 
 #if defined( VA_RM_HAS_INPUT_EmissiveColor )
-    material.EmissiveColor = materialInputs.EmissiveColor.xyz;
+    material.EmissiveColorIntensity *= materialInputs.EmissiveColor.xyz;
 #endif
 
 #if defined( VA_RM_HAS_INPUT_EmissiveIntensity )
-    material.EmissiveIntensity = materialInputs.EmissiveIntensity.x;
+    material.EmissiveColorIntensity *= materialInputs.EmissiveIntensity.x;
 #endif
+
+    material.EmissiveColorIntensity *= instance.EmissiveMultiplier;
 
 #if defined( VA_RM_HAS_INPUT_Roughness ) && !defined(SHADING_MODEL_SPECULAR_GLOSSINESS)
     material.Roughness = materialInputs.Roughness.x;
@@ -268,8 +270,8 @@ float4 EvaluateMaterialAndLighting( const SurfaceInteraction surface, const Shad
     if( shading.IBL.UseLocal || shading.IBL.UseDistant )
         evaluateIBL( shading, material, pixel, color, shading.IBL.UseLocal, shading.IBL.UseDistant );
 
-    // this is totally not PBR but left in here for testing purposes
-    color += material.BaseColor.rgb * g_lighting.AmbientLightIntensity.rgb;
+//    // 'ambient light' - this is totally not PBR but left in here for testing purposes
+//    color += material.BaseColor.rgb * g_lighting.AmbientLightIntensity.rgb;
 
 // #if defined(HAS_DIRECTIONAL_LIGHTING)
 //     evaluateDirectionalLights( shading, material, pixel, diffuseColor, specularColor );
@@ -279,7 +281,7 @@ float4 EvaluateMaterialAndLighting( const SurfaceInteraction surface, const Shad
      evaluatePunctualLights( surface, shading, pixel, color );
 // #endif
 
-#if defined(MATERIAL_HAS_EMISSIVE) && (VA_RM_SPECIAL_EMISSIVE_LIGHT == 0)
+#if defined(MATERIAL_HAS_EMISSIVE)
     color.xyz += shading.PrecomputedEmissive * g_globals.PreExposureMultiplier;
 #endif
 

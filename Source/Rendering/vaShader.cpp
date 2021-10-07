@@ -60,7 +60,7 @@ vaShader::~vaShader( )
 }
 
 //
-void vaShader::CreateShaderFromFile( const string & _filePath, const string & entryPoint, const std::vector<pair<string, string>> & macros, bool forceImmediateCompile )
+void vaShader::CompileFromFile( const string & _filePath, const string & entryPoint, const std::vector<pair<string, string>> & macros, bool forceImmediateCompile )
 {
     wstring filePath = vaStringTools::SimpleWiden(_filePath);
     const string shaderModel = string(GetSMPrefix())+"_"+GetSMVersion();
@@ -109,7 +109,7 @@ void vaShader::CreateShaderFromFile( const string & _filePath, const string & en
             vaBackgroundTaskManager::SpawnFlags::UseThreadPool, shaderCompileLambda );
 }
 
-void vaShader::CreateShaderFromBuffer( const string & shaderCode, const string & entryPoint, const std::vector<pair<string, string>> & macros, bool forceImmediateCompile )
+void vaShader::CompileFromBuffer( const string & shaderCode, const string & entryPoint, const std::vector<pair<string, string>> & macros, bool forceImmediateCompile )
 {
     const string shaderModel = string( GetSMPrefix( ) ) + "_" + GetSMVersion( );
     assert( shaderCode != "" && entryPoint != "" && shaderModel != "" );
@@ -293,3 +293,4 @@ vaShaderManager::~vaShaderManager( )
     vaBackgroundTaskManager::GetInstance().WaitUntilFinished( m_backgroundShaderCompilationProgressIndicator );
 #endif
 }
+

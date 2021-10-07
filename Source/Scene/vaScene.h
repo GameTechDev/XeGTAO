@@ -74,13 +74,6 @@ namespace Vanilla
         };
 
     private:
-        struct DragDropNodeData
-        {
-            vaGUID                      SceneUID;
-            entt::entity                Entity;
-            static const char*      PayloadTypeName( ) { return "DND_SCENE_NODE"; };
-            bool operator == ( const DragDropNodeData & other ) { return this->SceneUID == other.SceneUID && this->Entity == other.Entity; }
-        };
 
     protected:
         static int                                  s_instanceCount;
@@ -122,7 +115,6 @@ namespace Vanilla
 
         //////////////////////////////////////////////////////////////////////////
         // reactive systems
-        // entt::observer                              m_transformWorldObserver;       // this is effectively a list of 'moved' objects - I have no idea why I need this for the moment, but I wanted to test the observer pattern
         //////////////////////////////////////////////////////////////////////////
 
         //////////////////////////////////////////////////////////////////////////
@@ -172,6 +164,7 @@ namespace Vanilla
 
         entt::registry &                            Registry( )                                         { return m_registry; }
         const entt::registry &                      Registry( ) const                                   { return m_registry; }
+        const entt::registry &                      CRegistry( ) const                                  { return m_registry; }
         // const Scene::Staging &                      Staging( )                                          { return m_staging; }
 
         entt::entity                                CreateEntity( const string & name, const vaMatrix4x4 & localTransform = vaMatrix4x4::Identity, entt::entity parent = entt::null, const vaGUID & renderMeshID = vaGUID::Null, const vaGUID & renderMaterialID = vaGUID::Null );
@@ -182,8 +175,6 @@ namespace Vanilla
 
         // removes all entities
         void                                        ClearAll( );
-
-        bool                                        Serialize( class vaXMLSerializer & serializer );
 
         bool                                        SaveJSON( const string & filePath );
         bool                                        LoadJSON( const string & filePath );
@@ -246,6 +237,8 @@ namespace Vanilla
 
     public:
         static vaScene *                            FindByRuntimeID( uint64 runtimeID );
+
+        Scene::UIDRegistry &                        UIDRegistry( )                                      { return m_registry.ctx<Scene::UIDRegistry>(); }
     };
 
     // inline void vaScene::OnTransformLocalChanged( entt::registry & registry, entt::entity entity )

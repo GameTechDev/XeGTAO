@@ -36,7 +36,7 @@ namespace Vanilla
         friend class vaFramePtrStatic;
 
         alignas(VA_ALIGN_PAD)  char                    m_fptPadding1[VA_ALIGN_PAD];
-        alignas(VA_ALIGN_PAD)  std::atomic_uint64_t    m_fptLast = 0;
+        alignas(VA_ALIGN_PAD)  std::atomic_uint64_t    m_fptLast = ULLONG_MAX;
         alignas(VA_ALIGN_PAD)  char                    m_fptPadding2[VA_ALIGN_PAD];
 
     protected:

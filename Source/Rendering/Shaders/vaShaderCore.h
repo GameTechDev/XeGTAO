@@ -13,9 +13,33 @@
 
 #ifndef VA_COMPILED_AS_SHADER_CODE
 
-#include "Core/vaCoreIncludes.h"
+namespace Vanilla
+{
+#define VA_SATURATE     vaMath::Saturate
+#define VA_MIN          vaComponentMin
+#define VA_MAX          vaComponentMax
+#define VA_LENGTH       vaLength
+#define VA_INLINE       inline
+#define VA_REFERENCE    &
+#define VA_CONST        const
 
-#define ShaderMin( x, y )        std::min( x, y )
+}
+
+#else
+
+#define VA_SATURATE     saturate
+#define VA_MIN          min
+#define VA_MAX          max
+#define VA_LENGTH       length
+#define VA_INLINE       
+#define VA_REFERENCE    
+#define VA_CONST
+
+#endif
+
+#ifndef VA_COMPILED_AS_SHADER_CODE
+
+#include "Core/vaCoreIncludes.h"
 
 #else
 
@@ -39,6 +63,7 @@
 #define vaVector3   float3
 #define vaVector2   float2
 #define vaVector2i  int2
+#define vaVector2ui uint2
 #define vaVector4i  int4
 #define vaVector4ui uint4
 

@@ -6,7 +6,7 @@
     <ReceiveShadows>true</ReceiveShadows>
     <Wireframe>false</Wireframe>
     <AdvancedSpecularShader>true</AdvancedSpecularShader>
-    <SpecialEmissiveLight>true</SpecialEmissiveLight>
+    <SpecialEmissiveLight>false</SpecialEmissiveLight>
     <LocalIBLNormalBasedBias>0</LocalIBLNormalBasedBias>
     <LocalIBLBasedBias>-1</LocalIBLBasedBias>
     <VRSRateOffset>0</VRSRateOffset>

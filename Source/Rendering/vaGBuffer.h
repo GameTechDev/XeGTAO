@@ -80,7 +80,7 @@ namespace Vanilla
         bool                                            m_shadersDirty;
 
 //        vaDirectXConstantBuffer< GBufferConstants >
-//                                                m_constantsBuffer;
+//                                                m_constantBuffer;
 
         vector< pair< string, string > >                m_staticShaderMacros;
 

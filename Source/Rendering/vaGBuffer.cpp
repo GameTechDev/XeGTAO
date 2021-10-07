@@ -211,11 +211,11 @@ void vaGBuffer::UpdateShaders( )
     {
         m_shadersDirty = false;
     
-        m_debugDrawDepthPS->CreateShaderFromFile(                m_shaderFileToUse, "ps_5_0", "DebugDrawDepthPS",                 m_staticShaderMacros, false );
-        m_debugDrawDepthViewspaceLinearPS->CreateShaderFromFile( m_shaderFileToUse, "ps_5_0", "DebugDrawDepthViewspaceLinearPS",  m_staticShaderMacros, false );
-        m_debugDrawNormalMapPS->CreateShaderFromFile(            m_shaderFileToUse, "ps_5_0", "DebugDrawNormalMapPS",             m_staticShaderMacros, false );
-        m_debugDrawAlbedoPS->CreateShaderFromFile(               m_shaderFileToUse, "ps_5_0", "DebugDrawAlbedoPS",                m_staticShaderMacros, false );
-        m_debugDrawRadiancePS->CreateShaderFromFile(             m_shaderFileToUse, "ps_5_0", "DebugDrawRadiancePS",              m_staticShaderMacros, false );
+        m_debugDrawDepthPS->CompileFromFile(                m_shaderFileToUse, "ps_5_0", "DebugDrawDepthPS",                 m_staticShaderMacros, false );
+        m_debugDrawDepthViewspaceLinearPS->CompileFromFile( m_shaderFileToUse, "ps_5_0", "DebugDrawDepthViewspaceLinearPS",  m_staticShaderMacros, false );
+        m_debugDrawNormalMapPS->CompileFromFile(            m_shaderFileToUse, "ps_5_0", "DebugDrawNormalMapPS",             m_staticShaderMacros, false );
+        m_debugDrawAlbedoPS->CompileFromFile(               m_shaderFileToUse, "ps_5_0", "DebugDrawAlbedoPS",                m_staticShaderMacros, false );
+        m_debugDrawRadiancePS->CompileFromFile(             m_shaderFileToUse, "ps_5_0", "DebugDrawRadiancePS",              m_staticShaderMacros, false );
     }
 }
 

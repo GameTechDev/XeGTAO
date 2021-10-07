@@ -5,11 +5,18 @@
 
 #include "Rendering/Effects/vaSkybox.h"
 
+#include "Rendering/vaRenderingIncludes.h"
+
+#ifndef __INTELLISENSE__
+#include "Rendering/Shaders/vaSkybox.hlsl"
+#endif
+
 #include "Scene/vaScene.h"
 
 using namespace Vanilla;
 
-vaSkybox::vaSkybox( const vaRenderingModuleParams & params ) : vaRenderingModule( params ), m_constantsBuffer( params ),
+vaSkybox::vaSkybox( const vaRenderingModuleParams & params ) : vaRenderingModule( params ), 
+    m_constantBuffer( vaConstantBuffer::Create<ShaderSkyboxConstants>( params.RenderDevice, "ShaderSkyboxConstants" ) ),
     m_vertexShader( params ), 
     m_pixelShader( params )
 { 
@@ -18,8 +25,8 @@ vaSkybox::vaSkybox( const vaRenderingModuleParams & params ) : vaRenderingModule
     std::vector<vaVertexInputElementDesc> inputElements;
     inputElements.push_back( { "SV_Position", 0, vaResourceFormat::R32G32B32_FLOAT, 0, vaVertexInputElementDesc::AppendAlignedElement, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } );
 
-    m_vertexShader->CreateShaderAndILFromFile( "vaSkybox.hlsl", "SkyboxVS", inputElements, vaShaderMacroContaner{}, false );
-    m_pixelShader->CreateShaderFromFile( "vaSkybox.hlsl", "SkyboxPS", vaShaderMacroContaner{}, false );
+    m_vertexShader->CompileVSAndILFromFile( "vaSkybox.hlsl", "SkyboxVS", inputElements, vaShaderMacroContaner{}, false );
+    m_pixelShader->CompileFromFile( "vaSkybox.hlsl", "SkyboxPS", vaShaderMacroContaner{}, false );
 
     /*
     // Create screen triangle vertex buffer
@@ -107,12 +114,12 @@ vaDrawResultFlags vaSkybox::Draw( vaRenderDeviceContext & renderContext, const v
 
     ShaderSkyboxConstants consts;
     UpdateConstants( drawAttributes, consts );
-    m_constantsBuffer.Upload( renderContext, consts );
+    m_constantBuffer->Upload( renderContext, consts );
 
     vaGraphicsItem renderItem;
     m_renderDevice.FillFullscreenPassGraphicsItem( renderItem, drawAttributes.Camera.GetUseReversedZ( ) );
 
-    renderItem.ConstantBuffers[ SKYBOX_CONSTANTSBUFFERSLOT ]    = m_constantsBuffer;
+    renderItem.ConstantBuffers[ SKYBOX_CONSTANTSBUFFERSLOT ]    = m_constantBuffer;
     renderItem.ShaderResourceViews[ SKYBOX_TEXTURE_SLOT0 ]      = m_cubemap;
 
     renderItem.VertexShader         = m_vertexShader.get();

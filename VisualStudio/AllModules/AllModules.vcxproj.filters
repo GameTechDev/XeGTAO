@@ -363,6 +363,12 @@
     <ClCompile Include="..\..\Source\Scene\vaSceneAsync.cpp">
       <Filter>Scene</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Scene\vaAssetImporter_cgltf.cpp">
+      <Filter>Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Rendering\vaGPUSort.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Source\Core\vaCore.h">
@@ -854,6 +860,12 @@
     </ClInclude>
     <ClInclude Include="..\..\Source\Scene\vaSceneAsync.h">
       <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\vaGPUSort.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaGPUSort.hlsl">
+      <Filter>Rendering\Shaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

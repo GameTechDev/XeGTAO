@@ -8,6 +8,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#if 0 // this is probably going out forever
+
 #pragma once
 
 #include "Core/vaCoreIncludes.h"
@@ -76,7 +78,7 @@ namespace Vanilla
 
 
         vaTypedConstantBufferWrapper<PrimitiveShapeRendererShaderConstants, true>  
-                                                m_constantsBuffer;
+                                                m_constantBuffer;
 
         vaAutoRMI<vaVertexShader>           m_vertexShader;
         vaAutoRMI<vaPixelShader>            m_pixelShader;
@@ -97,3 +99,4 @@ namespace Vanilla
         virtual void                            Draw( vaRenderDeviceContext & renderContext, const vaRenderOutputs & renderOutputs, const vaDrawAttributes & drawAttributes, DrawSettings & drawSettings = DrawSettings(), bool clearCollected = true );
     };
 }
+#endif

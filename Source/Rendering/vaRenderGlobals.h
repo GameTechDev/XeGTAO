@@ -14,12 +14,7 @@
 #include "Core/vaUI.h"
 
 #include "Rendering/vaRendering.h"
-
 #include "Rendering/vaRenderDevice.h"
-
-#include "Rendering/vaShader.h"
-
-#include "Rendering/vaRenderBuffers.h"
 
 namespace Vanilla
 {
@@ -66,9 +61,7 @@ namespace Vanilla
 
         std::vector<CursorHoverInfo>        m_cursorHoverInfoItems;
 
-        vaTypedConstantBufferWrapper< ShaderGlobalConstants, true >
-                                            m_constantsBuffer;
-
+        shared_ptr<vaConstantBuffer>        m_constantBuffer;
         bool                                m_debugDrawDepth;
         bool                                m_debugDrawNormalsFromDepth;
 

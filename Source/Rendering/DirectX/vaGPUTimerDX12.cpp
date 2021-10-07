@@ -46,7 +46,7 @@ vaGPUContextTracerDX12::vaGPUContextTracerDX12( const vaRenderingModuleParams& p
 
     for( int i = 0; i < _countof( m_queryReadbackBuffers ); i++ )
     {
-        m_queryReadbackBuffers[i] = vaRenderBuffer::Create<uint64>( m_renderDevice, vaGPUContextTracer::c_maxTraceCount * 2, vaRenderBufferFlags::Readback, nullptr, "GPUContextTracerReadback" );
+        m_queryReadbackBuffers[i] = vaRenderBuffer::Create<uint64>( m_renderDevice, vaGPUContextTracer::c_maxTraceCount * 2, vaRenderBufferFlags::Readback, "GPUContextTracerReadback", nullptr );
         m_currentTraceIndex[i] = 0;
     }
 }

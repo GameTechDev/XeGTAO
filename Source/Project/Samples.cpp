@@ -26,8 +26,13 @@
 #include "Rendering/Effects/vaPostProcessTonemap.h"
 #include "Rendering/Misc/vaZoomTool.h"
 #include "Rendering/Misc/vaImageCompareTool.h"
+#include "Rendering/Effects/vaGTAO.h"
+
+#include "Rendering/vaSceneRenderer.h"
 
 #include "IntegratedExternals/vaImguiIntegration.h"
+
+#include <random>
 
 using namespace Vanilla;
 
@@ -54,7 +59,7 @@ void Sample01_FullscreenPass( vaRenderDevice & renderDevice, vaApplicationBase &
     if( applicationState == vaApplicationState::Initializing )
     {
         pixelShader = renderDevice.CreateModule<vaPixelShader>( );
-        pixelShader->CreateShaderFromBuffer( 
+        pixelShader->CompileFromBuffer( 
             "float4 main( in const float4 xPos : SV_Position ) : SV_Target          \n"
             "{                                                                      \n"
             "   return float4( frac(xPos.x / 256.0), frac(xPos.y / 256.0), 0, 1 );  \n"
@@ -99,13 +104,13 @@ void Sample02_JustATriangle( vaRenderDevice & renderDevice, vaApplicationBase & 
         std::vector<vaVertexInputElementDesc> inputElements = { 
             { "SV_Position", 0,    vaResourceFormat::R32G32B32A32_FLOAT,    0,  0, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 }, 
             { "TEXCOORD", 0,       vaResourceFormat::R32G32_FLOAT,          0, 16, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } };
-        vertexShader->CreateShaderAndILFromBuffer( 
+        vertexShader->CompileVSAndILFromBuffer( 
             "void main( inout const float4 xPos : SV_Position, inout float2 UV : TEXCOORD0 ) { }"
             , "main", inputElements, vaShaderMacroContaner(), true );
 
         // pixel shader
         pixelShader = renderDevice.CreateModule<vaPixelShader>(); // get the platform dependent object
-        pixelShader->CreateShaderFromBuffer( 
+        pixelShader->CompileFromBuffer( 
             "Texture2D g_source           : register( t0 );                                                 \n"
             "float4 main( in const float4 xPos : SV_Position, in const float2 UV : TEXCOORD0  ) : SV_Target \n"
             "{                                                                                              \n"
@@ -124,7 +129,7 @@ void Sample02_JustATriangle( vaRenderDevice & renderDevice, vaApplicationBase & 
             {  0.25f, -0.2f, 0.0f, 1.0f, 2.0f, 0.0f },
             { -0.25f, -0.2f, 0.0f, 1.0f, 0.0f, 2.0f },
         };
-        vertexBuffer = vaRenderBuffer::Create<SimpleVertex>( renderDevice, _countof(triangleVerts), vaRenderBufferFlags::VertexIndexBuffer, triangleVerts, "vertices" );
+        vertexBuffer = vaRenderBuffer::Create<SimpleVertex>( renderDevice, _countof(triangleVerts), vaRenderBufferFlags::VertexIndexBuffer, "vertices", triangleVerts );
         return;
     }
     else if( applicationState == vaApplicationState::ShuttingDown )
@@ -175,13 +180,13 @@ void Sample03_TexturedTriangle( vaRenderDevice & renderDevice, vaApplicationBase
         std::vector<vaVertexInputElementDesc> inputElements = { 
             { "SV_Position", 0,    vaResourceFormat::R32G32B32A32_FLOAT,    0,  0, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 }, 
             { "TEXCOORD", 0,       vaResourceFormat::R32G32_FLOAT,          0, 16, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } };
-        vertexShader->CreateShaderAndILFromBuffer( 
+        vertexShader->CompileVSAndILFromBuffer( 
             "void main( inout const float4 xPos : SV_Position, inout float2 UV : TEXCOORD0 ) { }"
             , "main", inputElements, vaShaderMacroContaner(), true );
 
         // pixel shader
         pixelShader = renderDevice.CreateModule<vaPixelShader>(); // get the platform dependent object
-        pixelShader->CreateShaderFromBuffer( 
+        pixelShader->CompileFromBuffer( 
             "#include \"vaShared.hlsl\"                                                                     \n" // this defines g_samplerLinearClamp and bunch of other stuff
             "Texture2D g_source           : register( t0 );                                                 \n"
             "float4 main( in const float4 xPos : SV_Position, in const float2 UV : TEXCOORD0  ) : SV_Target \n"
@@ -201,7 +206,7 @@ void Sample03_TexturedTriangle( vaRenderDevice & renderDevice, vaApplicationBase
             {  0.25f, -0.2f, 0.0f, 1.0f, 1.0f, 0.0f },
             { -0.25f, -0.2f, 0.0f, 1.0f, 0.0f, 1.0f },
         };
-        vertexBuffer = vaRenderBuffer::Create<SimpleVertex>( renderDevice, _countof(triangleVerts), vaRenderBufferFlags::VertexIndexBuffer, triangleVerts, "vertices" );
+        vertexBuffer = vaRenderBuffer::Create<SimpleVertex>( renderDevice, _countof(triangleVerts), vaRenderBufferFlags::VertexIndexBuffer, "vertices", triangleVerts );
         // texture
         {
             uint32 initialData[16*16];
@@ -263,7 +268,7 @@ void Sample04_ConstantBuffer( vaRenderDevice & renderDevice, vaApplicationBase &
         float AspectRatio;
         float SomethingElse;
     };
-    static shared_ptr<vaTypedConstantBufferWrapper<ShaderConstants>> constantBuffer;
+    static shared_ptr<vaConstantBuffer> constantBuffer;
 
     if( applicationState == vaApplicationState::Initializing )
     {
@@ -272,7 +277,7 @@ void Sample04_ConstantBuffer( vaRenderDevice & renderDevice, vaApplicationBase &
         std::vector<vaVertexInputElementDesc> inputElements = { 
             { "SV_Position", 0,    vaResourceFormat::R32G32B32A32_FLOAT,    0,  0, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 }, 
             { "TEXCOORD", 0,       vaResourceFormat::R32G32_FLOAT,          0, 16, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } };
-        vertexShader->CreateShaderAndILFromBuffer( 
+        vertexShader->CompileVSAndILFromBuffer( 
             "struct ShaderConstants{ float2 UVOffset; float AspectRatio; float SomethingElse; };                           \n"
             "cbuffer Sample04Globals : register(b0) { ShaderConstants g_consts ; }                                        \n"
             "void main( inout float4 xPos : SV_Position, inout float2 UV : TEXCOORD0 ) { xPos *= float4( 1, g_consts.AspectRatio, 1, 1 ); }   \n"
@@ -280,7 +285,7 @@ void Sample04_ConstantBuffer( vaRenderDevice & renderDevice, vaApplicationBase &
 
         // pixel shader
         pixelShader = renderDevice.CreateModule<vaPixelShader>(); // get the platform dependent object
-        pixelShader->CreateShaderFromBuffer( 
+        pixelShader->CompileFromBuffer( 
             "#include \"vaShared.hlsl\"                                                                             \n" // this defines g_samplerLinearClamp and bunch of other stuff
             "struct ShaderConstants{ float2 UVOffset; float AspectRatio; float SomethingElse; };           \n"
             "cbuffer Sample04Globals : register(b0) { ShaderConstants g_consts ; }                        \n"
@@ -302,10 +307,10 @@ void Sample04_ConstantBuffer( vaRenderDevice & renderDevice, vaApplicationBase &
             {  0.2f,  -0.141f, 0.0f, 1.0f, 1.0f, 0.0f },
             { -0.2f,  -0.141f, 0.0f, 1.0f, 0.0f, 1.0f },
         };
-        vertexBuffer = vaRenderBuffer::Create<SimpleVertex>( renderDevice, _countof(triangleVerts), vaRenderBufferFlags::VertexIndexBuffer, triangleVerts, "vertices" );
+        vertexBuffer = vaRenderBuffer::Create<SimpleVertex>( renderDevice, _countof(triangleVerts), vaRenderBufferFlags::VertexIndexBuffer, "vertices", triangleVerts );
 
         uint32 indices[3] = { 0, 2, 1 };
-        indexBuffer = vaRenderBuffer::Create( renderDevice, _countof(indices), vaResourceFormat::R32_UINT, vaRenderBufferFlags::VertexIndexBuffer, indices, "indices" );
+        indexBuffer = vaRenderBuffer::Create( renderDevice, _countof(indices), vaResourceFormat::R32_UINT, vaRenderBufferFlags::VertexIndexBuffer, "indices", indices );
 
         // texture
         {
@@ -315,7 +320,7 @@ void Sample04_ConstantBuffer( vaRenderDevice & renderDevice, vaApplicationBase &
                     initialData[ y * 16 + x ] = (((x+y)%2) == 0)?(0xFFFFFFFF):(0x00000000);
             texture = vaTexture::Create2D( renderDevice, vaResourceFormat::R8G8B8A8_UNORM, 16, 16, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource, vaResourceAccessFlags::Default, vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaTextureFlags::None, vaTextureContentsType::GenericColor, initialData, 16*sizeof( uint32 ) );
         }
-        constantBuffer = std::make_shared<vaTypedConstantBufferWrapper<ShaderConstants>>( renderDevice );
+        constantBuffer = vaConstantBuffer::Create<ShaderConstants>( renderDevice, "constants" );
         return;
     }
     else if( applicationState == vaApplicationState::ShuttingDown )
@@ -353,7 +358,7 @@ void Sample04_ConstantBuffer( vaRenderDevice & renderDevice, vaApplicationBase &
     renderItem.DrawType         = vaGraphicsItem::DrawType::DrawIndexed;
     renderItem.DrawIndexedParams.IndexCount = 3;
     renderItem.ShaderResourceViews[0] = texture;
-    renderItem.ConstantBuffers[0] = *constantBuffer;
+    renderItem.ConstantBuffers[0] = constantBuffer;
 
     renderDevice.GetMainContext()->ExecuteSingleItem( renderItem, renderDevice.GetCurrentBackbuffer(), nullptr );
 
@@ -380,7 +385,7 @@ void Sample05_RenderToTexture( vaRenderDevice & renderDevice, vaApplicationBase 
         float AspectRatio;
         float Time;
     };
-    static shared_ptr<vaTypedConstantBufferWrapper<ShaderConstants>> constantBuffer;
+    static shared_ptr<vaConstantBuffer> constantBuffer;
 
     if( applicationState == vaApplicationState::Initializing )
     {
@@ -389,7 +394,7 @@ void Sample05_RenderToTexture( vaRenderDevice & renderDevice, vaApplicationBase 
         std::vector<vaVertexInputElementDesc> inputElements = { 
             { "SV_Position", 0,    vaResourceFormat::R32G32B32A32_FLOAT,    0,  0, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 }, 
             { "TEXCOORD", 0,       vaResourceFormat::R32G32_FLOAT,          0, 16, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } };
-        vertexShader->CreateShaderAndILFromBuffer( 
+        vertexShader->CompileVSAndILFromBuffer( 
             "struct ShaderConstants{ float2 UVOffset; float AspectRatio; float SomethingElse; };                           \n"
             "cbuffer Sample04Globals : register(b0) { ShaderConstants g_consts ; }                                        \n"
             "void main( inout float4 xPos : SV_Position, inout float2 UV : TEXCOORD0 ) { xPos *= float4( 1, g_consts.AspectRatio, 1, 1 ); }   \n"
@@ -397,7 +402,7 @@ void Sample05_RenderToTexture( vaRenderDevice & renderDevice, vaApplicationBase 
 
         // pixel shader
         pixelShader = renderDevice.CreateModule<vaPixelShader>(); // get the platform dependent object
-        pixelShader->CreateShaderFromBuffer( 
+        pixelShader->CompileFromBuffer( 
             "#include \"vaShared.hlsl\"                                                                             \n" // this defines g_samplerLinearClamp and bunch of other stuff
             "struct ShaderConstants{ float2 UVOffset; float AspectRatio; float SomethingElse; };           \n"
             "cbuffer Sample04Globals : register(b0) { ShaderConstants g_consts ; }                        \n"
@@ -410,7 +415,7 @@ void Sample05_RenderToTexture( vaRenderDevice & renderDevice, vaApplicationBase 
 
         // texture pixel shader
         texturePixelShader = renderDevice.CreateModule<vaPixelShader>(); // get the platform dependent object
-        texturePixelShader->CreateShaderFromBuffer( 
+        texturePixelShader->CompileFromBuffer( 
             "#include \"vaShared.hlsl\"                                                                             \n" // this defines g_samplerLinearClamp and bunch of other stuff
             "struct ShaderConstants{ float2 UVOffset; float AspectRatio; float Time; };                    \n"
             "cbuffer Sample04Globals : register(b0) { ShaderConstants g_consts ; }                        \n"
@@ -444,10 +449,10 @@ void Sample05_RenderToTexture( vaRenderDevice & renderDevice, vaApplicationBase 
             {  0.2f,  -0.141f, 0.0f, 1.0f, 1.0f, 0.0f },
             { -0.2f,  -0.141f, 0.0f, 1.0f, 0.0f, 1.0f },
         };
-        vertexBuffer = vaRenderBuffer::Create<SimpleVertex>( renderDevice, _countof( triangleVerts ), vaRenderBufferFlags::VertexIndexBuffer, triangleVerts, "vertices" );
+        vertexBuffer = vaRenderBuffer::Create<SimpleVertex>( renderDevice, _countof( triangleVerts ), vaRenderBufferFlags::VertexIndexBuffer, "vertices", triangleVerts );
 
         uint32 indices[3] = { 0, 2, 1 };
-        indexBuffer = vaRenderBuffer::Create( renderDevice, _countof( indices ), vaResourceFormat::R32_UINT, vaRenderBufferFlags::VertexIndexBuffer, indices, "indices" );
+        indexBuffer = vaRenderBuffer::Create( renderDevice, _countof( indices ), vaResourceFormat::R32_UINT, vaRenderBufferFlags::VertexIndexBuffer, "indices", indices );
 
         // textures
         {
@@ -457,7 +462,7 @@ void Sample05_RenderToTexture( vaRenderDevice & renderDevice, vaApplicationBase 
                     initialData[ y * 32 + x ] = (((x+y)%2) == 0)?(0xFFFFFFFF):(0x00000000);
             texture = vaTexture::Create2D( renderDevice, vaResourceFormat::R8G8B8A8_UNORM_SRGB, 32, 32, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::RenderTarget, vaResourceAccessFlags::Default, vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaTextureFlags::None, vaTextureContentsType::GenericColor, initialData, 32*sizeof(uint32) );
         }
-        constantBuffer = std::make_shared<vaTypedConstantBufferWrapper<ShaderConstants>>( renderDevice );
+        constantBuffer = vaConstantBuffer::Create<ShaderConstants>( renderDevice, "constants" );
         return;
     }
     else if( applicationState == vaApplicationState::ShuttingDown )
@@ -492,7 +497,7 @@ void Sample05_RenderToTexture( vaRenderDevice & renderDevice, vaApplicationBase 
         vaGraphicsItem renderItem;
         renderDevice.FillFullscreenPassGraphicsItem( renderItem );
         renderItem.PixelShader = texturePixelShader;
-        renderItem.ConstantBuffers[0] = *constantBuffer;
+        renderItem.ConstantBuffers[0] = constantBuffer;
         renderDevice.GetMainContext()->ExecuteSingleItem( renderItem, vaRenderOutputs::FromRTDepth(texture), nullptr );
     }
 
@@ -507,7 +512,7 @@ void Sample05_RenderToTexture( vaRenderDevice & renderDevice, vaApplicationBase 
         renderItem.DrawType         = vaGraphicsItem::DrawType::DrawIndexed;
         renderItem.DrawIndexedParams.IndexCount = 3;
         renderItem.ShaderResourceViews[0] = texture;
-        renderItem.ConstantBuffers[0] = *constantBuffer;
+        renderItem.ConstantBuffers[0] = constantBuffer;
 
         renderDevice.GetMainContext( )->ExecuteSingleItem( renderItem, renderDevice.GetCurrentBackbuffer( ), nullptr );
     }
@@ -534,7 +539,7 @@ void Sample06_RenderToTextureCS( vaRenderDevice & renderDevice, vaApplicationBas
         float AspectRatio;
         float Time;
     };
-    static shared_ptr<vaTypedConstantBufferWrapper<ShaderConstants>> constantBuffer;
+    static shared_ptr<vaConstantBuffer> constantBuffer;
 
     if( applicationState == vaApplicationState::Initializing )
     {
@@ -543,7 +548,7 @@ void Sample06_RenderToTextureCS( vaRenderDevice & renderDevice, vaApplicationBas
         std::vector<vaVertexInputElementDesc> inputElements = { 
             { "SV_Position", 0,    vaResourceFormat::R32G32B32A32_FLOAT,    0,  0, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 }, 
             { "TEXCOORD", 0,       vaResourceFormat::R32G32_FLOAT,          0, 16, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } };
-        vertexShader->CreateShaderAndILFromBuffer( 
+        vertexShader->CompileVSAndILFromBuffer( 
             "struct ShaderConstants{ float2 UVOffset; float AspectRatio; float SomethingElse; };                           \n"
             "cbuffer Sample04Globals : register(b0) { ShaderConstants g_consts ; }                                        \n"
             "void main( inout float4 xPos : SV_Position, inout float2 UV : TEXCOORD0 ) { xPos *= float4( 1, g_consts.AspectRatio, 1, 1 ); }   \n"
@@ -551,7 +556,7 @@ void Sample06_RenderToTextureCS( vaRenderDevice & renderDevice, vaApplicationBas
 
         // pixel shader
         pixelShader = renderDevice.CreateModule<vaPixelShader>(); // get the platform dependent object
-        pixelShader->CreateShaderFromBuffer( 
+        pixelShader->CompileFromBuffer( 
             "#include \"vaShared.hlsl\"                                                                             \n" // this defines g_samplerLinearClamp and bunch of other stuff
             "struct ShaderConstants{ float2 UVOffset; float AspectRatio; float SomethingElse; };           \n"
             "cbuffer Sample04Globals : register(b0) { ShaderConstants g_consts ; }                        \n"
@@ -564,7 +569,7 @@ void Sample06_RenderToTextureCS( vaRenderDevice & renderDevice, vaApplicationBas
 
         // texture pixel shader
         textureComputeShader = renderDevice.CreateModule<vaComputeShader>(); // get the platform dependent object
-        textureComputeShader->CreateShaderFromBuffer( 
+        textureComputeShader->CompileFromBuffer( 
             "#include \"vaShared.hlsl\"                                                                             \n" // this defines g_samplerLinearClamp and bunch of other stuff
             "struct ShaderConstants{ float2 UVOffset; float AspectRatio; float Time; };                    \n"
             "cbuffer Sample04Globals : register(b0) { ShaderConstants g_consts ; }                        \n"
@@ -602,10 +607,10 @@ void Sample06_RenderToTextureCS( vaRenderDevice & renderDevice, vaApplicationBas
             {  0.2f,  -0.141f, 0.0f, 1.0f, 1.0f, 0.0f },
             { -0.2f,  -0.141f, 0.0f, 1.0f, 0.0f, 1.0f },
         };
-        vertexBuffer = vaRenderBuffer::Create<SimpleVertex>( renderDevice, _countof( triangleVerts ), vaRenderBufferFlags::VertexIndexBuffer, triangleVerts, "vertices" );
+        vertexBuffer = vaRenderBuffer::Create<SimpleVertex>( renderDevice, _countof( triangleVerts ), vaRenderBufferFlags::VertexIndexBuffer, "vertices", triangleVerts );
 
         uint32 indices[3] = { 0, 2, 1 };
-        indexBuffer = vaRenderBuffer::Create( renderDevice, _countof( indices ), vaResourceFormat::R32_UINT, vaRenderBufferFlags::VertexIndexBuffer, indices, "indices" );
+        indexBuffer = vaRenderBuffer::Create( renderDevice, _countof( indices ), vaResourceFormat::R32_UINT, vaRenderBufferFlags::VertexIndexBuffer, "indices", indices );
 
         // texture
         {
@@ -615,7 +620,7 @@ void Sample06_RenderToTextureCS( vaRenderDevice & renderDevice, vaApplicationBas
                     initialData[ y * 32 + x ] = (((x+y)%2) == 0)?(0xFFFFFFFF):(0x00000000);
             texture = vaTexture::Create2D( renderDevice, vaResourceFormat::R8G8B8A8_TYPELESS, 32, 32, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess, vaResourceAccessFlags::Default, vaResourceFormat::R8G8B8A8_UNORM_SRGB, vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaResourceFormat::R32_UINT, vaTextureFlags::None, vaTextureContentsType::GenericColor, initialData, 32*sizeof(uint32) );
         }
-        constantBuffer = std::make_shared<vaTypedConstantBufferWrapper<ShaderConstants>>( renderDevice );
+        constantBuffer = vaConstantBuffer::Create<ShaderConstants>( renderDevice, "constants" );
         return;
     }
     else if( applicationState == vaApplicationState::ShuttingDown )
@@ -650,7 +655,7 @@ void Sample06_RenderToTextureCS( vaRenderDevice & renderDevice, vaApplicationBas
         vaComputeItem computeItem;
         vaRenderOutputs outputs;
         computeItem.ComputeShader = textureComputeShader;
-        computeItem.ConstantBuffers[0] = *constantBuffer;
+        computeItem.ConstantBuffers[0] = constantBuffer;
         outputs.UnorderedAccessViews[0] = texture;
         assert( texture->GetSizeX() == 32 && texture->GetSizeY() == 32 );
         computeItem.SetDispatch( 32/16, 32/16, 1 );
@@ -668,7 +673,7 @@ void Sample06_RenderToTextureCS( vaRenderDevice & renderDevice, vaApplicationBas
         renderItem.DrawType         = vaGraphicsItem::DrawType::DrawIndexed;
         renderItem.DrawIndexedParams.IndexCount = 3;
         renderItem.ShaderResourceViews[0] = texture;
-        renderItem.ConstantBuffers[0] = *constantBuffer;
+        renderItem.ConstantBuffers[0] = constantBuffer;
 
         renderDevice.GetMainContext()->ExecuteSingleItem( renderItem, renderDevice.GetCurrentBackbuffer(), nullptr );
     }
@@ -696,7 +701,7 @@ void Sample07_TextureUpload( vaRenderDevice & renderDevice, vaApplicationBase & 
         float AspectRatio;
         float Time;
     };
-    static shared_ptr<vaTypedConstantBufferWrapper<ShaderConstants>> constantBuffer;
+    static shared_ptr<vaConstantBuffer> constantBuffer;
 
     if( applicationState == vaApplicationState::Initializing )
     {
@@ -705,7 +710,7 @@ void Sample07_TextureUpload( vaRenderDevice & renderDevice, vaApplicationBase & 
         std::vector<vaVertexInputElementDesc> inputElements = { 
             { "SV_Position", 0,    vaResourceFormat::R32G32B32A32_FLOAT,    0,  0, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 }, 
             { "TEXCOORD", 0,       vaResourceFormat::R32G32_FLOAT,          0, 16, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } };
-        vertexShader->CreateShaderAndILFromBuffer( 
+        vertexShader->CompileVSAndILFromBuffer( 
             "struct ShaderConstants{ float2 UVOffset; float AspectRatio; float SomethingElse; };                           \n"
             "cbuffer Sample04Globals : register(b0) { ShaderConstants g_consts ; }                                        \n"
             "void main( inout float4 xPos : SV_Position, inout float2 UV : TEXCOORD0 ) { xPos *= float4( 1, g_consts.AspectRatio, 1, 1 ); }   \n"
@@ -713,7 +718,7 @@ void Sample07_TextureUpload( vaRenderDevice & renderDevice, vaApplicationBase & 
 
         // pixel shader
         pixelShader = renderDevice.CreateModule<vaPixelShader>(); // get the platform dependent object
-        pixelShader->CreateShaderFromBuffer( 
+        pixelShader->CompileFromBuffer( 
             "#include \"vaShared.hlsl\"                                                                             \n" // this defines g_samplerLinearClamp and bunch of other stuff
             "struct ShaderConstants{ float2 UVOffset; float AspectRatio; float SomethingElse; };           \n"
             "cbuffer Sample04Globals : register(b0) { ShaderConstants g_consts ; }                        \n"
@@ -735,10 +740,10 @@ void Sample07_TextureUpload( vaRenderDevice & renderDevice, vaApplicationBase & 
             {  0.2f,  -0.141f, 0.0f, 1.0f, 1.0f, 0.0f },
             { -0.2f,  -0.141f, 0.0f, 1.0f, 0.0f, 1.0f },
         };
-        vertexBuffer = vaRenderBuffer::Create<SimpleVertex>( renderDevice, _countof( triangleVerts ), vaRenderBufferFlags::VertexIndexBuffer, triangleVerts, "vertices" );
+        vertexBuffer = vaRenderBuffer::Create<SimpleVertex>( renderDevice, _countof( triangleVerts ), vaRenderBufferFlags::VertexIndexBuffer, "vertices", triangleVerts );
 
         uint32 indices[3] = { 0, 2, 1 };
-        indexBuffer = vaRenderBuffer::Create( renderDevice, _countof( indices ), vaResourceFormat::R32_UINT, vaRenderBufferFlags::VertexIndexBuffer, indices, "indices" );
+        indexBuffer = vaRenderBuffer::Create( renderDevice, _countof( indices ), vaResourceFormat::R32_UINT, vaRenderBufferFlags::VertexIndexBuffer, "indices", indices );
 
         // textures
         {
@@ -751,7 +756,7 @@ void Sample07_TextureUpload( vaRenderDevice & renderDevice, vaApplicationBase & 
                 stagingTextures[i] = vaTexture::Create2D( renderDevice, vaResourceFormat::R8G8B8A8_TYPELESS, 32, 32, 1, 1, 1, vaResourceBindSupportFlags::None, vaResourceAccessFlags::CPUWrite, vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaTextureFlags::None, vaTextureContentsType::GenericColor, initialData, 32*sizeof(uint32) );
         }
 
-        constantBuffer = std::make_shared<vaTypedConstantBufferWrapper<ShaderConstants>>( renderDevice );
+        constantBuffer = vaConstantBuffer::Create<ShaderConstants>( renderDevice, "constants" );
         return;
     }
     else if( applicationState == vaApplicationState::ShuttingDown )
@@ -840,7 +845,7 @@ void Sample07_TextureUpload( vaRenderDevice & renderDevice, vaApplicationBase & 
         renderItem.DrawType         = vaGraphicsItem::DrawType::DrawIndexed;
         renderItem.DrawIndexedParams.IndexCount = 3;
         renderItem.ShaderResourceViews[0] = texture;
-        renderItem.ConstantBuffers[0] = *constantBuffer;
+        renderItem.ConstantBuffers[0] = constantBuffer;
 
         renderDevice.GetMainContext()->ExecuteSingleItem( renderItem, renderDevice.GetCurrentBackbuffer(), nullptr );
     }
@@ -870,7 +875,7 @@ void Sample08_TextureDownload( vaRenderDevice & renderDevice, vaApplicationBase 
         float AspectRatio;
         float Time;
     };
-    static shared_ptr<vaTypedConstantBufferWrapper<ShaderConstants>> constantBuffer;
+    static shared_ptr<vaConstantBuffer> constantBuffer;
 
     if( applicationState == vaApplicationState::Initializing )
     {
@@ -879,7 +884,7 @@ void Sample08_TextureDownload( vaRenderDevice & renderDevice, vaApplicationBase 
         std::vector<vaVertexInputElementDesc> inputElements = { 
             { "SV_Position", 0,    vaResourceFormat::R32G32B32A32_FLOAT,    0,  0, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 }, 
             { "TEXCOORD", 0,       vaResourceFormat::R32G32_FLOAT,          0, 16, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } };
-        vertexShader->CreateShaderAndILFromBuffer( 
+        vertexShader->CompileVSAndILFromBuffer( 
             "struct ShaderConstants{ float2 UVOffset; float AspectRatio; float SomethingElse; };                           \n"
             "cbuffer Sample04Globals : register(b0) { ShaderConstants g_consts ; }                                        \n"
             "void main( inout float4 xPos : SV_Position, inout float2 UV : TEXCOORD0 ) { xPos *= float4( 1, g_consts.AspectRatio, 1, 1 ); }   \n"
@@ -887,7 +892,7 @@ void Sample08_TextureDownload( vaRenderDevice & renderDevice, vaApplicationBase 
 
         // pixel shader
         pixelShader = renderDevice.CreateModule<vaPixelShader>(); // get the platform dependent object
-        pixelShader->CreateShaderFromBuffer( 
+        pixelShader->CompileFromBuffer( 
             "#include \"vaShared.hlsl\"                                                                             \n" // this defines g_samplerLinearClamp and bunch of other stuff
             "struct ShaderConstants{ float2 UVOffset; float AspectRatio; float SomethingElse; };           \n"
             "cbuffer Sample04Globals : register(b0) { ShaderConstants g_consts ; }                        \n"
@@ -900,7 +905,7 @@ void Sample08_TextureDownload( vaRenderDevice & renderDevice, vaApplicationBase 
 
         // texture pixel shader
         textureComputeShader = renderDevice.CreateModule<vaComputeShader>(); // get the platform dependent object
-        textureComputeShader->CreateShaderFromBuffer( 
+        textureComputeShader->CompileFromBuffer( 
             "#include \"vaShared.hlsl\"                                                                             \n" // this defines g_samplerLinearClamp and bunch of other stuff
             "struct ShaderConstants{ float2 UVOffset; float AspectRatio; float Time; };                    \n"
             "cbuffer Sample04Globals : register(b0) { ShaderConstants g_consts ; }                        \n"
@@ -938,10 +943,10 @@ void Sample08_TextureDownload( vaRenderDevice & renderDevice, vaApplicationBase 
             {  0.2f,  -0.141f, 0.0f, 1.0f, 1.0f, 0.0f },
             { -0.2f,  -0.141f, 0.0f, 1.0f, 0.0f, 1.0f },
         };
-        vertexBuffer = vaRenderBuffer::Create<SimpleVertex>( renderDevice, _countof( triangleVerts ), vaRenderBufferFlags::VertexIndexBuffer, triangleVerts, "vertices" );
+        vertexBuffer = vaRenderBuffer::Create<SimpleVertex>( renderDevice, _countof( triangleVerts ), vaRenderBufferFlags::VertexIndexBuffer, "vertices", triangleVerts );
 
         uint32 indices[3] = { 0, 2, 1 };
-        indexBuffer = vaRenderBuffer::Create( renderDevice, _countof( indices ), vaResourceFormat::R32_UINT, vaRenderBufferFlags::VertexIndexBuffer, indices, "indices" );
+        indexBuffer = vaRenderBuffer::Create( renderDevice, _countof( indices ), vaResourceFormat::R32_UINT, vaRenderBufferFlags::VertexIndexBuffer, "indices", indices );
 
         // textures
         {
@@ -953,7 +958,7 @@ void Sample08_TextureDownload( vaRenderDevice & renderDevice, vaApplicationBase 
             for( int i = 0; i < _countof( stagingTextures ); i++ )
                 stagingTextures[i] = vaTexture::Create2D( renderDevice, vaResourceFormat::R8G8B8A8_TYPELESS, 32, 32, 1, 1, 1, vaResourceBindSupportFlags::None, vaResourceAccessFlags::CPURead, vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaTextureFlags::None, vaTextureContentsType::GenericColor, initialData, 32*sizeof(uint32) );
         }
-        constantBuffer = std::make_shared<vaTypedConstantBufferWrapper<ShaderConstants>>( renderDevice );
+        constantBuffer = vaConstantBuffer::Create<ShaderConstants>( renderDevice, "constants" );
         return;
     }
     else if( applicationState == vaApplicationState::ShuttingDown )
@@ -992,7 +997,7 @@ void Sample08_TextureDownload( vaRenderDevice & renderDevice, vaApplicationBase 
         vaComputeItem computeItem;
         vaRenderOutputs outputs;
         computeItem.ComputeShader = textureComputeShader;
-        computeItem.ConstantBuffers[0] = *constantBuffer;
+        computeItem.ConstantBuffers[0] = constantBuffer;
         outputs.UnorderedAccessViews[0] = texture;
         assert( texture->GetSizeX() == 32 && texture->GetSizeY() == 32 );
         computeItem.SetDispatch( 32/16, 32/16, 1 );
@@ -1039,7 +1044,7 @@ void Sample08_TextureDownload( vaRenderDevice & renderDevice, vaApplicationBase 
         renderItem.DrawType         = vaGraphicsItem::DrawType::DrawIndexed;
         renderItem.DrawIndexedParams.IndexCount = 3;
         renderItem.ShaderResourceViews[0] = texture;
-        renderItem.ConstantBuffers[0] = *constantBuffer;
+        renderItem.ConstantBuffers[0] = constantBuffer;
 
         renderDevice.GetMainContext()->ExecuteSingleItem( renderItem, renderDevice.GetCurrentBackbuffer(), nullptr );
     }
@@ -1067,7 +1072,7 @@ void Sample09_SavingScreenshot( vaRenderDevice & renderDevice, vaApplicationBase
         float AspectRatio;
         float Time;
     };
-    static shared_ptr<vaTypedConstantBufferWrapper<ShaderConstants>> constantBuffer;
+    static shared_ptr<vaConstantBuffer> constantBuffer;
 
     if( applicationState == vaApplicationState::Initializing )
     {
@@ -1076,7 +1081,7 @@ void Sample09_SavingScreenshot( vaRenderDevice & renderDevice, vaApplicationBase
         std::vector<vaVertexInputElementDesc> inputElements = { 
             { "SV_Position", 0,    vaResourceFormat::R32G32B32A32_FLOAT,    0,  0, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 }, 
             { "TEXCOORD", 0,       vaResourceFormat::R32G32_FLOAT,          0, 16, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } };
-        vertexShader->CreateShaderAndILFromBuffer( 
+        vertexShader->CompileVSAndILFromBuffer( 
             "struct ShaderConstants{ float2 UVOffset; float AspectRatio; float SomethingElse; };                           \n"
             "cbuffer Sample04Globals : register(b0) { ShaderConstants g_consts ; }                                        \n"
             "void main( inout float4 xPos : SV_Position, inout float2 UV : TEXCOORD0 ) { xPos *= float4( 1, g_consts.AspectRatio, 1, 1 ); }   \n"
@@ -1084,7 +1089,7 @@ void Sample09_SavingScreenshot( vaRenderDevice & renderDevice, vaApplicationBase
 
         // pixel shader
         pixelShader = renderDevice.CreateModule<vaPixelShader>(); // get the platform dependent object
-        pixelShader->CreateShaderFromBuffer( 
+        pixelShader->CompileFromBuffer( 
             "#include \"vaShared.hlsl\"                                                                             \n" // this defines g_samplerLinearClamp and bunch of other stuff
             "struct ShaderConstants{ float2 UVOffset; float AspectRatio; float Time; };                    \n"
             "cbuffer Sample04Globals : register(b0) { ShaderConstants g_consts ; }                        \n"
@@ -1118,12 +1123,12 @@ void Sample09_SavingScreenshot( vaRenderDevice & renderDevice, vaApplicationBase
             {  0.2f*4,  -0.141f*4, 0.0f, 1.0f, 3*1.0f, 3*0.0f },
             { -0.2f*4,  -0.141f*4, 0.0f, 1.0f, 3*0.0f, 3*1.0f },
         };
-        vertexBuffer = vaRenderBuffer::Create<SimpleVertex>( renderDevice, _countof( triangleVerts ), vaRenderBufferFlags::VertexIndexBuffer, triangleVerts, "vertices" );
+        vertexBuffer = vaRenderBuffer::Create<SimpleVertex>( renderDevice, _countof( triangleVerts ), vaRenderBufferFlags::VertexIndexBuffer, "vertices", triangleVerts );
 
         uint32 indices[3] = { 0, 2, 1 };
-        indexBuffer = vaRenderBuffer::Create( renderDevice, _countof( indices ), vaResourceFormat::R32_UINT, vaRenderBufferFlags::VertexIndexBuffer, indices, "indices" );
+        indexBuffer = vaRenderBuffer::Create( renderDevice, _countof( indices ), vaResourceFormat::R32_UINT, vaRenderBufferFlags::VertexIndexBuffer, "indices", indices );
 
-        constantBuffer = std::make_shared<vaTypedConstantBufferWrapper<ShaderConstants>>( renderDevice );
+        constantBuffer = vaConstantBuffer::Create<ShaderConstants>( renderDevice, "constants" );
 
         UIPanel = std::make_shared<vaUISimplePanel>( [&renderDevice] ( vaApplicationBase & ) 
         {
@@ -1178,7 +1183,7 @@ void Sample09_SavingScreenshot( vaRenderDevice & renderDevice, vaApplicationBase
     renderItem.FrontCounterClockwise = true; // just to prove index buffer works
     renderItem.DrawType         = vaGraphicsItem::DrawType::DrawIndexed;
     renderItem.DrawIndexedParams.IndexCount = 3;
-    renderItem.ConstantBuffers[0] = *constantBuffer;
+    renderItem.ConstantBuffers[0] = constantBuffer;
 
     renderDevice.GetMainContext()->ExecuteSingleItem( renderItem, vaRenderOutputs::FromRTDepth(offscreenRT), nullptr );
 
@@ -1257,101 +1262,232 @@ void Sample10_Skybox( vaRenderDevice & renderDevice, vaApplicationBase & applica
     renderDevice.EndAndPresentFrame( (application.GetVsync())?(1):(0) );
 }
 
+// basics required to draw a mesh (without any external complexities)
+struct SimpleMeshRenderer
+{
+    struct SimpleInstanceConstants
+    {
+        vaMatrix4x4         WorldTrans              = vaMatrix4x4::Identity;
+        vaMatrix4x4         WorldViewProjTrans      = vaMatrix4x4::Identity;
+        vaVector4           SunDir                  = vaVector4( vaVector3( 0.5f, 0.5f, -1.0f ).Normalized(), 0 );
+        vaVector4           SunIntensity            = vaVector4( 0.6f, 0.55f, 0.5f, 1.0f );
+        vaVector4           AmbientIntensity        = vaVector4( 0.4f, 0.45f, 0.5f, 1.0f );
+        vaVector4           PreExposureMultiplier   = vaVector4::Zero;
+    };
+
+    shared_ptr<vaVertexShader>      VertexShader;
+    shared_ptr<vaPixelShader>       PixelShader;
+    shared_ptr<vaConstantBuffer>    ConstantBuffer;
+
+    SimpleMeshRenderer( vaRenderDevice & renderDevice )
+    {
+        // constants
+        ConstantBuffer = vaConstantBuffer::Create<SimpleInstanceConstants>( renderDevice, "SimpleInstanceConstants" );
+
+        // vertex shader
+        VertexShader = renderDevice.CreateModule<vaVertexShader>(); // get the platform dependent object
+         
+        string globals =    
+            "struct SimpleInstanceConstants                                         \n"
+            "{                                                                      \n"
+            "   float4x4            WorldTrans        ;                             \n" 
+            "   float4x4            WorldViewProjTrans;                             \n"
+            "   float4              SunDir         ;                                \n"
+            "   float4              SunIntensity   ;                                \n"
+            "   float4              AmbientIntensity;                               \n"
+            "   float4              PreExposureMultiplier;                          \n"
+            "};                                                                     \n"
+            "cbuffer Globals : register(b0) { SimpleInstanceConstants g_consts ; }  \n";
+
+        VertexShader->CompileVSAndILFromBuffer( globals + 
+            "void main( inout float4 position : SV_Position, inout float3 normal : NORMAL, inout float4 texcoord01 : TEXCOORD0 )    \n"
+            "{                                                                                                                      \n"
+            " position = mul( g_consts.WorldViewProjTrans, float4( position.xyz, 1.0 ) );                                           \n"
+            " normal   = normalize( mul( (float3x3)g_consts.WorldTrans, normal.xyz ).xyz );                                         \n"     // <- this isn't correct with scaling (see main vertex shader)
+            "}                                                                                                                      \n"
+            , "main", vaRenderMesh::GetStandardInputLayout(), {}, true );
+
+        // pixel shader
+        PixelShader = renderDevice.CreateModule<vaPixelShader>(); // get the platform dependent object
+        PixelShader->CompileFromBuffer( globals + 
+            "float4 main( const float4 position : SV_Position, float3 normal : NORMAL, float4 texcoord01 : TEXCOORD0 ) : SV_Target  \n"
+            "{                                                                                                                      \n"
+            " float3 albedo = 0.8.xxx + 0.1.xxx * (sin( texcoord01.x * 100 ) + sin( texcoord01.y * 100 ));                          \n"
+            " float3 color = albedo * (dot( normal, -g_consts.SunDir.xyz ) * g_consts.SunIntensity.rgb + g_consts.AmbientIntensity.rgb);\n"
+            " return float4( g_consts.PreExposureMultiplier.xxx * color, 1 );                                                       \n"
+            "}                                                                                                                      \n"
+            , "main", vaShaderMacroContaner(), true );
+    }
+
+    vaDrawResultFlags Draw( vaRenderDeviceContext & renderContext, const vaRenderOutputs & renderOutputs, shared_ptr<vaRenderMesh> mesh, const vaMatrix4x4 & worldTransform, const vaCameraBase & camera, vaBlendMode blendMode = vaBlendMode::Opaque, vaRenderMeshDrawFlags drawFlags = vaRenderMeshDrawFlags::EnableDepthTest | vaRenderMeshDrawFlags::EnableDepthWrite )
+    {
+        assert( mesh != nullptr );
+        const bool skipNonShadowCasters     = (drawFlags & vaRenderMeshDrawFlags::SkipNonShadowCasters  )   != 0; assert( !skipNonShadowCasters ); // not valid for simple renderer
+        const bool enableDepthTest          = (drawFlags & vaRenderMeshDrawFlags::EnableDepthTest       )   != 0;
+        const bool invertDepthTest          = (drawFlags & vaRenderMeshDrawFlags::InvertDepthTest       )   != 0; 
+        const bool enableDepthWrite         = (drawFlags & vaRenderMeshDrawFlags::EnableDepthWrite      )   != 0;
+        const bool depthTestIncludesEqual   = (drawFlags & vaRenderMeshDrawFlags::DepthTestIncludesEqual)   != 0;
+        const bool depthTestEqualOnly       = (drawFlags & vaRenderMeshDrawFlags::DepthTestEqualOnly    )   != 0;
+        const bool depthEnable              = enableDepthTest || enableDepthWrite;
+        const bool useReversedZ             = (invertDepthTest)?(!camera.GetUseReversedZ()):(camera.GetUseReversedZ());
+        vaComparisonFunc depthFunc          = vaComparisonFunc::Always;
+        if( enableDepthTest )
+        {
+            if( !depthTestEqualOnly )
+                depthFunc               = ( depthTestIncludesEqual ) ? ( ( useReversedZ )?( vaComparisonFunc::GreaterEqual ):( vaComparisonFunc::LessEqual ) ):( ( useReversedZ )?( vaComparisonFunc::Greater ):( vaComparisonFunc::Less ) );
+            else
+                depthFunc               = vaComparisonFunc::Equal;
+        }
+
+        vaGraphicsItem renderItem;
+        renderItem.BlendMode            = blendMode;
+        renderItem.DepthFunc            = depthFunc;
+        renderItem.Topology             = vaPrimitiveTopology::TriangleList;
+        renderItem.DepthEnable          = depthEnable;
+        renderItem.DepthWriteEnable     = enableDepthWrite;
+        renderItem.InstanceIndex        = 0xFFFFFFFF;
+        renderItem.FillMode             = (false)?(vaFillMode::Wireframe):(vaFillMode::Solid);
+        renderItem.ConstantBuffers[0]   = ConstantBuffer;
+        renderItem.VertexShader         = VertexShader;
+        renderItem.PixelShader          = PixelShader;
+        renderItem.ShadingRate          = vaShadingRate::ShadingRate1X1;
+
+        // mesh stuff
+        {
+            mesh->PreRenderUpdate( renderContext );
+            // read lock
+            std::shared_lock meshLock( mesh->Mutex( ) );
+            renderItem.VertexBuffer                 = mesh->GetGPUVertexBufferFP( );
+            renderItem.IndexBuffer                  = mesh->GetGPUIndexBufferFP( );
+            renderItem.FrontCounterClockwise        = mesh->GetFrontFaceWindingOrder( ) == vaWindingOrder::CounterClockwise;
+
+            const std::vector<vaRenderMesh::LODPart> & LODParts = mesh->GetLODParts();
+            const vaRenderMesh::LODPart & LODPart = LODParts[0];    // just always LOD 0
+
+            renderItem.SetDrawIndexed( LODPart.IndexCount, LODPart.IndexStart, 0 );
+        }
+
+        // constants
+        {
+            SimpleInstanceConstants consts;
+            consts.WorldTrans               = worldTransform;
+            consts.WorldViewProjTrans       = worldTransform * camera.GetViewMatrix( ) * camera.GetProjMatrix( );
+            consts.PreExposureMultiplier.x  = camera.GetPreExposureMultiplier( true );
+            ConstantBuffer->Upload( renderContext, consts );
+        }
+        return renderContext.ExecuteSingleItem( renderItem, renderOutputs, nullptr );
+    }
+};
+
+struct SimpleSampleShared
+{
+    shared_ptr<vaTexture>               DepthBuffer;
+    shared_ptr<vaSkybox>                Skybox;
+    shared_ptr<vaTexture>               SkyboxTexture;
+    shared_ptr<vaRenderCamera>          Camera;
+    shared_ptr<vaRenderMesh>            MeshTeapot;
+    shared_ptr<vaRenderMesh>            MeshPlane;
+    shared_ptr<SimpleMeshRenderer>      MeshRenderer;
+    std::vector<vaMatrix4x4>            TeapotInstances;
+    bool                                AnimateCamera   = true;
+
+    SimpleSampleShared( vaRenderDevice & renderDevice, bool animateCamera, bool thousandsOfTeapots ) : AnimateCamera( animateCamera )
+    {
+        MeshRenderer = std::make_shared<SimpleMeshRenderer>( renderDevice );
+        Skybox = renderDevice.CreateModule<vaSkybox>();
+        SkyboxTexture = vaTexture::CreateFromImageFile( renderDevice, vaStringTools::SimpleNarrow(vaCore::GetExecutableDirectory()) + "Media\\sky_cube.dds", vaTextureLoadFlags::Default );
+        Skybox->SetCubemap( SkyboxTexture );
+        Skybox->Settings().ColorMultiplier    = 1.0f;   // scale brightness
+        Camera = std::make_shared<vaRenderCamera>( renderDevice, false ); //renderDevice.CreateModule<vaRenderCamera>();
+        Camera->SetYFOV( 65.0f / 180.0f * VA_PIf );
+        MeshPlane  = vaRenderMesh::CreatePlane( renderDevice, vaMatrix4x4::Identity, 500.0f, 500.0f );
+        MeshTeapot = vaRenderMesh::CreateTeapot( renderDevice, vaMatrix4x4::Identity );
+
+        if( thousandsOfTeapots )
+        {
+            vaRandom rnd;
+            for( int x = 0; x < 10; x++ )
+                for( int y = 0; y < 10; y++ )
+                {
+                    TeapotInstances.push_back( vaMatrix4x4::RotationZ( rnd.NextFloat() * VA_PIf ) * vaMatrix4x4::Translation( { (x-8) * 3.5f, (y-6) * 3.5f, 0.0f } ) );
+                }
+        }
+        else
+        {
+            TeapotInstances.push_back( vaMatrix4x4::Identity );
+        }
+    }
+
+    void Tick( vaRenderDevice & renderDevice, vaApplicationBase & application, float deltaTime )
+    {
+        auto backbufferTex = renderDevice.GetCurrentBackbufferTexture();
+
+        // Create/update depth
+        if( DepthBuffer == nullptr || DepthBuffer->GetSize() != backbufferTex->GetSize() || DepthBuffer->GetSampleCount() != backbufferTex->GetSampleCount() )
+            DepthBuffer = vaTexture::Create2D( renderDevice, vaResourceFormat::R32_TYPELESS, backbufferTex->GetSizeX(), backbufferTex->GetSizeY(), 1, 1, 1, vaResourceBindSupportFlags::DepthStencil | vaResourceBindSupportFlags::ShaderResource, vaResourceAccessFlags::Default, 
+                vaResourceFormat::R32_FLOAT, vaResourceFormat::Automatic, vaResourceFormat::D32_FLOAT );
+
+        // setup and rotate camera
+        Camera->SetViewport( vaViewport( renderDevice.GetCurrentBackbufferTexture()->GetWidth(), renderDevice.GetCurrentBackbufferTexture()->GetHeight() ) );
+        double timeFromStart = AnimateCamera?application.GetTimeFromStart():4.0;
+        Camera->SetPosition( 5.0f * vaVector3{ (float)cos(0.1*timeFromStart), (float)sin(0.1*timeFromStart), 0.5f } );
+        Camera->SetOrientationLookAt( { 0, 0, 0 } );
+        Camera->Tick( deltaTime, true );
+    }
+
+    void DrawOpaque( vaRenderDeviceContext & mainContext, vaRenderOutputs & outputs, vaDrawAttributes & drawAttributes )
+    {
+        {
+            VA_TRACE_CPUGPU_SCOPE( Sky, mainContext );
+            // opaque skybox
+            Skybox->Draw( mainContext, outputs, drawAttributes );
+        }
+
+        {
+            VA_TRACE_CPUGPU_SCOPE( Geometry, mainContext );
+            // draw meshes
+            MeshRenderer->Draw( mainContext, outputs, MeshPlane, vaMatrix4x4::Translation( 0, 0, -0.9f ), *Camera );
+            for( const vaMatrix4x4 & transform : TeapotInstances )
+                MeshRenderer->Draw( mainContext, outputs, MeshTeapot, transform, *Camera );
+        }
+    }
+};
+
 void Sample11_Basic3DMesh( vaRenderDevice & renderDevice, vaApplicationBase & application, float deltaTime, vaApplicationState applicationState )
 {
-    static shared_ptr<vaTexture>                depthBuffer;
-    static shared_ptr<vaSkybox>                 skybox;
-    static shared_ptr<vaTexture>                skyboxTexture;
-    static shared_ptr<vaCameraBase>             camera;
-    static shared_ptr<vaRenderMesh>             meshTeapot;
-    static shared_ptr<vaRenderMesh>             meshPlane;
-    static shared_ptr<std::vector<vaRenderInstanceSimple>>  meshList;
-    //static shared_ptr<std::vector<shared_ptr<vaLight>>>
-    //                                        lights;
-    static shared_ptr<vaSceneLighting>           lighting;
+    static shared_ptr<SimpleSampleShared>   sampleShared;
 
     if( applicationState == vaApplicationState::Initializing )
     {
-        skybox = renderDevice.CreateModule<vaSkybox>();
-
-        skyboxTexture = vaTexture::CreateFromImageFile( renderDevice, vaStringTools::SimpleNarrow(vaCore::GetExecutableDirectory()) + "Media\\sky_cube.dds", vaTextureLoadFlags::Default );
-
-        skybox->SetCubemap( skyboxTexture );
-
-        // scale brightness
-        skybox->Settings().ColorMultiplier    = 1.0f;
-
-        camera = std::make_shared<vaCameraBase>();
-        camera->SetYFOV( 65.0f / 180.0f * VA_PIf );
-
-        lighting              = renderDevice.CreateModule<vaSceneLighting>();
-        
-        // lights = std::make_shared<std::vector<shared_ptr<vaLight>>>();
-        // lights->push_back( std::make_shared<vaLight>( vaLight::MakePoint( "PtLight", 0.2f, vaVector3( 6, 6, 5 ), 1.0f, vaVector3( 3, 3, 3 ) ) ) );
-        // lights->push_back( std::make_shared<vaLight>( vaLight::MakeAmbient( "AmbLight", vaVector3( 0.05f, 0.05f, 0.1f ), 1.0f ) ) );
-        // lighting->SetLights( *lights );
-
-        meshList   = std::make_shared<std::vector<vaRenderInstanceSimple>>( );
-
-        meshTeapot = vaRenderMesh::CreateTeapot( renderDevice, vaMatrix4x4::Identity );
-        meshPlane  = vaRenderMesh::CreatePlane( renderDevice, vaMatrix4x4::Identity, 5.0f, 5.0f );
-    
+        sampleShared = std::make_shared<SimpleSampleShared>( renderDevice, true, false );
         return;
     }
     else if( applicationState == vaApplicationState::ShuttingDown )
     {
-        depthBuffer     = nullptr;
-        skyboxTexture   = nullptr;
-        skybox          = nullptr;
-        camera          = nullptr;
-        meshTeapot      = nullptr;
-        meshPlane       = nullptr;
-        lighting        = nullptr;
-        //lights          = nullptr;
-        meshList        = nullptr;
+        sampleShared = nullptr;
         return;
     }
     assert( applicationState == vaApplicationState::Running );
     
     auto backbufferTex = renderDevice.GetCurrentBackbufferTexture();
-    vaRenderDeviceContext& mainContext = *renderDevice.GetMainContext( );
+    vaRenderDeviceContext & mainContext = *renderDevice.GetMainContext( );
 
-    // Create/update depth
-    if( depthBuffer == nullptr || depthBuffer->GetSize() != backbufferTex->GetSize() || depthBuffer->GetSampleCount() != backbufferTex->GetSampleCount() )
-        depthBuffer = vaTexture::Create2D( renderDevice, vaResourceFormat::D32_FLOAT, backbufferTex->GetSizeX(), backbufferTex->GetSizeY(), 1, 1, 1, vaResourceBindSupportFlags::DepthStencil );
+    sampleShared->Tick( renderDevice, application, deltaTime );
 
-    // setup and rotate camera
-    camera->SetViewport( vaViewport( renderDevice.GetCurrentBackbufferTexture()->GetWidth(), renderDevice.GetCurrentBackbufferTexture()->GetHeight() ) );
-    camera->SetPosition( 5.0f * vaVector3{ (float)cos(0.1*application.GetTimeFromStart()), (float)sin(0.1*application.GetTimeFromStart()), 0.5f } );
-    camera->SetOrientationLookAt( { 0, 0, 0 } );
-    camera->Tick( deltaTime, true );
-
-    application.TickUI( *camera );
-
-    // mesh lists can now only be dynamic, reset each frame
-
-    meshList->push_back( { meshTeapot, vaMatrix4x4::Identity } );
-    meshList->push_back( { meshPlane, vaMatrix4x4::Translation( 0, 0, -2.2f ) } );
+    application.TickUI( *sampleShared->Camera );
 
     // Do the rendering tick and present 
     renderDevice.BeginFrame( deltaTime );
 
     //currentBackbuffer->ClearRTV( mainContext, vaVector4( 0.0f, 0.0f, 0.0f, 0.0f ) );
-    depthBuffer->ClearDSV( mainContext, true, camera->GetUseReversedZ( ) ? ( 0.0f ) : ( 1.0f ), false, 0 );
+    sampleShared->DepthBuffer->ClearDSV( mainContext, true, sampleShared->Camera->GetUseReversedZ( ) ? ( 0.0f ) : ( 1.0f ), false, 0 );
 
-    vaRenderOutputs finalOutputs = vaRenderOutputs::FromRTDepth( backbufferTex, depthBuffer );
+    vaRenderOutputs finalOutputs = vaRenderOutputs::FromRTDepth( backbufferTex, sampleShared->DepthBuffer );
 
     // needed for rendering of more complex items
-    vaDrawAttributes drawAttributes( *camera, vaDrawAttributes::RenderFlags::None, lighting.get() );
+    vaDrawAttributes drawAttributes( *sampleShared->Camera, vaDrawAttributes::RenderFlags::None );
 
-    // opaque skybox
-    skybox->Draw( mainContext, finalOutputs, drawAttributes );
-
-    renderDevice.GetMeshManager( ).DrawSimple( mainContext, finalOutputs, vaRenderMaterialShaderType::Forward, drawAttributes, vaBlendMode::Opaque, vaRenderMeshDrawFlags::EnableDepthTest | vaRenderMeshDrawFlags::EnableDepthWrite, *meshList );
-
-    meshList->clear();
-
-    ImGui::Text( "This sample is broken because lighting no longer works without a scene. This can be fixed if/when needed." );
+    sampleShared->DrawOpaque( mainContext, finalOutputs, drawAttributes );
 
     // update and draw imgui
     application.DrawUI( mainContext, finalOutputs, nullptr );
@@ -1364,24 +1500,15 @@ void Sample12_PostProcess( vaRenderDevice & renderDevice, vaApplicationBase & ap
 {
     struct Globals
     {
-        shared_ptr<vaSkybox>                Skybox;
-        shared_ptr<vaTexture>               SkyboxTexture;
-        shared_ptr<vaCameraBase>            Camera;
-        shared_ptr<vaRenderMesh>            MeshTeapot;
-        shared_ptr<vaRenderMesh>            MeshPlane;
-        std::vector<vaRenderInstanceSimple> MeshList;
-        //shared_ptr<std::vector<shared_ptr<vaLight>>>
-        //                                Lights;
-        shared_ptr<vaSceneLighting>         Lighting;
+        shared_ptr<SimpleSampleShared>      SampleShared;
         shared_ptr<vaTexture>               OffscreenRT;
-        shared_ptr<vaTexture>               DepthBuffer;
+        shared_ptr<vaUISimplePanel>         UIPanel;
 
         float                               PPHue        = 0.1f;
         float                               PPSaturation = 0.5f;
         float                               PPBrightness = 0.2f;
         float                               PPContrast   = -0.01f;
 
-        shared_ptr<vaUISimplePanel>         UIPanel;
     };
     static shared_ptr<Globals> globals;
 
@@ -1390,27 +1517,7 @@ void Sample12_PostProcess( vaRenderDevice & renderDevice, vaApplicationBase & ap
         assert( globals == nullptr );
         globals = std::make_shared<Globals>( );
 
-        globals->Skybox = renderDevice.CreateModule<vaSkybox>();
-
-        globals->SkyboxTexture = vaTexture::CreateFromImageFile( renderDevice, vaStringTools::SimpleNarrow(vaCore::GetExecutableDirectory()) + "Media\\sky_cube.dds", vaTextureLoadFlags::Default );
-
-        globals->Skybox->SetCubemap( globals->SkyboxTexture );
-
-        // scale brightness
-        globals->Skybox->Settings().ColorMultiplier    = 1.0f;
-
-        globals->Camera = std::make_shared<vaCameraBase>();
-        globals->Camera->SetYFOV( 65.0f / 180.0f * VA_PIf );
-
-        globals->Lighting            = renderDevice.CreateModule<vaSceneLighting>();
-
-        // globals->Lights = std::make_shared<std::vector<shared_ptr<vaLight>>>();
-        // globals->Lights->push_back( std::make_shared<vaLight>( vaLight::MakePoint( "PtLight", 0.2f, vaVector3( 6, 6, 5 ), 1.0f, vaVector3( 3, 3, 3 ) ) ) );
-        // globals->Lights->push_back( std::make_shared<vaLight>( vaLight::MakeAmbient( "AmbLight", vaVector3( 0.05f, 0.05f, 0.1f ), 1.0f ) ) );
-        // globals->Lighting->SetLights( *globals->Lights );
-
-        globals->MeshTeapot = vaRenderMesh::CreateTeapot( renderDevice, vaMatrix4x4::Identity );
-        globals->MeshPlane  = vaRenderMesh::CreatePlane( renderDevice, vaMatrix4x4::Identity, 5.0f, 5.0f );
+        globals->SampleShared = std::make_shared<SimpleSampleShared>( renderDevice, true, false );
 
         globals->UIPanel = std::make_shared<vaUISimplePanel>( [g = &(*globals)] ( vaApplicationBase & ) 
         {
@@ -1432,54 +1539,36 @@ void Sample12_PostProcess( vaRenderDevice & renderDevice, vaApplicationBase & ap
     assert( applicationState == vaApplicationState::Running );
     
     auto backbufferTex = renderDevice.GetCurrentBackbufferTexture( );
-    vaRenderDeviceContext& mainContext = *renderDevice.GetMainContext( );
+    vaRenderDeviceContext & mainContext = *renderDevice.GetMainContext( );
 
-    // Create/update depth
-    if( globals->DepthBuffer == nullptr || globals->DepthBuffer->GetSize() != backbufferTex->GetSize() || globals->DepthBuffer->GetSampleCount() != backbufferTex->GetSampleCount() )
-        globals->DepthBuffer = vaTexture::Create2D( renderDevice, vaResourceFormat::D32_FLOAT, backbufferTex->GetSizeX(), backbufferTex->GetSizeY(), 1, 1, 1, vaResourceBindSupportFlags::DepthStencil );
+    globals->SampleShared->Tick( renderDevice, application, deltaTime );
 
     // Create/update offscreen render target
     if( globals->OffscreenRT == nullptr || globals->OffscreenRT->GetSizeX() != backbufferTex->GetSizeX() || globals->OffscreenRT->GetSizeY() != backbufferTex->GetSizeY() )
         globals->OffscreenRT = vaTexture::Create2D( renderDevice, vaResourceFormat::R8G8B8A8_UNORM_SRGB, backbufferTex->GetSizeX(), backbufferTex->GetSizeY(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::RenderTarget );
 
-    // setup and rotate camera
-    globals->Camera->SetViewport( vaViewport( renderDevice.GetCurrentBackbufferTexture()->GetWidth(), renderDevice.GetCurrentBackbufferTexture()->GetHeight() ) );
-    globals->Camera->SetPosition( 5.0f * vaVector3{ (float)cos(0.1*application.GetTimeFromStart()), (float)sin(0.1*application.GetTimeFromStart()), 0.5f } );
-    globals->Camera->SetOrientationLookAt( { 0, 0, 0 } );
-    globals->Camera->Tick( deltaTime, true );
+    globals->SampleShared->Tick( renderDevice, application, deltaTime );
 
-    application.TickUI( *globals->Camera );
-
-    // mesh lists can now only be dynamic, reset each frame
-    globals->MeshList.push_back( { globals->MeshTeapot, vaMatrix4x4::Identity } );
-    globals->MeshList.push_back( { globals->MeshPlane, vaMatrix4x4::Translation( 0, 0, -2.2f ) } );
+    application.TickUI( *globals->SampleShared->Camera );
 
     // Do the rendering tick and present 
     renderDevice.BeginFrame( deltaTime );
 
-    vaRenderOutputs offscreenOutputs = vaRenderOutputs::FromRTDepth( globals->OffscreenRT, globals->DepthBuffer );
+    vaRenderOutputs offscreenOutputs = vaRenderOutputs::FromRTDepth( globals->OffscreenRT, globals->SampleShared->DepthBuffer );
     //currentBackbuffer->ClearRTV( mainContext, vaVector4( 0.0f, 0.0f, 0.0f, 0.0f ) );
-    offscreenOutputs.DepthStencil->ClearDSV( mainContext, true, globals->Camera->GetUseReversedZ( ) ? ( 0.0f ) : ( 1.0f ), false, 0 );
+    offscreenOutputs.DepthStencil->ClearDSV( mainContext, true, globals->SampleShared->Camera->GetUseReversedZ( ) ? ( 0.0f ) : ( 1.0f ), false, 0 );
 
     // needed for rendering of more complex items
-    vaDrawAttributes drawAttributes( *globals->Camera, vaDrawAttributes::RenderFlags::None, globals->Lighting.get() );
+    vaDrawAttributes drawAttributes( *globals->SampleShared->Camera, vaDrawAttributes::RenderFlags::None );
 
-    // opaque skybox
-    globals->Skybox->Draw( mainContext, offscreenOutputs, drawAttributes );
-
-    // draw meshes
-    renderDevice.GetMeshManager().DrawSimple( mainContext, offscreenOutputs, vaRenderMaterialShaderType::Forward, drawAttributes, vaBlendMode::Opaque, vaRenderMeshDrawFlags::EnableDepthTest | vaRenderMeshDrawFlags::EnableDepthWrite, globals->MeshList );
+    globals->SampleShared->DrawOpaque( mainContext, offscreenOutputs, drawAttributes );
 
     // copy contents of offscreen rendertarget to the backbuffer
     // renderDevice.GetMainContext()->CopySRVToRTV( backbufferTex, globals->OffscreenRT );
     renderDevice.GetPostProcess().ColorProcessHSBC( mainContext, renderDevice.GetCurrentBackbuffer( ), globals->OffscreenRT, globals->PPHue, globals->PPSaturation, globals->PPBrightness, globals->PPContrast );
 
-    ImGui::Text( "This sample is broken because lighting no longer works without a scene. This can be fixed if/when needed." );
-
     // update and draw imgui
-    application.DrawUI( *renderDevice.GetMainContext( ), renderDevice.GetCurrentBackbuffer( ), globals->DepthBuffer );
-
-    globals->MeshList.clear();
+    application.DrawUI( *renderDevice.GetMainContext( ), renderDevice.GetCurrentBackbuffer( ), globals->SampleShared->DepthBuffer );
 
     // present the frame, flip the buffers, etc
     renderDevice.EndAndPresentFrame( (application.GetVsync())?(1):(0) );
@@ -1489,18 +1578,11 @@ void Sample13_Tonemap( vaRenderDevice & renderDevice, vaApplicationBase & applic
 {
     struct Globals
     {
-        shared_ptr<vaSkybox>                Skybox;
-        shared_ptr<vaTexture>               SkyboxTexture;
-        shared_ptr<vaRenderCamera>          Camera;
-        shared_ptr<vaRenderMesh>            MeshTeapot;
-        shared_ptr<vaRenderMesh>            MeshPlane;
-        std::vector<vaRenderInstanceSimple> MeshList;
-        shared_ptr<vaSceneLighting>         Lighting;
-        // shared_ptr<vaLight>             ShinyLight;
+        shared_ptr<SimpleSampleShared>      SampleShared;
         shared_ptr<vaTexture>               OffscreenRT;
-        shared_ptr<vaTexture>               DepthBuffer;
+        shared_ptr<vaUISimplePanel>         UIPanel;
 
-        shared_ptr<vaPostProcessTonemap>Tonemap;
+        shared_ptr<vaPostProcessTonemap>    Tonemap;
     };
     static shared_ptr<Globals> globals;
 
@@ -1509,30 +1591,18 @@ void Sample13_Tonemap( vaRenderDevice & renderDevice, vaApplicationBase & applic
         assert( globals == nullptr );
         globals = std::make_shared<Globals>( );
 
-        globals->Skybox = renderDevice.CreateModule<vaSkybox>();
-
-        globals->SkyboxTexture = vaTexture::CreateFromImageFile( renderDevice, vaStringTools::SimpleNarrow(vaCore::GetExecutableDirectory()) + "Media\\sky_cube.dds", vaTextureLoadFlags::Default );
-
-        globals->Skybox->SetCubemap( globals->SkyboxTexture );
-
-        // scale brightness
-        globals->Skybox->Settings().ColorMultiplier    = 1.0f;
-
-        // create camera and setup fov
-        globals->Camera = std::make_shared<vaRenderCamera>( renderDevice, true );
-        globals->Camera->SetYFOV( 65.0f / 180.0f * VA_PIf );
-
-        globals->Lighting            = renderDevice.CreateModule<vaSceneLighting>();
-        // std::vector<shared_ptr<vaLight>> lights;
-        // lights.push_back( std::make_shared<vaLight>( vaLight::MakeAmbient( "DefaultAmbient", vaVector3( 0.05f, 0.05f, 0.15f ), 1.0f ) ) );
-        // lights.push_back( std::make_shared<vaLight>( vaLight::MakeDirectional( "DefaultDirectional", vaVector3( 1.0f, 1.0f, 0.9f ), 1.0f, vaVector3( 0.0f, -1.0f, -1.0f ).Normalized() ) ) );
-        // lights.push_back( globals->ShinyLight = std::make_shared<vaLight>( vaLight::MakePoint( "ShinyLight", 0.1f, vaVector3( 0.5f, 1.0f, 0.5f ), 1.0f, vaVector3( 0.0f, 2.0f, 2.0f ) ) ) );
-        // globals->Lighting->SetLights( lights );
-        
-        globals->MeshTeapot = vaRenderMesh::CreateTeapot( renderDevice, vaMatrix4x4::Identity );
-        globals->MeshPlane  = vaRenderMesh::CreatePlane( renderDevice, vaMatrix4x4::Identity, 5.0f, 5.0f );
+        globals->SampleShared = std::make_shared<SimpleSampleShared>( renderDevice, true, false );
 
         globals->Tonemap         = renderDevice.CreateModule<vaPostProcessTonemap>();
+
+        globals->UIPanel = std::make_shared<vaUISimplePanel>( [&] ( vaApplicationBase & application )
+        {
+#ifdef VA_IMGUI_INTEGRATION_ENABLED
+            ImGui::Text( "Tone mapping settings are part of camera settings:" );
+            globals->SampleShared->Camera->UIPanelTickCollapsable( application, true, true, false );
+#endif
+        },
+            "Tone mapping sample", 0, true, vaUIPanel::DockLocation::DockedLeft );
         return;
     }
     else if( applicationState == vaApplicationState::ShuttingDown )
@@ -1542,84 +1612,56 @@ void Sample13_Tonemap( vaRenderDevice & renderDevice, vaApplicationBase & applic
     }
     assert( applicationState == vaApplicationState::Running );
     
-    // globals->ShinyLight->Intensity = (float)vaMath::Max( 0.0, sin(renderDevice.GetTotalTime() )) * 1000.0f;
-
     auto backbufferTex = renderDevice.GetCurrentBackbufferTexture( );
-    vaRenderDeviceContext& mainContext = *renderDevice.GetMainContext( );
+    vaRenderDeviceContext & mainContext = *renderDevice.GetMainContext( );
 
-    // Create/update depth
-    if( globals->DepthBuffer == nullptr || globals->DepthBuffer->GetSize() != backbufferTex->GetSize() || globals->DepthBuffer->GetSampleCount() != backbufferTex->GetSampleCount() )
-        globals->DepthBuffer = vaTexture::Create2D( renderDevice, vaResourceFormat::D32_FLOAT, backbufferTex->GetSizeX(), backbufferTex->GetSizeY(), 1, 1, 1, vaResourceBindSupportFlags::DepthStencil );
+    globals->SampleShared->Tick( renderDevice, application, deltaTime );
 
     // Create/update offscreen render target
     if( globals->OffscreenRT == nullptr || globals->OffscreenRT->GetSizeX() != backbufferTex->GetSizeX() || globals->OffscreenRT->GetSizeY() != backbufferTex->GetSizeY() )
         globals->OffscreenRT = vaTexture::Create2D( renderDevice, vaResourceFormat::R11G11B10_FLOAT, backbufferTex->GetSizeX(), backbufferTex->GetSizeY(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::RenderTarget );
 
-    // setup and rotate camera
-    globals->Camera->SetViewport( vaViewport( renderDevice.GetCurrentBackbufferTexture()->GetWidth(), renderDevice.GetCurrentBackbufferTexture()->GetHeight() ) );
-    globals->Camera->SetPosition( 5.0f * vaVector3{ (float)cos(0.1*application.GetTimeFromStart()), (float)sin(0.1*application.GetTimeFromStart()), 0.5f } );
-    globals->Camera->SetOrientationLookAt( { 0, 0, 0 } );
-    globals->Camera->Tick( deltaTime, true );
+    globals->SampleShared->Tick( renderDevice, application, deltaTime );
 
-    // tick lighting
-    // globals->Lighting->Tick( deltaTime );
-
-    application.TickUI( *globals->Camera );
-
-    // mesh lists can now only be dynamic, reset each frame
-    globals->MeshList.push_back( { globals->MeshTeapot, vaMatrix4x4::Identity } );
-    globals->MeshList.push_back( { globals->MeshPlane, vaMatrix4x4::Translation( 0, 0, -2.2f ) } );
+    application.TickUI( *globals->SampleShared->Camera );
 
     // Do the rendering tick and present 
     renderDevice.BeginFrame( deltaTime );
 
-    globals->Camera->PreRenderTick( mainContext, deltaTime );
+	// This is important - it readbacks luminance from the last Tonemap->TickAndApplyCameraPostProcess and computes exposure for the frame
+    globals->SampleShared->Camera->PreRenderTick( mainContext, deltaTime );
 
-    vaRenderOutputs offscreenOutputs = vaRenderOutputs::FromRTDepth( globals->OffscreenRT, globals->DepthBuffer );
-
+    vaRenderOutputs offscreenOutputs = vaRenderOutputs::FromRTDepth( globals->OffscreenRT, globals->SampleShared->DepthBuffer );
     //currentBackbuffer->ClearRTV( mainContext, vaVector4( 0.0f, 0.0f, 0.0f, 0.0f ) );
-    offscreenOutputs.DepthStencil->ClearDSV( mainContext, true, globals->Camera->GetUseReversedZ( ) ? ( 0.0f ) : ( 1.0f ), false, 0 );
+    offscreenOutputs.DepthStencil->ClearDSV( mainContext, true, globals->SampleShared->Camera->GetUseReversedZ( ) ? ( 0.0f ) : ( 1.0f ), false, 0 );
 
     // needed for rendering of more complex items
-    vaDrawAttributes drawAttributes( *globals->Camera, vaDrawAttributes::RenderFlags::None, globals->Lighting.get() );
+    vaDrawAttributes drawAttributes( *globals->SampleShared->Camera, vaDrawAttributes::RenderFlags::None );
 
-    // opaque skybox
-    globals->Skybox->Draw( mainContext, offscreenOutputs, drawAttributes );
-
-    // draw meshes
-    renderDevice.GetMeshManager().DrawSimple( mainContext, offscreenOutputs, vaRenderMaterialShaderType::Forward, drawAttributes, vaBlendMode::Opaque, vaRenderMeshDrawFlags::EnableDepthTest | vaRenderMeshDrawFlags::EnableDepthWrite, globals->MeshList );
+    globals->SampleShared->DrawOpaque( mainContext, offscreenOutputs, drawAttributes );
 
     // copy contents of offscreen rendertarget while performing tonemapping
     renderDevice.GetMainContext()->CopySRVToRTV( backbufferTex, globals->OffscreenRT );
-    globals->Tonemap->TickAndApplyCameraPostProcess( mainContext, *globals->Camera, backbufferTex, globals->OffscreenRT );
-
-    ImGui::Text( "This sample is broken because lighting no longer works without a scene. This can be fixed if/when needed." );
+    globals->Tonemap->TickAndApplyCameraPostProcess( mainContext, *globals->SampleShared->Camera, backbufferTex, globals->OffscreenRT );
 
     // update and draw imgui
-    application.DrawUI( *renderDevice.GetMainContext( ), renderDevice.GetCurrentBackbuffer( ), globals->DepthBuffer );
-
-    globals->MeshList.clear();
+    application.DrawUI( *renderDevice.GetMainContext( ), renderDevice.GetCurrentBackbuffer( ), globals->SampleShared->DepthBuffer );
 
     // present the frame, flip the buffers, etc
     renderDevice.EndAndPresentFrame( (application.GetVsync())?(1):(0) );
 }
 
-void Sample14_PointShadow( vaRenderDevice & renderDevice, vaApplicationBase & application, float deltaTime, vaApplicationState applicationState )
+void Sample14_SSAO( vaRenderDevice & renderDevice, vaApplicationBase & application, float deltaTime, vaApplicationState applicationState )
 {
     struct Globals
     {
-        shared_ptr<vaSkybox>                    Skybox;
-        shared_ptr<vaTexture>                   SkyboxTexture;
-        shared_ptr<vaRenderCamera>              Camera;
-        shared_ptr<vaRenderMesh>                MeshTeapot;
-        shared_ptr<vaRenderMesh>                MeshPlane;
-        std::vector<vaRenderInstanceSimple>     MeshList;
-        shared_ptr<vaSceneLighting>              Lighting;
-        // shared_ptr<vaLight>                 ShinyLight;
-        shared_ptr<vaTexture>                   OffscreenRT;
-        shared_ptr<vaTexture>                   DepthBuffer;
+        shared_ptr<SimpleSampleShared>      SampleShared;
+        shared_ptr<vaTexture>               OffscreenRT;
+        shared_ptr<vaTexture>               SSAORT;
+        shared_ptr<vaUISimplePanel>         UIPanel;
 
-        shared_ptr<vaPostProcessTonemap>Tonemap;
+        bool                                SSAOEnabled = true;
+        shared_ptr<vaGTAO>                  SSAO;
     };
     static shared_ptr<Globals> globals;
 
@@ -1628,44 +1670,20 @@ void Sample14_PointShadow( vaRenderDevice & renderDevice, vaApplicationBase & ap
         assert( globals == nullptr );
         globals = std::make_shared<Globals>( );
 
-        globals->Skybox = renderDevice.CreateModule<vaSkybox>();
+        globals->SampleShared = std::make_shared<SimpleSampleShared>( renderDevice, false, true );
 
-        globals->SkyboxTexture = vaTexture::CreateFromImageFile( renderDevice, vaStringTools::SimpleNarrow(vaCore::GetExecutableDirectory()) + "Media\\sky_cube.dds", vaTextureLoadFlags::Default );
+        globals->SSAO = renderDevice.CreateModule<vaGTAO>( );
 
-#if 0 // testing updating subresources
-        globals->SkyboxTexture = vaTexture::Create2D( renderDevice, vaResourceFormat::R8G8B8A8_UNORM, 1, 1, 1, 6, 1, vaResourceBindSupportFlags::ShaderResource, vaResourceAccessFlags::Default, vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaTextureFlags::Cubemap, vaTextureContentsType::GenericColor );
-        uint32 initialDataB = 0xFFFF0000; uint32 initialDataW = 0xFF00FFFF;
-        vaTextureSubresourceData faceSubResB = { &initialDataB, 4, 4 }; vaTextureSubresourceData faceSubResW = { &initialDataW, 4, 4 };
-        globals->SkyboxTexture->UpdateSubresources( 0, std::vector<vaTextureSubresourceData>{faceSubResB, faceSubResW, faceSubResB, faceSubResW, faceSubResB, faceSubResW } );
+        globals->UIPanel = std::make_shared<vaUISimplePanel>( [&] ( vaApplicationBase & application ) 
+        {
+#ifdef VA_IMGUI_INTEGRATION_ENABLED
+            ImGui::Checkbox( "Animate camera", &globals->SampleShared->AnimateCamera );
+            ImGui::Checkbox( "Enable XeGTAO", &globals->SSAOEnabled );
+            if( globals->SSAOEnabled )
+                globals->SSAO->UIPanelTickCollapsable( application, true, true, false );
 #endif
-
-        globals->Skybox->SetCubemap( globals->SkyboxTexture );
-
-        // scale brightness
-        globals->Skybox->Settings().ColorMultiplier    = 1.0f;
-
-        // create camera and setup fov
-        globals->Camera = std::make_shared<vaRenderCamera>( renderDevice, true );
-        globals->Camera->SetYFOV( 65.0f / 180.0f * VA_PIf );
-
-        // globals->Lighting            = renderDevice.CreateModule<vaSceneLighting>();
-        // std::vector<shared_ptr<vaLight>> lights;
-        // lights.push_back( std::make_shared<vaLight>( vaLight::MakeAmbient( "DefaultAmbient", vaVector3( 0.05f, 0.05f, 0.15f ), 1.0f ) ) );
-        // lights.push_back( std::make_shared<vaLight>( vaLight::MakeDirectional( "DefaultDirectional", vaVector3( 1.0f, 1.0f, 0.9f ), 1.0f, vaVector3( 0.0f, -1.0f, -1.0f ).Normalized() ) ) );
-        // lights.push_back( globals->ShinyLight = std::make_shared<vaLight>( vaLight::MakePoint( "ShinyLight", 0.1f, vaVector3( 300.0f, 100.0f, 100.0f ), 1.0f, vaVector3( 0.0f, 2.0f, 2.0f ) ) ) );
-        // globals->ShinyLight->CastShadows = true; 
-        // globals->Lighting->SetLights( lights );
-        
-        globals->MeshTeapot = vaRenderMesh::CreateTeapot( renderDevice, vaMatrix4x4::Identity );
-        globals->MeshPlane  = vaRenderMesh::CreatePlane( renderDevice, vaMatrix4x4::Identity, 5.0f, 5.0f );
-
-        globals->Tonemap         = renderDevice.CreateModule<vaPostProcessTonemap>();
-
-        auto & renderCameraSettings = globals->Camera->Settings();
-
-        renderCameraSettings.BloomSettings.UseBloom         = true;
-        renderCameraSettings.BloomSettings.BloomMultiplier  = 0.2f;
-        renderCameraSettings.BloomSettings.BloomSize        = 0.3f;
+        },
+            "XeGTAO micro sample", 0, true, vaUIPanel::DockLocation::DockedLeft );
         return;
     }
     else if( applicationState == vaApplicationState::ShuttingDown )
@@ -1674,70 +1692,51 @@ void Sample14_PointShadow( vaRenderDevice & renderDevice, vaApplicationBase & ap
         return;
     }
     assert( applicationState == vaApplicationState::Running );
- 
-    //globals->ShinyLight->Position  = 5.0f * vaVector3{ (float)cos(-0.2*application.GetTimeFromStart()), (float)sin(-0.2*application.GetTimeFromStart()), 1.0f };
-    ////globals->ShinyLight->Intensity = (float)vaMath::Max( 0.0, (0.5+sin(renderDevice.GetTotalTime()))) * 10.0f * vaVector3( 0.5f, 0.0f, 1.0f );
 
     auto backbufferTex = renderDevice.GetCurrentBackbufferTexture( );
-    vaRenderDeviceContext& mainContext = *renderDevice.GetMainContext( );
+    vaRenderDeviceContext & mainContext = *renderDevice.GetMainContext( );
 
-    // Create/update depth
-    if( globals->DepthBuffer == nullptr || globals->DepthBuffer->GetSize() != backbufferTex->GetSize() || globals->DepthBuffer->GetSampleCount() != backbufferTex->GetSampleCount() )
-        globals->DepthBuffer = vaTexture::Create2D( renderDevice, vaResourceFormat::D32_FLOAT, backbufferTex->GetSizeX(), backbufferTex->GetSizeY(), 1, 1, 1, vaResourceBindSupportFlags::DepthStencil );
+    globals->SampleShared->Tick( renderDevice, application, deltaTime );
 
     // Create/update offscreen render target
     if( globals->OffscreenRT == nullptr || globals->OffscreenRT->GetSizeX() != backbufferTex->GetSizeX() || globals->OffscreenRT->GetSizeY() != backbufferTex->GetSizeY() )
-        globals->OffscreenRT = vaTexture::Create2D( renderDevice, vaResourceFormat::R11G11B10_FLOAT, backbufferTex->GetSizeX(), backbufferTex->GetSizeY(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::RenderTarget );
+    {
+        globals->OffscreenRT = vaTexture::Create2D( renderDevice, vaResourceFormat::R8G8B8A8_UNORM_SRGB, backbufferTex->GetSizeX(), backbufferTex->GetSizeY(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::RenderTarget );
+        globals->SSAORT = vaTexture::Create2D( renderDevice, vaResourceFormat::R8_UNORM, backbufferTex->GetSizeX(), backbufferTex->GetSizeY(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
+    }
 
-    // setup and rotate camera
-    globals->Camera->SetViewport( vaViewport( renderDevice.GetCurrentBackbufferTexture()->GetWidth(), renderDevice.GetCurrentBackbufferTexture()->GetHeight() ) );
-    globals->Camera->SetPosition( 5.0f * vaVector3{ (float)cos(0.05*application.GetTimeFromStart()), (float)sin(0.05*application.GetTimeFromStart()), 0.5f } );
-    globals->Camera->SetOrientationLookAt( { 0, 0, 0 } );
-    globals->Camera->Tick( deltaTime, true );
+    globals->SampleShared->Tick( renderDevice, application, deltaTime );
 
-    // tick lighting
-    // globals->Lighting->Tick( deltaTime );
-
-    application.TickUI( *globals->Camera );
-
-    // mesh lists can now only be dynamic, reset each frame
-    globals->MeshList.push_back( { globals->MeshTeapot, vaMatrix4x4::Identity } );
-    globals->MeshList.push_back( { globals->MeshPlane, vaMatrix4x4::Translation( 0, 0, -2.2f ) } );
+    application.TickUI( *globals->SampleShared->Camera );
 
     // Do the rendering tick and present 
     renderDevice.BeginFrame( deltaTime );
 
-    globals->Camera->PreRenderTick( *renderDevice.GetMainContext( ), deltaTime );
-
-    vaRenderOutputs offscreenOutputs = vaRenderOutputs::FromRTDepth( globals->OffscreenRT, globals->DepthBuffer );
-
+    vaRenderOutputs offscreenOutputs = vaRenderOutputs::FromRTDepth( globals->OffscreenRT, globals->SampleShared->DepthBuffer );
     //currentBackbuffer->ClearRTV( mainContext, vaVector4( 0.0f, 0.0f, 0.0f, 0.0f ) );
-    offscreenOutputs.DepthStencil->ClearDSV( mainContext, true, globals->Camera->GetUseReversedZ( ) ? ( 0.0f ) : ( 1.0f ), false, 0 );
-
-    // // update shadows
-    // shared_ptr<vaShadowmap> queuedShadowmap = globals->Lighting->GetNextHighestPriorityShadowmapForRendering( );
-    // if( queuedShadowmap != nullptr )
-    //     queuedShadowmap->Draw( mainContext, globals->MeshList );
+    offscreenOutputs.DepthStencil->ClearDSV( mainContext, true, globals->SampleShared->Camera->GetUseReversedZ( ) ? ( 0.0f ) : ( 1.0f ), false, 0 );
 
     // needed for rendering of more complex items
-    vaDrawAttributes drawAttributes( *globals->Camera, vaDrawAttributes::RenderFlags::None, globals->Lighting.get() );
+    vaDrawAttributes drawAttributes( *globals->SampleShared->Camera, vaDrawAttributes::RenderFlags::None );
 
-    // opaque skybox
-    globals->Skybox->Draw( mainContext, offscreenOutputs, drawAttributes );
+    globals->SampleShared->DrawOpaque( mainContext, offscreenOutputs, drawAttributes );
 
-    // draw meshes
-    renderDevice.GetMeshManager().DrawSimple( mainContext, offscreenOutputs, vaRenderMaterialShaderType::Forward, drawAttributes, vaBlendMode::Opaque, vaRenderMeshDrawFlags::EnableDepthTest | vaRenderMeshDrawFlags::EnableDepthWrite, globals->MeshList );
+    globals->SSAO->Compute( mainContext, *globals->SampleShared->Camera, false, false, globals->SSAORT, globals->SampleShared->DepthBuffer, nullptr );
 
-    // copy contents of offscreen rendertarget while performing tonemapping
-    renderDevice.GetMainContext()->CopySRVToRTV( backbufferTex, globals->OffscreenRT );
-    globals->Tonemap->TickAndApplyCameraPostProcess( mainContext, *globals->Camera, backbufferTex, globals->OffscreenRT );
-
-    ImGui::Text( "This sample is broken because lighting no longer works without a scene. This can be fixed if/when needed." );
-
+    // apply SSAO term.. or not
+    if( globals->SSAOEnabled )
+    {
+        vaPostProcess & pp = renderDevice.GetPostProcess();
+        if( globals->SSAO->DebugShowEdges() || globals->SSAO->DebugShowNormals() || globals->SSAO->ReferenceRTAOEnabled() )
+            pp.MergeTextures( mainContext, backbufferTex, globals->OffscreenRT, globals->SSAO->DebugImage(), nullptr, "float4( srcB.xyz, 1.0 )" );
+        else
+            pp.MergeTextures( mainContext, backbufferTex, globals->OffscreenRT, globals->SSAORT, nullptr, "float4( srcA.rgb * srcB.xxx, 1.0 )" );
+    }
+    else
+        renderDevice.GetMainContext()->CopySRVToRTV( backbufferTex, globals->OffscreenRT );
+ 
     // update and draw imgui
-    application.DrawUI( *renderDevice.GetMainContext( ), renderDevice.GetCurrentBackbuffer( ), globals->DepthBuffer );
-
-    globals->MeshList.clear();
+    application.DrawUI( *renderDevice.GetMainContext( ), renderDevice.GetCurrentBackbuffer( ), globals->SampleShared->DepthBuffer );
 
     // present the frame, flip the buffers, etc
     renderDevice.EndAndPresentFrame( (application.GetVsync())?(1):(0) );
@@ -1745,26 +1744,19 @@ void Sample14_PointShadow( vaRenderDevice & renderDevice, vaApplicationBase & ap
 
 void Sample15_BasicScene( vaRenderDevice & renderDevice, vaApplicationBase & application, float deltaTime, vaApplicationState applicationState )
 {
-    renderDevice; application; deltaTime; applicationState;
-#if 0
     struct Globals
     {
-        shared_ptr<vaSkybox>                        Skybox;
-        shared_ptr<vaTexture>                       SkyboxTexture;
-        shared_ptr<vaRenderCamera>                  Camera;
-        shared_ptr<vaCameraControllerFreeFlight>    CameraFreeFlightController;
-        shared_ptr<vaRenderMesh>                    MeshTeapot;
-        shared_ptr<vaRenderMesh>                    MeshPlane;
-        shared_ptr<vaSceneLighting>                      Lighting;
-        shared_ptr<vaTexture>                       OffscreenRT;
-        shared_ptr<vaTexture>                       DepthBuffer;
-        shared_ptr<vaScene>                         Scene;
-        vaRenderInstanceList                           OpaqueRenderSelection;
-        vaRenderInstanceList                           TransparentRenderSelection;
-        vaRenderInstanceList                           ShadowRenderSelection;
-        shared_ptr<vaPostProcessTonemap>            Tonemap;
-        shared_ptr<vaZoomTool>                      ZoomTool;
-        shared_ptr<vaUISimplePanel>                 UIPanel;
+        shared_ptr<vaUISimplePanel>         UIPanel;
+
+        shared_ptr<vaScene>                 Scene;                  // this has most of the thingies
+        shared_ptr<vaSceneRenderer>         SceneRenderer;          // this draws the scene
+        shared_ptr<vaSceneMainRenderView>   SceneMainView;          // this is where the SceneRenderer draws the scene
+
+        shared_ptr<vaRenderMesh>            MeshTeapot;
+        shared_ptr<vaRenderMesh>            MeshPlane;
+
+        shared_ptr<vaRenderCamera>          Camera;
+        bool                                AnimateCamera   = true;
     };
     static shared_ptr<Globals> globals;
 
@@ -1773,54 +1765,55 @@ void Sample15_BasicScene( vaRenderDevice & renderDevice, vaApplicationBase & app
         assert( globals == nullptr );
         globals = std::make_shared<Globals>( );
 
-        // skybox
-        globals->Skybox = renderDevice.CreateModule<vaSkybox>();
-        globals->SkyboxTexture = vaTexture::CreateFromImageFile( renderDevice, vaStringTools::SimpleNarrow(vaCore::GetExecutableDirectory()) + "Media\\sky_cube.dds", vaTextureLoadFlags::Default );
-        globals->Skybox->SetCubemap( globals->SkyboxTexture );
-
-        // scale brightness
-        globals->Skybox->Settings().ColorMultiplier    = 1.0f;
-
-        // create camera and setup fov
-        globals->Camera = std::make_shared<vaRenderCamera>( renderDevice, true );
+        globals->Camera = std::make_shared<vaRenderCamera>( renderDevice, false ); //renderDevice.CreateModule<vaRenderCamera>();
         globals->Camera->SetYFOV( 65.0f / 180.0f * VA_PIf );
-        globals->Camera->SetPosition( { -7.0f, 1.0f, 2.0f } );
-        globals->Camera->SetOrientationLookAt( { 0, 0, 0 } );
-        globals->CameraFreeFlightController    = std::shared_ptr<vaCameraControllerFreeFlight>( new vaCameraControllerFreeFlight() );
-        globals->CameraFreeFlightController->SetMoveWhileNotCaptured( false );
-        globals->Camera->AttachController( globals->CameraFreeFlightController );
-        
-        auto & renderCameraSettings = globals->Camera->Settings();
 
-        renderCameraSettings.GeneralSettings.AutoExposureAdaptationSpeed = 10.0f;
-        renderCameraSettings.BloomSettings.UseBloom         = true;
-        renderCameraSettings.BloomSettings.BloomMultiplier  = 0.2f;
-        renderCameraSettings.BloomSettings.BloomSize        = 0.3f;
+        globals->MeshPlane  = vaRenderMesh::CreatePlane( renderDevice, vaMatrix4x4::Identity, 500.0f, 500.0f );
+        globals->MeshTeapot = vaRenderMesh::CreateTeapot( renderDevice, vaMatrix4x4::Translation( 0, 0, 0.9f ) );
 
-        globals->Lighting            = renderDevice.CreateModule<vaSceneLighting>();
-        
-        globals->MeshTeapot = vaRenderMesh::CreateTeapot( renderDevice, vaMatrix4x4::Identity );
-        globals->MeshPlane  = vaRenderMesh::CreatePlane( renderDevice, vaMatrix4x4::Identity, 5.0f, 5.0f );
+        globals->Scene           = std::make_shared<vaScene>( );
+        globals->SceneRenderer   = renderDevice.CreateModule<vaSceneRenderer>( );
+        globals->SceneMainView   = globals->SceneRenderer->CreateMainView( );
+        globals->SceneRenderer->SetScene( globals->Scene );
 
-        // this loads assets (meshes, textures, materials) - looks in the path pointed to by renderDevice.GetAssetPackManager().GetAssetFolderPath()
-        renderDevice.GetAssetPackManager( ).LoadPacks( "LostEmpire", true );  // 
-      
-        // load scene 
-        globals->Scene = std::make_shared<vaScene>();
-        globals->Scene->LoadJSON( vaCore::GetExecutableDirectoryNarrow() + "Media\\" + "MinecraftLostEmpire.vaScene" );
-
-        
-        // tone mapping
-        globals->Tonemap         = renderDevice.CreateModule<vaPostProcessTonemap>();
-        
-        // UI
-        globals->UIPanel = std::make_shared<vaUISimplePanel>( [g = &(*globals)] ( vaApplicationBase & ) 
+        // build up the scene from scratch
         {
+            // Sky
+            entt::entity skyboxEntity = globals->Scene->CreateEntity( "DistantIBL" );
+            Scene::DistantIBLProbe & distantIBL = globals->Scene->Registry( ).emplace<Scene::DistantIBLProbe>( skyboxEntity, Scene::DistantIBLProbe{} );
+            distantIBL.SetImportFilePath( vaCore::GetMediaRootDirectoryNarrow( ) + "noon_grass_2k.hdr" );
+            //            Scene->GetDistantIBL( ).SetImportFilePath( mediaPath + "sky_cube.dds" );
+
+            // Plane mesh
+            globals->Scene->CreateEntity( "Plane",   vaMatrix4x4::Identity, entt::null, globals->MeshPlane->UIDObject_GetUID() );
+
+            // Teapots
+            bool thousandsOfTeapots = true;
+            if( thousandsOfTeapots )
+            {
+                vaRandom rnd;
+                for( int x = 0; x < 41; x++ )
+                    for( int y = 0; y < 41; y++ )
+                    {
+                        vaMatrix4x4 transform = vaMatrix4x4::RotationZ( rnd.NextFloat() * VA_PIf ) * vaMatrix4x4::Translation( { (x-20) * 3.5f, (y-20) * 3.5f, 0.0f } );
+                        globals->Scene->CreateEntity( "Teapot", transform, entt::null, globals->MeshTeapot->UIDObject_GetUID() );
+                    }
+            }
+            else
+            {
+                globals->Scene->CreateEntity( "Teapot", vaMatrix4x4::Identity, entt::null, globals->MeshTeapot->UIDObject_GetUID() );
+            }
+        }
+
+        globals->UIPanel = std::make_shared<vaUISimplePanel>( [&] ( vaApplicationBase & application ) 
+        {
+            application;
 #ifdef VA_IMGUI_INTEGRATION_ENABLED
-            ImGui::Text( "Test" );
+            ImGui::Checkbox( "Animate camera", &globals->AnimateCamera );
+                //globals->SSAO->UIPanelTickCollapsable( application, true, true, false );
 #endif
         },
-            "BasicScene", 0, true, vaUIPanel::DockLocation::DockedLeft );
+            "Basic scene sample", 0, true, vaUIPanel::DockLocation::DockedLeft );
         return;
     }
     else if( applicationState == vaApplicationState::ShuttingDown )
@@ -1829,144 +1822,102 @@ void Sample15_BasicScene( vaRenderDevice & renderDevice, vaApplicationBase & app
         return;
     }
     assert( applicationState == vaApplicationState::Running );
-    
-    auto backbufferTex = renderDevice.GetCurrentBackbufferTexture( );
-    vaRenderDeviceContext& mainContext = *renderDevice.GetMainContext( );
 
-    // Create/update depth
-    if( globals->DepthBuffer == nullptr || globals->DepthBuffer->GetSize() != backbufferTex->GetSize() || globals->DepthBuffer->GetSampleCount() != backbufferTex->GetSampleCount() )
-        globals->DepthBuffer = vaTexture::Create2D( renderDevice, vaResourceFormat::R32_TYPELESS, backbufferTex->GetSizeX(), backbufferTex->GetSizeY(), 1, 1, 1, 
-            vaResourceBindSupportFlags::DepthStencil | vaResourceBindSupportFlags::ShaderResource, vaResourceAccessFlags::Default, vaResourceFormat::R32_FLOAT, vaResourceFormat::Unknown, vaResourceFormat::D32_FLOAT );
+    VA_TRACE_CPU_SCOPE( MainLoop );
 
-    // Create/update offscreen render target
-    if( globals->OffscreenRT == nullptr || globals->OffscreenRT->GetSizeX() != backbufferTex->GetSizeX() || globals->OffscreenRT->GetSizeY() != backbufferTex->GetSizeY() )
-        globals->OffscreenRT = vaTexture::Create2D( renderDevice, vaResourceFormat::R11G11B10_FLOAT, backbufferTex->GetSizeX(), backbufferTex->GetSizeY(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::RenderTarget );
+    auto backbufferTexture = renderDevice.GetCurrentBackbufferTexture( );
+    if( backbufferTexture == nullptr )
+        { vaThreading::Sleep(10); return; }
+    vaViewport mainViewport( backbufferTexture->GetWidth( ), backbufferTexture->GetHeight( ) );
 
-    // setup and rotate camera
-    globals->Camera->SetViewport( vaViewport( renderDevice.GetCurrentBackbufferTexture()->GetWidth(), renderDevice.GetCurrentBackbufferTexture()->GetHeight() ) );
-    // globals->Camera->SetPosition( 5.0f * vaVector3{ (float)cos(0.05*application.GetTimeFromStart()), (float)sin(0.05*application.GetTimeFromStart()), 0.5f } );
-    // globals->Camera->SetOrientationLookAt( { 0, 0, 0 } );
-    globals->Camera->Tick( deltaTime, true );
-
-    // tick scene
-    globals->Scene->Tick( deltaTime );
-    globals->Scene->ApplyToLighting( *globals->Lighting );
-    
-    // collect rendering lists
-    globals->OpaqueRenderSelection.Reset();
-    globals->TransparentRenderSelection.Reset( );
-    vaDrawResultFlags drawResults = globals->Scene->SelectForRendering( &globals->OpaqueRenderSelection, &globals->TransparentRenderSelection, vaRenderInstanceList::FilterSettings::FrustumCull( *globals->Camera, globals->Camera.get() ) ); // add stuff!
-    
-    // below not supported anymore at the moment but could be added
-    // // add our two custom objects that are not part of the scene
-    // globals->OpaqueRenderSelection.push_back( { globals->MeshTeapot, vaMatrix4x4::Identity );
-    // globals->OpaqueRenderSelection.Insert( globals->MeshPlane, vaMatrix4x4::Translation(0, 0, -2.2f) );
-
-    // tick lighting
-    globals->Lighting->Tick( deltaTime );
+    {
+        // setup and rotate camera
+        globals->Camera->SetViewport( mainViewport );
+        double timeFromStart = globals->AnimateCamera?application.GetTimeFromStart():4.0;
+        globals->Camera->SetPosition( 5.0f * vaVector3{ (float)cos(0.1*timeFromStart), (float)sin(0.1*timeFromStart), 0.5f } );
+        globals->Camera->SetOrientationLookAt( { 0, 0, 0 } );
+        globals->Camera->Tick( deltaTime, true );
+        globals->SceneMainView->Camera()->FromOther( *globals->Camera );
+        globals->SceneMainView->Camera()->Tick( deltaTime, application.HasFocus( ) ); //&& !freezeMotionAndInput );
+    }
 
     application.TickUI( *globals->Camera );
 
-    // Do the rendering tick and present 
-    renderDevice.BeginFrame( deltaTime );
-
-    // this has to be called before starting any rendering to setup exposure and any related params
-    globals->Camera->PreRenderTick( *renderDevice.GetMainContext( ), deltaTime );
-
-    vaRenderOutputs offscreenOutputs = vaRenderOutputs::FromRTDepth( globals->OffscreenRT, globals->DepthBuffer );
-
-    //currentBackbuffer->ClearRTV( mainContext, vaVector4( 0.0f, 0.0f, 0.0f, 0.0f ) );
-    offscreenOutputs.DepthStencil->ClearDSV( mainContext, true, globals->Camera->GetUseReversedZ( ) ? ( 0.0f ) : ( 1.0f ), false, 0 );
-
-    // update shadows
-    shared_ptr<vaShadowmap> queuedShadowmap = globals->Lighting->GetNextHighestPriorityShadowmapForRendering( );
-    if( queuedShadowmap != nullptr )
     {
-        vaRenderInstanceList queuedShadowmapRenderSelection;   // should be global but since these shadowmaps are static no need to optimize
-        vaDrawResultFlags shadowMapDrawResults = globals->Scene->SelectForRendering( &queuedShadowmapRenderSelection, nullptr, vaRenderInstanceList::FilterSettings::ShadowmapCull( *queuedShadowmap, globals->Camera.get() ) ); // add stuff!
+        VA_TRACE_CPU_SCOPE( SceneTick );
+        globals->Scene->TickBegin( deltaTime, application.GetCurrentTickIndex() );
+        globals->Scene->TickEnd( );
+    }
 
-        // below not supported anymore at the moment but could be added
-        // // add our two custom objects that are not part of the scene
-        // queuedShadowmapRenderSelection.Insert( globals->MeshTeapot, vaMatrix4x4::Identity );
-        // queuedShadowmapRenderSelection.Insert( globals->MeshPlane, vaMatrix4x4::Translation(0, 0, -2.2f) );
+    {
+        // Draw grid using debug drawing system
+        auto & canvas3D = renderDevice.GetCanvas3D( );
+        canvas3D.DrawAxis( vaVector3( 0, 0, 0 ), 10000.0f, NULL, 0.3f );
+        float zoffset = 0.01f;
 
-        // draw into shadow maps but only if no issues with selection (can happen if assets still loading)
-        if( shadowMapDrawResults == vaDrawResultFlags::None )
+        for( float gridStep = 1.0f; gridStep <= 1000; gridStep *= 10 )
         {
-            VA_TRACE_CPUGPU_SCOPE( ShadowmapDraw, mainContext );
-            queuedShadowmap->Draw( mainContext, queuedShadowmapRenderSelection );
+            int gridCount = 10;
+            for( int i = -gridCount; i <= gridCount; i++ )
+            {
+                canvas3D.DrawLine( { i * gridStep, -gridCount * gridStep, zoffset }, { i * gridStep, +gridCount * gridStep, 0.0f }, 0x80000000 );
+                canvas3D.DrawLine( { -gridCount * gridStep, i * gridStep, zoffset }, { +gridCount * gridStep, i * gridStep, 0.0f }, 0x80000000 );
+            }
         }
     }
 
-    // needed for more rendering of more complex items - in this case skybox requires it only to get the camera
-    vaDrawAttributes drawAttributes( *globals->Camera, vaDrawAttributes::OutputType::Forward, vaDrawAttributes::RenderFlags::None, globals->Lighting.get() );
-
-    // opaque skybox
     {
-        VA_TRACE_CPUGPU_SCOPE( Skybox, mainContext );
-        drawResults |= globals->Skybox->Draw( mainContext, offscreenOutputs, drawAttributes );
-    }
+        // Do the rendering tick and present 
+        renderDevice.BeginFrame( deltaTime );
+        vaRenderDeviceContext & renderContext = *renderDevice.GetMainContext( );
 
-    // draw opaque meshes
-    {
-        VA_TRACE_CPUGPU_SCOPE( OpaqueGeometry, mainContext );
-        drawResults |= renderDevice.GetMeshManager().Draw( mainContext, offscreenOutputs, drawAttributes, globals->OpaqueRenderSelection, vaBlendMode::Opaque, vaRenderMeshDrawFlags::EnableDepthTest | vaRenderMeshDrawFlags::EnableDepthWrite );
-    }
+        // VA_TRACE_CPUGPU_SCOPE( RenderFrame, renderContext );
 
-    // draw transparent meshes
-    {
-        VA_TRACE_CPUGPU_SCOPE( TransparentGeometry, mainContext );
-        // draw transparent meshes
-        drawResults |= renderDevice.GetMeshManager().Draw( mainContext, offscreenOutputs, drawAttributes, globals->TransparentRenderSelection, vaBlendMode::AlphaBlend, vaRenderMeshDrawFlags::EnableDepthTest | vaRenderMeshDrawFlags::DepthTestIncludesEqual );
-    }
+        globals->SceneRenderer->RenderTick( deltaTime, application.GetCurrentTickIndex() );
 
-#if 0   // for debugging visible content
-    {
-        vaVector3 mouseCursor3DWorldPos = renderDevice.GetRenderGlobals().GetLast3DCursorInfo().AsVec3();
-        renderDevice.GetCanvas3D().DrawSphere( mouseCursor3DWorldPos, 0.1f, 0xFF0000FF ); //, 0xFFFFFFFF );
-        for( int i = 0; i < globals->MainRenderSelection.MeshList->Count(); i++ )
+        const shared_ptr<vaTexture> & finalColor = globals->SceneMainView->GetOutputColor( );
+        //    const shared_ptr<vaTexture> & finalDepth     = m_sceneMainView->GetTextureDepth();
+
+        // this is possible
+        if( finalColor == nullptr )
         {
-            const vaRenderMeshDrawList::Entry & entry = (*globals->MainRenderSelection.MeshList)[i];
-            const vaBoundingBox & aabb = entry.Mesh->GetAABB();
-
-            const vaOrientedBoundingBox obb( aabb, entry.Transform );
-            if( obb.NearestDistanceToPoint( mouseCursor3DWorldPos ) <= 0.01f )
-                renderDevice.GetCanvas3D( ).DrawBox( obb, 0xFF00FF00, 0x0400FF00 );
+            backbufferTexture->ClearRTV( renderContext, { 0.5f, 0.5f, 0.5f, 1.0f } );
         }
+        else
+        {
+            VA_TRACE_CPUGPU_SCOPE( FinalApply, renderContext );
+
+            renderDevice.StretchRect( renderContext, backbufferTexture, finalColor, vaVector4( (float)0.0f, (float)0.0f, (float)mainViewport.Width, (float)mainViewport.Height ), vaVector4( 0.0f, 0.0f, (float)mainViewport.Width, (float)mainViewport.Height ), false );
+        }
+
+        // update and draw imgui
+        application.DrawUI( *renderDevice.GetMainContext( ), renderDevice.GetCurrentBackbuffer( ), globals->SceneMainView->GetOutputDepth() );
+
+        // present the frame, flip the buffers, etc
+        renderDevice.EndAndPresentFrame( ( application.GetVsync( ) ) ? ( 1 ) : ( 0 ) );
     }
-#endif
-
-//    // get mouse cursor world pos
-//    {
-//        renderDevice.GetRenderGlobals().Update3DCursor( mainContext, drawAttributes, globals->DepthBuffer, (vaVector2)vaInputMouseBase::GetCurrent()->GetCursorClientPosDirect() );
-//    }
-
-    // copy contents of offscreen rendertarget while performing tonemapping
-    // renderDevice.GetMainContext()->CopySRVToRTV( backbufferTex, globals->OffscreenRT );
-    drawResults |= globals->Tonemap->TickAndApplyCameraPostProcess( mainContext, *globals->Camera, backbufferTex, globals->OffscreenRT );
-
-    // wireframe
-    // if( m_settings.ShowWireframe )
-    // {
-    //     VA_TRACE_CPUGPU_SCOPE( Wireframe, mainContext );
-    //     vaDrawAttributes drawAttributes( camera, vaDrawAttributes::OutputType::Forward, vaDrawAttributes::RenderFlags::SetZOffsettedProjMatrix | vaDrawAttributes::RenderFlags::DebugWireframePass, m_lighting.get( ) );
-    //     drawAttributes.GlobalMIPOffset = globalMIPOffset; drawAttributes.GlobalPixelScale = globalPixelScale;
-    // 
-    //     drawResults |= GetRenderDevice().GetMeshManager().Draw( drawAttributes, *m_currentSceneMainRenderSelection.MeshList, vaBlendMode::Opaque, vaRenderMeshDrawFlags::EnableDepthTest | vaRenderMeshDrawFlags::DepthTestIncludesEqual );
-    // }
-
-    // update and draw imgui
-    application.DrawUI( *renderDevice.GetMainContext( ), renderDevice.GetCurrentBackbuffer( ), globals->DepthBuffer );
-
-    // present the frame, flip the buffers, etc
-    renderDevice.EndAndPresentFrame( (application.GetVsync())?(1):(0) );
-#endif
 }
 
 #include "Rendering/Effects/vaSimpleParticles.h"
 void Sample16_Particles( vaRenderDevice & renderDevice, vaApplicationBase & application, float deltaTime, vaApplicationState applicationState )
 {
     renderDevice; application; deltaTime; applicationState;
+
+    if( applicationState == vaApplicationState::Running )
+    {
+        application.TickUI( );
+
+        renderDevice.BeginFrame( deltaTime );
+
+        renderDevice.GetCurrentBackbufferTexture( )->ClearRTV( *renderDevice.GetMainContext( ), vaVector4( 0.5f, 0.7f, 0.5f, 0.0f ) );
+
+        // update and draw imgui
+        application.DrawUI( *renderDevice.GetMainContext( ), renderDevice.GetCurrentBackbuffer( ), nullptr );
+
+        // present the frame, flip the buffers, etc
+        renderDevice.EndAndPresentFrame( ( application.GetVsync( ) ) ? ( 1 ) : ( 0 ) );
+    }
+
 #if 0
     struct Globals
     {
@@ -2895,10 +2846,10 @@ return 0;
         assert( globals == nullptr );
         globals = std::make_shared<Globals>( );
 
-        globals->ConstantBuffer = vaConstantBuffer::Create<ShaderConstants>( renderDevice, nullptr, false );
+        globals->ConstantBuffer = vaConstantBuffer::Create<ShaderConstants>( renderDevice, "constants" );
 
         globals->ComputeShader  = renderDevice.CreateModule<vaComputeShader>(); // get the platform dependent object
-        globals->ComputeShader->CreateShaderFromBuffer( 
+        globals->ComputeShader->CompileFromBuffer( 
             "#include \"vaNoise.hlsl\"                                                                                      \n"
             "struct ShaderConstants { uint Seed; uint Count; uint Padding0; uint Padding1; float2 TopLeft; float2 Size; };  \n"
             "cbuffer Sample18Consts : register(b0) { ShaderConstants g_consts ; }                                           \n"

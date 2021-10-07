@@ -12,6 +12,10 @@
 
 #include "Rendering/vaRenderDeviceContext.h"
 
+#include "Rendering/vaShader.h"
+
+#include "Rendering/vaRenderBuffers.h"
+
 #include "Rendering/vaTexture.h"
 
 #include "IntegratedExternals/vaImguiIntegration.h"
@@ -55,7 +59,7 @@ static std::vector<UIContextItem>   s_ui_contextItems;
 vaRenderGlobals::vaRenderGlobals( const vaRenderingModuleParams & params ) : 
     vaRenderingModule( params ),
     vaUIPanel( "RenderDebug", 0, !VA_MINIMAL_UI_BOOL, vaUIPanel::DockLocation::DockedLeftBottom ),
-    m_constantsBuffer( params )
+    m_constantBuffer( vaConstantBuffer::Create<ShaderGlobalConstants>( params.RenderDevice, "ShaderGlobalConstants" ) )
     //m_genericDataCaptureCS( params ),
     //m_cursorCaptureCS( params )
 { 
@@ -87,8 +91,8 @@ vaRenderGlobals::vaRenderGlobals( const vaRenderingModuleParams & params ) :
     m_debugDrawDepth            = false;
     m_debugDrawNormalsFromDepth = false;
 
-    //m_genericDataCaptureCS->CreateShaderFromFile( L"vaHelperTools.hlsl", "cs_5_0", "GenericDataCaptureMSCS", { pair< string, string >( "VA_UPDATE_GENERIC_DATA_CAPTURE_SPECIFIC", "" ) }, false );
-    //m_cursorCaptureCS->CreateShaderFromFile( L"vaHelperTools.hlsl", "cs_5_0", "CursorCaptureCS", { pair< string, string >( "VA_UPDATE_3D_CURSOR_SPECIFIC", "" ) }, false );
+    //m_genericDataCaptureCS->CompileFromFile( L"vaHelperTools.hlsl", "cs_5_0", "GenericDataCaptureMSCS", { pair< string, string >( "VA_UPDATE_GENERIC_DATA_CAPTURE_SPECIFIC", "" ) }, false );
+    //m_cursorCaptureCS->CompileFromFile( L"vaHelperTools.hlsl", "cs_5_0", "CursorCaptureCS", { pair< string, string >( "VA_UPDATE_3D_CURSOR_SPECIFIC", "" ) }, false );
 
     params.RenderDevice.e_BeforeEndFrame.AddWithToken( m_aliveToken, [ thisPtr = this ]( vaRenderDevice & device )
     {
@@ -212,7 +216,7 @@ void vaRenderGlobals::UpdateShaderConstants( vaRenderDeviceContext & renderConte
     consts.SinTime2Pi                       = (float)sin( totalTime * 2.0 * VA_PI );
     consts.SinTime1Pi                       = (float)sin( totalTime * VA_PI );
 
-    m_constantsBuffer.Upload( renderContext, consts );
+    m_constantBuffer->Upload( renderContext, consts );
 }
 
 void vaRenderGlobals::UpdateAndSetToGlobals( vaRenderDeviceContext & renderContext, vaShaderItemGlobals & shaderItemGlobals, const vaDrawAttributes * drawAttributes )
@@ -220,7 +224,7 @@ void vaRenderGlobals::UpdateAndSetToGlobals( vaRenderDeviceContext & renderConte
     UpdateShaderConstants( renderContext, drawAttributes );
 
     assert( shaderItemGlobals.ConstantBuffers[ SHADERGLOBAL_CONSTANTSBUFFERSLOT ] == nullptr );
-    shaderItemGlobals.ConstantBuffers[ SHADERGLOBAL_CONSTANTSBUFFERSLOT ] = m_constantsBuffer;
+    shaderItemGlobals.ConstantBuffers[ SHADERGLOBAL_CONSTANTSBUFFERSLOT ] = m_constantBuffer;
 
     if( drawAttributes != nullptr && drawAttributes->Settings.GenericDataCollect )
     {
@@ -391,21 +395,6 @@ void vaRenderGlobals::DigestShaderFeedbackInfo( ShaderFeedbackDynamic dynamicIte
     auto & canvas2D = vaDebugCanvas2D::GetInstance(); canvas2D;
     auto & canvas3D = vaDebugCanvas3D::GetInstance(); canvas3D;
 
-    auto draw3DText = [ &canvas2D, &canvas3D ]( const vaVector4 & worldPos, const vaVector2 screenOffset, unsigned int penColor, unsigned int shadowColor, const char* text, ... )
-    {
-        va_list args;
-        va_start( args, text );
-        std::string txt = vaStringTools::Format( text, args );
-        va_end( args );
-        vaMatrix4x4 viewProj = canvas3D.GetLastCamera( ).GetViewMatrix( ) * canvas3D.GetLastCamera( ).GetProjMatrix( );
-        vaVector4 pos = vaVector4::Transform(worldPos, viewProj); pos /= pos.w; pos.x = pos.x * 0.5f + 0.5f; pos.y = -pos.y * 0.5f + 0.5f;
-        if( pos.z > 0 ) // don't draw if behind near clipping plane
-        {
-            pos.x *= canvas3D.GetLastCamera( ).GetViewportWidth( ); pos.y *= canvas3D.GetLastCamera( ).GetViewportHeight( );
-            canvas2D.DrawText( pos.x + screenOffset.x, pos.y + screenOffset.y, penColor, shadowColor, txt.c_str() );
-        }
-    };
-
     for( ShaderFeedbackDynamic & item : m_debugDrawItems )
     {
         vaVector4ui & ref1ui = reinterpret_cast<vaVector4ui &>(item.Ref1);
@@ -444,13 +433,13 @@ void vaRenderGlobals::DigestShaderFeedbackInfo( ShaderFeedbackDynamic dynamicIte
         else if( item.Type == ShaderFeedbackDynamic::Type_2DTextFLT4 )
             canvas2D.DrawText( item.Ref0.x, item.Ref0.y, color.ToBGRA( ), shadowColor, "%f, %f, %f, %f", item.Ref1.x, item.Ref1.y, item.Ref1.z, item.Ref1.w );
         else if( item.Type == ShaderFeedbackDynamic::Type_3DTextUINT )
-            draw3DText( item.Ref0, {item.Param1, item.Param2}, color.ToBGRA( ), shadowColor, "%u", ref1ui.x );
+            canvas2D.DrawText3D( canvas3D.GetLastCamera( ), item.Ref0.AsVec3(), {item.Param1, item.Param2}, color.ToBGRA( ), shadowColor, "%u", ref1ui.x );
         else if( item.Type == ShaderFeedbackDynamic::Type_3DTextUINT4 )
-            draw3DText( item.Ref0, {item.Param1, item.Param2}, color.ToBGRA( ), shadowColor, "%u, %u, %u, %u", ref1ui.x, ref1ui.y, ref1ui.z, ref1ui.w );
+            canvas2D.DrawText3D( canvas3D.GetLastCamera( ), item.Ref0.AsVec3(), {item.Param1, item.Param2}, color.ToBGRA( ), shadowColor, "%u, %u, %u, %u", ref1ui.x, ref1ui.y, ref1ui.z, ref1ui.w );
         else if( item.Type == ShaderFeedbackDynamic::Type_3DTextFLT )
-            draw3DText( item.Ref0, {item.Param1, item.Param2}, color.ToBGRA( ), shadowColor, "%f", item.Ref1.x );
+            canvas2D.DrawText3D( canvas3D.GetLastCamera( ), item.Ref0.AsVec3(), {item.Param1, item.Param2}, color.ToBGRA( ), shadowColor, "%f", item.Ref1.x );
         else if( item.Type == ShaderFeedbackDynamic::Type_3DTextFLT4 )
-            draw3DText( item.Ref0, {item.Param1, item.Param2}, color.ToBGRA( ), shadowColor, "%f, %f, %f, %f", item.Ref1.x, item.Ref1.y, item.Ref1.z, item.Ref1.w );
+            canvas2D.DrawText3D( canvas3D.GetLastCamera( ), item.Ref0.AsVec3(), {item.Param1, item.Param2}, color.ToBGRA( ), shadowColor, "%f, %f, %f, %f", item.Ref1.x, item.Ref1.y, item.Ref1.z, item.Ref1.w );
         else if( item.Type == ShaderFeedbackDynamic::Type_3DLine )
             canvas3D.DrawLine( item.Ref0.AsVec3( ), item.Ref1.AsVec3( ), color.ToBGRA( ) );
         else if( item.Type == ShaderFeedbackDynamic::Type_3DSphere )
@@ -478,9 +467,9 @@ void vaRenderGlobals::DigestShaderFeedbackInfo( ShaderFeedbackDynamic dynamicIte
 void vaRenderGlobals::UIPanelTick( vaApplicationBase & )
 {
 #ifdef VA_IMGUI_INTEGRATION_ENABLED
-    ImGui::Text( "TODO (future): " );
-    ImGui::Text( "      [ ] draw triangle, pos, color" );
-    ImGui::Text( "      [ ] draw cone, pos, color" );
+    //ImGui::Text( "TODO (future): " );
+    //ImGui::Text( "      [ ] draw triangle, pos, color" );
+    //ImGui::Text( "      [ ] draw cone, pos, color" );
     if( ImGui::CollapsingHeader( "CursorHoverInfo" ) )
     {
         ImGui::Text( "CursorHoverInfo count: %d", m_cursorHoverInfoItems.size() );

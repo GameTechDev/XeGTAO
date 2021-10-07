@@ -95,8 +95,8 @@ namespace Vanilla
     public:
         virtual                         ~vaShader( );
 
-        virtual void                    CreateShaderFromFile( const string & filePath, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile );
-        virtual void                    CreateShaderFromBuffer( const string & shaderCode, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile );
+        virtual void                    CompileFromFile( const string & filePath, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile );
+        virtual void                    CompileFromBuffer( const string & shaderCode, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile );
 
         // "vs", "ps", ...
         virtual const char *            GetSMPrefix( )                      = 0;
@@ -153,6 +153,9 @@ namespace Vanilla
 
         static inline string            StateToString( vaShader::State state )      { if( state == vaShader::State::Empty ) return "Empty"; else if( state == vaShader::State::Uncooked ) return "Uncooked"; else if( state == vaShader::State::Cooked ) return "Cooked"; assert( false ); return "Unknown"; }
 
+        template< typename ShaderType >
+        static shared_ptr<ShaderType>   CreateFromFile( vaRenderDevice & renderDevice, const string & filePath, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile );
+
         // you'll need this if casting directly from vaShader to any of the platform-dependent ones - but it's slow.
         // template< typename CastToType >
         // CastToType                      SafeCast( )                                                                 
@@ -166,7 +169,7 @@ namespace Vanilla
 
     class vaPixelShader : public virtual vaShader
     {
-        void *                          m_cachedPlatformPtr = nullptr;
+        void *                              m_cachedPlatformPtr = nullptr;
 
     public:
         vaPixelShader( ) { };
@@ -175,12 +178,14 @@ namespace Vanilla
         // to avoid dynamic_cast for performance reasons (as this specific call happens very, very frequently) 
         template< typename OutType > OutType SafeCast( ) { return vaCachedDynamicCast<OutType>( this, m_cachedPlatformPtr ); }
 
-        virtual const char *            GetSMPrefix( ) override             { return "ps"; };
+        virtual const char *                GetSMPrefix( ) override             { return "ps"; };
+
+        static shared_ptr<vaPixelShader>    CreateFromFile( vaRenderDevice & renderDevice, const string & filePath, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile )   { return vaShader::CreateFromFile<vaPixelShader>( renderDevice, filePath, entryPoint, macros, forceImmediateCompile ); }
     };
 
     class vaComputeShader : public virtual vaShader
     {
-            void *                      m_cachedPlatformPtr = nullptr;
+            void *                          m_cachedPlatformPtr = nullptr;
 
     public:
         vaComputeShader( ) { };
@@ -189,12 +194,14 @@ namespace Vanilla
        // to avoid dynamic_cast for performance reasons (as this specific call happens very, very frequently) 
        template< typename OutType > OutType SafeCast( ) { return vaCachedDynamicCast<OutType>( this, m_cachedPlatformPtr ); }
 
-       virtual const char *            GetSMPrefix( ) override             { return "cs"; };
+       virtual const char *                 GetSMPrefix( ) override             { return "cs"; };
+
+       static shared_ptr<vaComputeShader>   CreateFromFile( vaRenderDevice & renderDevice, const string & filePath, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile )   { return vaShader::CreateFromFile<vaComputeShader>( renderDevice, filePath, entryPoint, macros, forceImmediateCompile ); }
     };
 
     class vaShaderLibrary : public virtual vaShader
     {
-            void *                      m_cachedPlatformPtr = nullptr;
+            void *                          m_cachedPlatformPtr = nullptr;
 
     public:
         vaShaderLibrary( )              { };
@@ -203,7 +210,9 @@ namespace Vanilla
        // to avoid dynamic_cast for performance reasons (as this specific call happens very, very frequently) 
        template< typename OutType > OutType SafeCast( ) { return vaCachedDynamicCast<OutType>( this, m_cachedPlatformPtr ); }
 
-       virtual const char *            GetSMPrefix( ) override             { return "lib"; };
+       virtual const char *                 GetSMPrefix( ) override             { return "lib"; };
+
+       static shared_ptr<vaShaderLibrary>   CreateFromFile( vaRenderDevice & renderDevice, const string & filePath, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile )   { return vaShader::CreateFromFile<vaShaderLibrary>( renderDevice, filePath, entryPoint, macros, forceImmediateCompile ); }
     };
 
     class vaHullShader : public virtual vaShader
@@ -217,7 +226,7 @@ namespace Vanilla
        // to avoid dynamic_cast for performance reasons (as this specific call happens very, very frequently) 
        template< typename OutType > OutType SafeCast( ) { return vaCachedDynamicCast<OutType>( this, m_cachedPlatformPtr ); }
 
-       virtual const char *            GetSMPrefix( ) override             { return "hs"; };
+       virtual const char *                 GetSMPrefix( ) override             { return "hs"; };
     };
 
     class vaDomainShader : public virtual vaShader
@@ -231,7 +240,7 @@ namespace Vanilla
        // to avoid dynamic_cast for performance reasons (as this specific call happens very, very frequently) 
        template< typename OutType > OutType SafeCast( ) { return vaCachedDynamicCast<OutType>( this, m_cachedPlatformPtr ); }
 
-       virtual const char *            GetSMPrefix( ) override             { return "ds"; };
+       virtual const char *                 GetSMPrefix( ) override             { return "ds"; };
     };
 
     class vaGeometryShader : public virtual vaShader
@@ -245,7 +254,7 @@ namespace Vanilla
        // to avoid dynamic_cast for performance reasons (as this specific call happens very, very frequently) 
        template< typename OutType > OutType SafeCast( ) { return vaCachedDynamicCast<OutType>( this, m_cachedPlatformPtr ); }
 
-       virtual const char *            GetSMPrefix( ) override             { return "gs"; };
+       virtual const char *                 GetSMPrefix( ) override             { return "gs"; };
     };
 
     struct vaVertexInputElementDesc
@@ -319,8 +328,8 @@ namespace Vanilla
         vaVertexShader( ) { };
         virtual ~vaVertexShader( ) { }
 
-        virtual void                CreateShaderAndILFromFile( const string & filePath, const string & entryPoint, const std::vector<vaVertexInputElementDesc> & inputLayoutElements, const vaShaderMacroContaner & macros, bool forceImmediateCompile )     = 0;
-        virtual void                CreateShaderAndILFromBuffer( const string & shaderCode, const string & entryPoint, const std::vector<vaVertexInputElementDesc> & inputLayoutElements, const vaShaderMacroContaner & macros, bool forceImmediateCompile )  = 0;
+        virtual void                CompileVSAndILFromFile( const string & filePath, const string & entryPoint, const std::vector<vaVertexInputElementDesc> & inputLayoutElements, const vaShaderMacroContaner & macros, bool forceImmediateCompile )     = 0;
+        virtual void                CompileVSAndILFromBuffer( const string & shaderCode, const string & entryPoint, const std::vector<vaVertexInputElementDesc> & inputLayoutElements, const vaShaderMacroContaner & macros, bool forceImmediateCompile )  = 0;
 
        // to avoid dynamic_cast for performance reasons (as this specific call happens very, very frequently) 
        template< typename OutType > OutType SafeCast( ) { return vaCachedDynamicCast<OutType>( this, m_cachedPlatformPtr ); }
@@ -364,5 +373,14 @@ namespace Vanilla
 
         Settings &          Settings( ) { return m_settings; }
     };
+
+    template< typename ShaderType >
+    inline shared_ptr<ShaderType> vaShader::CreateFromFile( vaRenderDevice & renderDevice, const string & filePath, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile )
+    {
+        shared_ptr<ShaderType> ret = renderDevice.CreateModule<ShaderType>( );
+        if( ret == nullptr ) {assert( false ); return ret; }
+        ret->CompileFromFile( filePath, entryPoint, macros, forceImmediateCompile );
+        return ret;
+    }
 
 }

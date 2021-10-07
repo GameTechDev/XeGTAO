@@ -375,12 +375,27 @@ float4 PSSmartOffscreenUpsampleComposite( const in float4 Position : SV_Position
 
 
 #ifdef VA_POSTPROCESS_MERGETEXTURES
-Texture2D<float4>                g_srcTexture              : register( t0 );
+
+#if VA_POSTPROCESS_MERGETEXTURES_UINT_VALUES
+Texture2D<uint4>            g_srcA                 : register( T_CONCATENATER( POSTPROCESS_TEXTURE_SLOT0 ) );
+Texture2D<uint4>            g_srcB                 : register( T_CONCATENATER( POSTPROCESS_TEXTURE_SLOT1 ) );
+Texture2D<uint4>            g_srcC                 : register( T_CONCATENATER( POSTPROCESS_TEXTURE_SLOT2 ) );
+#else
+Texture2D<float4>           g_srcA                 : register( T_CONCATENATER( POSTPROCESS_TEXTURE_SLOT0 ) );
+Texture2D<float4>           g_srcB                 : register( T_CONCATENATER( POSTPROCESS_TEXTURE_SLOT1 ) );
+Texture2D<float4>           g_srcC                 : register( T_CONCATENATER( POSTPROCESS_TEXTURE_SLOT2 ) );
+#endif
 float4 PSMergeTextures( in float4 inPos : SV_Position, const in float2 Texcoord : TEXCOORD0 ) : SV_Target0
 {
-    float4 srcA = g_sourceTexture0.Sample( g_samplerLinearClamp, Texcoord );
-    float4 srcB = g_sourceTexture1.Sample( g_samplerLinearClamp, Texcoord );
-    float4 srcC = g_sourceTexture2.Sample( g_samplerLinearClamp, Texcoord );
+#if VA_POSTPROCESS_MERGETEXTURES_UINT_VALUES
+    uint4 srcA = g_srcA[(uint2)inPos.xy]; //.Sample( g_samplerPointClamp, Texcoord );
+    uint4 srcB = g_srcB[(uint2)inPos.xy]; //.Sample( g_samplerPointClamp, Texcoord );
+    uint4 srcC = g_srcC[(uint2)inPos.xy]; //.Sample( g_samplerPointClamp, Texcoord );
+#else
+    float4 srcA = g_srcA[(uint2)inPos.xy]; //.Sample( g_samplerPointClamp, Texcoord );
+    float4 srcB = g_srcB[(uint2)inPos.xy]; //.Sample( g_samplerPointClamp, Texcoord );
+    float4 srcC = g_srcC[(uint2)inPos.xy]; //.Sample( g_samplerPointClamp, Texcoord );
+#endif
     
     return VA_POSTPROCESS_MERGETEXTURES_CODE;
 }

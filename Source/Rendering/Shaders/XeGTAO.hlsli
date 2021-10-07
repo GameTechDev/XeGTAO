@@ -18,7 +18,7 @@
 #include "vaShared.hlsl"
 #endif
 
-#if defined( XE_GTAO_SHOW_NORMALS ) || defined( XE_GTAO_SHOW_EDGES )
+#if defined( XE_GTAO_SHOW_NORMALS ) || defined( XE_GTAO_SHOW_EDGES ) || defined( XE_GTAO_SHOW_BENT_NORMALS )
 RWTexture2D<float4>         g_outputDbgImage    : register( u2 );
 #endif
 
@@ -42,22 +42,65 @@ RWTexture2D<float4>         g_outputDbgImage    : register( u2 );
     typedef min16float2     lpfloat2;
     typedef min16float3     lpfloat3;
     typedef min16float4     lpfloat4;
+    typedef min16float3x3   lpfloat3x3;
 #else // new fp16 approach (requires SM6.2 and -enable-16bit-types) - WARNING: perf degradation noticed on some HW, while the old (min16float) path is mostly at least a minor perf gain so this is more useful for quality testing
     typedef float16_t       lpfloat; 
     typedef float16_t2      lpfloat2;
     typedef float16_t3      lpfloat3;
     typedef float16_t4      lpfloat4;
+    typedef float16_t3x3    lpfloat3x3;
 #endif
 #else
     typedef float           lpfloat;
     typedef float2          lpfloat2;
     typedef float3          lpfloat3;
     typedef float4          lpfloat4;
+    typedef float3x3        lpfloat3x3;
 #endif
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-float3 NDCToViewspace( const float2 pos, const float viewspaceDepth, const GTAOConstants consts )
+
+// R11G11B10_UNORM <-> float3
+float3 XeGTAO_R11G11B10_UNORM_to_FLOAT3( uint packedInput )
+{
+    float3 unpackedOutput;
+    unpackedOutput.x = (float)( ( packedInput       ) & 0x000007ff ) / 2047.0f;
+    unpackedOutput.y = (float)( ( packedInput >> 11 ) & 0x000007ff ) / 2047.0f;
+    unpackedOutput.z = (float)( ( packedInput >> 22 ) & 0x000003ff ) / 1023.0f;
+    return unpackedOutput;
+}
+// 'unpackedInput' is float3 and not float3 on purpose as half float lacks precision for below!
+uint XeGTAO_FLOAT3_to_R11G11B10_UNORM( float3 unpackedInput )
+{
+    uint packedOutput;
+    packedOutput =( ( uint( VA_SATURATE( unpackedInput.x ) * 2047 + 0.5f ) ) |
+        ( uint( VA_SATURATE( unpackedInput.y ) * 2047 + 0.5f ) << 11 ) |
+        ( uint( VA_SATURATE( unpackedInput.z ) * 1023 + 0.5f ) << 22 ) );
+    return packedOutput;
+}
+//
+lpfloat4 XeGTAO_R8G8B8A8_UNORM_to_FLOAT4( uint packedInput )
+{
+    lpfloat4 unpackedOutput;
+    unpackedOutput.x = (lpfloat)( packedInput & 0x000000ff ) / (lpfloat)255;
+    unpackedOutput.y = (lpfloat)( ( ( packedInput >> 8 ) & 0x000000ff ) ) / (lpfloat)255;
+    unpackedOutput.z = (lpfloat)( ( ( packedInput >> 16 ) & 0x000000ff ) ) / (lpfloat)255;
+    unpackedOutput.w = (lpfloat)( packedInput >> 24 ) / (lpfloat)255;
+    return unpackedOutput;
+}
+//
+uint XeGTAO_FLOAT4_to_R8G8B8A8_UNORM( lpfloat4 unpackedInput )
+{
+    return (( uint( saturate( unpackedInput.x ) * (lpfloat)255 + (lpfloat)0.5 ) ) |
+            ( uint( saturate( unpackedInput.y ) * (lpfloat)255 + (lpfloat)0.5 ) << 8 ) |
+            ( uint( saturate( unpackedInput.z ) * (lpfloat)255 + (lpfloat)0.5 ) << 16 ) |
+            ( uint( saturate( unpackedInput.w ) * (lpfloat)255 + (lpfloat)0.5 ) << 24 ) );
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+float3 XeGTAO_NDCToViewspace( const float2 pos, const float viewspaceDepth, const GTAOConstants consts )
 {
     float3 ret;
     ret.xy = (consts.NDCToViewMul * pos.xy + consts.NDCToViewAdd) * viewspaceDepth;
@@ -65,7 +108,7 @@ float3 NDCToViewspace( const float2 pos, const float viewspaceDepth, const GTAOC
     return ret;
 }
 
-float ScreenSpaceToViewSpaceDepth( const float screenDepth, const GTAOConstants consts )
+float XeGTAO_ScreenSpaceToViewSpaceDepth( const float screenDepth, const GTAOConstants consts )
 {
     float depthLinearizeMul = consts.DepthUnpackConsts.x;
     float depthLinearizeAdd = consts.DepthUnpackConsts.y;
@@ -73,7 +116,7 @@ float ScreenSpaceToViewSpaceDepth( const float screenDepth, const GTAOConstants 
     return depthLinearizeMul / (depthLinearizeAdd - screenDepth);
 }
 
-lpfloat4 CalculateEdges( const lpfloat centerZ, const lpfloat leftZ, const lpfloat rightZ, const lpfloat topZ, const lpfloat bottomZ )
+lpfloat4 XeGTAO_CalculateEdges( const lpfloat centerZ, const lpfloat leftZ, const lpfloat rightZ, const lpfloat topZ, const lpfloat bottomZ )
 {
     lpfloat4 edgesLRTB = lpfloat4( leftZ, rightZ, topZ, bottomZ ) - (lpfloat)centerZ;
 
@@ -85,7 +128,7 @@ lpfloat4 CalculateEdges( const lpfloat centerZ, const lpfloat leftZ, const lpflo
 }
 
 // packing/unpacking for edges; 2 bits per edge mean 4 gradient values (0, 0.33, 0.66, 1) for smoother transitions!
-lpfloat PackEdges( lpfloat4 edgesLRTB )
+lpfloat XeGTAO_PackEdges( lpfloat4 edgesLRTB )
 {
     // integer version:
     // edgesLRTB = saturate(edgesLRTB) * 2.9.xxxx + 0.5.xxxx;
@@ -96,7 +139,7 @@ lpfloat PackEdges( lpfloat4 edgesLRTB )
     return dot( edgesLRTB, lpfloat4( 64.0 / 255.0, 16.0 / 255.0, 4.0 / 255.0, 1.0 / 255.0 ) ) ;
 }
 
-float3 CalculateNormal( const float4 edgesLRTB, float3 pixCenterPos, float3 pixLPos, float3 pixRPos, float3 pixTPos, float3 pixBPos )
+float3 XeGTAO_CalculateNormal( const float4 edgesLRTB, float3 pixCenterPos, float3 pixLPos, float3 pixRPos, float3 pixTPos, float3 pixBPos )
 {
     // Get this pixel's viewspace normal
     float4 acceptedNormals  = saturate( float4( edgesLRTB.x*edgesLRTB.z, edgesLRTB.z*edgesLRTB.y, edgesLRTB.y*edgesLRTB.w, edgesLRTB.w*edgesLRTB.x ) + 0.01 );
@@ -115,36 +158,92 @@ float3 CalculateNormal( const float4 edgesLRTB, float3 pixCenterPos, float3 pixL
     return pixelNormal;
 }
 
+#ifdef XE_GTAO_SHOW_DEBUG_VIZ
 float4 DbgGetSliceColor(int slice, int sliceCount, bool mirror)
 {
     float red = (float)slice / (float)sliceCount; float green = 0.01; float blue = 1.0 - (float)slice / (float)sliceCount;
     return (mirror)?(float4(blue, green, red, 0.9)):(float4(red, green, blue, 0.9));
 }
+#endif
 
 // http://h14s.p5r.org/2012/09/0x5f3759df.html, [Drobot2014a] Low Level Optimizations for GCN, https://blog.selfshadow.com/publications/s2016-shading-course/activision/s2016_pbs_activision_occlusion.pdf slide 63
-lpfloat fast_sqrt( float x )
+lpfloat XeGTAO_FastSqrt( float x )
 {
     return (lpfloat)(asfloat( 0x1fbd1df5 + ( asint( x ) >> 1 ) ));
 }
 // input [-1, 1] and output [0, PI], from https://seblagarde.wordpress.com/2014/12/01/inverse-trigonometric-functions-gpu-optimization-for-amd-gcn-architecture/
-lpfloat fast_acos( lpfloat inX )
+lpfloat XeGTAO_FastACos( lpfloat inX )
 { 
     const lpfloat PI = 3.141593;
     const lpfloat HALF_PI = 1.570796;
     lpfloat x = abs(inX); 
     lpfloat res = -0.156583 * x + HALF_PI; 
-    res *= fast_sqrt(1.0 - x); 
+    res *= XeGTAO_FastSqrt(1.0 - x); 
     return (inX >= 0) ? res : PI - res; 
 }
 
-struct GTAOResult
+uint XeGTAO_EncodeVisibilityBentNormal( lpfloat visibility, lpfloat3 bentNormal )
 {
-    lpfloat   Visibility;   // range from [0, ~1.5]
-    lpfloat   PackedEdgesLRTB;
-};
+    return XeGTAO_FLOAT4_to_R8G8B8A8_UNORM( lpfloat4( bentNormal * 0.5 + 0.5, visibility ) );
+}
 
-GTAOResult XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat stepsPerSlice, const lpfloat2 localNoise, lpfloat3 viewspaceNormal, const GTAOConstants consts, Texture2D<lpfloat> sourceViewspaceDepth, SamplerState depthSampler )
+void XeGTAO_DecodeVisibilityBentNormal( const uint packedValue, out lpfloat visibility, out lpfloat3 bentNormal )
 {
+    lpfloat4 decoded = XeGTAO_R8G8B8A8_UNORM_to_FLOAT4( packedValue );
+    bentNormal = decoded.xyz * 2.0.xxx - 1.0.xxx;   // could normalize - don't want to since it's done so many times, better to do it at the final step only
+    visibility = decoded.w;
+}
+
+void XeGTAO_OutputWorkingTerm( const uint2 pixCoord, lpfloat visibility, lpfloat3 bentNormal, RWTexture2D<uint> outWorkingAOTerm )
+{
+    visibility = saturate( visibility / lpfloat(XE_GTAO_OCCLUSION_TERM_SCALE) );
+#ifdef XE_GTAO_COMPUTE_BENT_NORMALS
+    outWorkingAOTerm[pixCoord] = XeGTAO_EncodeVisibilityBentNormal( visibility, bentNormal );
+#else
+    outWorkingAOTerm[pixCoord] = uint(visibility * 255.0 + 0.5);
+#endif
+}
+
+// "Efficiently building a matrix to rotate one vector to another"
+// http://cs.brown.edu/research/pubs/pdfs/1999/Moller-1999-EBA.pdf / https://dl.acm.org/doi/10.1080/10867651.1999.10487509
+// (using https://github.com/assimp/assimp/blob/master/include/assimp/matrix3x3.inl#L275 as a code reference as it seems to be best)
+lpfloat3x3 XeGTAO_RotFromToMatrix( lpfloat3 from, lpfloat3 to )
+{
+    const lpfloat e       = dot(from, to);
+    const lpfloat f       = abs(e); //(e < 0)? -e:e;
+
+    // WARNING: This has not been tested/worked through, especially not for 16bit floats; seems to work in our special use case (from is always {0, 0, -1}) but wouldn't use it in general
+    if( f > lpfloat( 1.0 - 0.0003 ) )
+        return lpfloat3x3( 1, 0, 0, 0, 1, 0, 0, 0, 1 );
+
+    const lpfloat3 v      = cross( from, to );
+    /* ... use this hand optimized version (9 mults less) */
+    const lpfloat h       = (1.0)/(1.0 + e);      /* optimization by Gottfried Chen */
+    const lpfloat hvx     = h * v.x;
+    const lpfloat hvz     = h * v.z;
+    const lpfloat hvxy    = hvx * v.y;
+    const lpfloat hvxz    = hvx * v.z;
+    const lpfloat hvyz    = hvz * v.y;
+
+    lpfloat3x3 mtx;
+    mtx[0][0] = e + hvx * v.x;
+    mtx[0][1] = hvxy - v.z;
+    mtx[0][2] = hvxz + v.y;
+
+    mtx[1][0] = hvxy + v.z;
+    mtx[1][1] = e + h * v.y * v.y;
+    mtx[1][2] = hvyz - v.x;
+
+    mtx[2][0] = hvxz - v.y;
+    mtx[2][1] = hvyz + v.x;
+    mtx[2][2] = e + hvz * v.z;
+
+    return mtx;
+}
+
+void XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat stepsPerSlice, const lpfloat2 localNoise, lpfloat3 viewspaceNormal, const GTAOConstants consts, 
+    Texture2D<lpfloat> sourceViewspaceDepth, SamplerState depthSampler, RWTexture2D<uint> outWorkingAOTerm, RWTexture2D<unorm float> outWorkingEdges )
+{                                                                       
     float2 normalizedScreenPos = (pixCoord + 0.5.xx) * consts.ViewportPixelSize;
 
     lpfloat4 valuesUL   = sourceViewspaceDepth.GatherRed( depthSampler, float2( pixCoord * consts.ViewportPixelSize )               );
@@ -159,7 +258,8 @@ GTAOResult XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat st
     const lpfloat pixRZ = valuesBR.z;
     const lpfloat pixBZ = valuesBR.x;
 
-    lpfloat4 edgesLRTB  = CalculateEdges( (lpfloat)viewspaceZ, (lpfloat)pixLZ, (lpfloat)pixRZ, (lpfloat)pixTZ, (lpfloat)pixBZ );
+    lpfloat4 edgesLRTB  = XeGTAO_CalculateEdges( (lpfloat)viewspaceZ, (lpfloat)pixLZ, (lpfloat)pixRZ, (lpfloat)pixTZ, (lpfloat)pixBZ );
+    outWorkingEdges[pixCoord] = XeGTAO_PackEdges(edgesLRTB);
 
 	// Generating screen space normals in-place is faster than generating normals in a separate pass but requires
 	// use of 32bit depth buffer (16bit works but visibly degrades quality) which in turn slows everything down. So to
@@ -167,12 +267,12 @@ GTAOResult XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat st
 	// pass.
 	// However, we leave this code in, in case anyone has a use-case where it fits better.
 #ifdef XE_GTAO_GENERATE_NORMALS_INPLACE
-    float3 CENTER   = NDCToViewspace( normalizedScreenPos, viewspaceZ, consts );
-    float3 LEFT     = NDCToViewspace( normalizedScreenPos + float2(-1,  0) * consts.ViewportPixelSize, pixLZ, consts );
-    float3 RIGHT    = NDCToViewspace( normalizedScreenPos + float2( 1,  0) * consts.ViewportPixelSize, pixRZ, consts );
-    float3 TOP      = NDCToViewspace( normalizedScreenPos + float2( 0, -1) * consts.ViewportPixelSize, pixTZ, consts );
-    float3 BOTTOM   = NDCToViewspace( normalizedScreenPos + float2( 0,  1) * consts.ViewportPixelSize, pixBZ, consts );
-    viewspaceNormal = (lpfloat3)CalculateNormal( edgesLRTB, CENTER, LEFT, RIGHT, TOP, BOTTOM );
+    float3 CENTER   = XeGTAO_NDCToViewspace( normalizedScreenPos, viewspaceZ, consts );
+    float3 LEFT     = XeGTAO_NDCToViewspace( normalizedScreenPos + float2(-1,  0) * consts.ViewportPixelSize, pixLZ, consts );
+    float3 RIGHT    = XeGTAO_NDCToViewspace( normalizedScreenPos + float2( 1,  0) * consts.ViewportPixelSize, pixRZ, consts );
+    float3 TOP      = XeGTAO_NDCToViewspace( normalizedScreenPos + float2( 0, -1) * consts.ViewportPixelSize, pixTZ, consts );
+    float3 BOTTOM   = XeGTAO_NDCToViewspace( normalizedScreenPos + float2( 0,  1) * consts.ViewportPixelSize, pixBZ, consts );
+    viewspaceNormal = (lpfloat3)XeGTAO_CalculateNormal( edgesLRTB, CENTER, LEFT, RIGHT, TOP, BOTTOM );
 #endif
 
     // Move center pixel slightly towards camera to avoid imprecision artifacts due to depth buffer imprecision; offset depends on depth texture format used
@@ -182,7 +282,7 @@ GTAOResult XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat st
     viewspaceZ *= 0.99920;     // this is good for FP16 depth buffer
 #endif
 
-    const float3 pixCenterPos   = NDCToViewspace( normalizedScreenPos, viewspaceZ, consts );
+    const float3 pixCenterPos   = XeGTAO_NDCToViewspace( normalizedScreenPos, viewspaceZ, consts );
     const lpfloat3 viewVec      = (lpfloat3)normalize(-pixCenterPos);
     
     // prevents normals that are facing away from the view vector - xeGTAO struggles with extreme cases, but in Vanilla it seems rare so it's disabled by default
@@ -214,9 +314,16 @@ GTAOResult XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat st
     const lpfloat falloffMul        = (lpfloat)-1.0 / ( falloffRange );
     const lpfloat falloffAdd        = falloffFrom / ( falloffRange ) + (lpfloat)1.0;
 
-    GTAOResult res;
-    res.Visibility      = 0;
-    res.PackedEdgesLRTB = PackEdges(edgesLRTB);
+    lpfloat visibility = 0;
+#ifdef XE_GTAO_COMPUTE_BENT_NORMALS
+    lpfloat3 bentNormal = 0;
+#else
+    lpfloat3 bentNormal = viewspaceNormal;
+#endif
+
+#ifdef XE_GTAO_SHOW_DEBUG_VIZ
+    float3 dbgWorldPos          = mul(g_globals.ViewInv, float4(pixCenterPos, 1)).xyz;
+#endif
 
     // see "Algorithm 1" in https://www.activision.com/cdn/research/Practical_Real_Time_Strategies_for_Accurate_Indirect_Occlusion_NEW%20VERSION_COLOR.pdf
     {
@@ -232,20 +339,15 @@ GTAOResult XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat st
         lpfloat screenspaceRadius   = effectRadius / (lpfloat)pixelDirRBViewspaceSizeAtCenterZ.x;
 
         // fade out for small screen radii 
-        res.Visibility += saturate((10 - screenspaceRadius)/100)*0.5;
+        visibility += saturate((10 - screenspaceRadius)/100)*0.5;
 
 #if 0   // sensible early-out for even more performance; disabled because not yet tested
         [branch]
         if( screenspaceRadius < pixelTooCloseThreshold )
         {
-            res.Visibility = 1.0;
-            return res;
+            XeGTAO_OutputWorkingTerm( pixCoord, 1, viewspaceNormal, outWorkingAOTerm );
+            return;
         }
-#endif
-
-#ifdef XE_GTAO_SHOW_DEBUG_VIZ
-        const uint2 pixCoord        = normalizedScreenPos / consts.ViewportPixelSize;
-        float3 dbgWorldPos          = mul(g_globals.ViewInv, float4(pixCenterPos, 1)).xyz;
 #endif
 
 #ifdef XE_GTAO_SHOW_DEBUG_VIZ
@@ -277,15 +379,14 @@ GTAOResult XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat st
             omega *= screenspaceRadius;
 
             // line 8 from the paper
-            lpfloat3 directionVec = lpfloat3(cosPhi, sinPhi, 0);
+            const lpfloat3 directionVec = lpfloat3(cosPhi, sinPhi, 0);
 
             // line 9 from the paper
-            //float3 orthoDirectionVec = directionVec - (dot(directionVec, viewVec) * viewVec);
-            directionVec = directionVec - (dot(directionVec, viewVec) * viewVec);
+            const lpfloat3 orthoDirectionVec = directionVec - (dot(directionVec, viewVec) * viewVec);
 
             // line 10 from the paper
             //axisVec is orthogonal to directionVec and viewVec, used to define projectedNormal
-            lpfloat3 axisVec = normalize( cross(directionVec, viewVec) );
+            const lpfloat3 axisVec = normalize( cross(orthoDirectionVec, viewVec) );
 
             // alternative line 9 from the paper
             // float3 orthoDirectionVec = cross( viewVec, axisVec );
@@ -294,14 +395,14 @@ GTAOResult XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat st
             lpfloat3 projectedNormalVec = viewspaceNormal - axisVec * dot(viewspaceNormal, axisVec);
 
             // line 13 from the paper
-            lpfloat signNorm = (lpfloat)sign( dot( directionVec, projectedNormalVec ) );
+            lpfloat signNorm = (lpfloat)sign( dot( orthoDirectionVec, projectedNormalVec ) );
 
             // line 14 from the paper
             lpfloat projectedNormalVecLength = length(projectedNormalVec);
             lpfloat cosNorm = (lpfloat)saturate(dot(projectedNormalVec, viewVec) / projectedNormalVecLength);
 
             // line 15 from the paper
-            lpfloat n = signNorm * fast_acos(cosNorm);
+            lpfloat n = signNorm * XeGTAO_FastACos(cosNorm);
 
             // this is a lower weight target; not using -1 as in the original paper because it is under horizon, so a 'weight' has different meaning based on the normal
             const lpfloat lowHorizonCos0  = cos(n+XE_GTAO_PI_HALF);
@@ -347,19 +448,19 @@ GTAOResult XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat st
                 [branch] if (IsUnderCursorRange(pixCoord, int2(1, 1)))
                 {
                     //DebugDraw2DText( (normalizedScreenPos + sampleOffset) * consts.ViewportSize, mipColor, mipLevelU );
-                    DebugDraw2DText( (normalizedScreenPos + sampleOffset) * consts.ViewportSize, mipColor, (uint)slice );
-                    DebugDraw2DText( (normalizedScreenPos - sampleOffset) * consts.ViewportSize, mipColor, (uint)slice );
+                    //DebugDraw2DText( (normalizedScreenPos + sampleOffset) * consts.ViewportSize, mipColor, (uint)slice );
+                    //DebugDraw2DText( (normalizedScreenPos - sampleOffset) * consts.ViewportSize, mipColor, (uint)slice );
                     //DebugDraw2DText( (normalizedScreenPos - sampleOffset) * consts.ViewportSize, saturate( float4( mipLevelU>=3, mipLevelU>=1 && mipLevelU<=3, mipLevelU<=1, 1.0 ) ), mipLevelU );
                 }
 #endif
 
                 float2 sampleScreenPos0 = normalizedScreenPos + sampleOffset;
                 float  SZ0 = sourceViewspaceDepth.SampleLevel( depthSampler, sampleScreenPos0, mipLevel ).x;
-                float3 samplePos0 = NDCToViewspace( sampleScreenPos0, SZ0, consts );
+                float3 samplePos0 = XeGTAO_NDCToViewspace( sampleScreenPos0, SZ0, consts );
 
                 float2 sampleScreenPos1 = normalizedScreenPos - sampleOffset;
                 float  SZ1 = sourceViewspaceDepth.SampleLevel( depthSampler, sampleScreenPos1, mipLevel ).x;
-                float3 samplePos1 = NDCToViewspace( sampleScreenPos1, SZ1, consts );
+                float3 samplePos1 = XeGTAO_NDCToViewspace( sampleScreenPos1, SZ1, consts );
 
                 float3 sampleDelta0     = (samplePos0 - float3(pixCenterPos)); // using lpfloat for sampleDelta causes precision issues
                 float3 sampleDelta1     = (samplePos1 - float3(pixCenterPos)); // using lpfloat for sampleDelta causes precision issues
@@ -421,7 +522,7 @@ GTAOResult XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat st
                     // DebugDraw3DText( WS_samplePos0, float2(0,  0), float4( 1, 0, 0, 1), weight0 );
                     // DebugDraw3DText( WS_samplePos1, float2(0,  0), float4( 1, 0, 0, 1), weight1 );
 
-                    DebugDraw2DText( float2( 500, 94+(step+slice*3)*12 ), float4( 0, 1, 0, 1 ), float4( projectedNormalVecLength, 0, horizonCos0, horizonCos1 ) );
+                    // DebugDraw2DText( float2( 500, 94+(step+slice*3)*12 ), float4( 0, 1, 0, 1 ), float4( projectedNormalVecLength, 0, horizonCos0, horizonCos1 ) );
                 }
 #endif
             }
@@ -431,43 +532,50 @@ GTAOResult XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat st
 #endif
 
             // line ~27, unrolled
-            lpfloat h0 = -fast_acos((lpfloat)horizonCos1);
-            lpfloat h1 = fast_acos((lpfloat)horizonCos0);
+            lpfloat h0 = -XeGTAO_FastACos((lpfloat)horizonCos1);
+            lpfloat h1 = XeGTAO_FastACos((lpfloat)horizonCos0);
 #if 0       // we can skip clamping for a tiny little bit more performance
             h0 = n + clamp( h0-n, (lpfloat)-XE_GTAO_PI_HALF, (lpfloat)XE_GTAO_PI_HALF );
             h1 = n + clamp( h1-n, (lpfloat)-XE_GTAO_PI_HALF, (lpfloat)XE_GTAO_PI_HALF );
 #endif
             lpfloat iarc0 = ((lpfloat)cosNorm + (lpfloat)2 * (lpfloat)h0 * (lpfloat)sin(n)-(lpfloat)cos((lpfloat)2 * (lpfloat)h0-n))/(lpfloat)4;
             lpfloat iarc1 = ((lpfloat)cosNorm + (lpfloat)2 * (lpfloat)h1 * (lpfloat)sin(n)-(lpfloat)cos((lpfloat)2 * (lpfloat)h1-n))/(lpfloat)4;
-            res.Visibility += (lpfloat)projectedNormalVecLength * (lpfloat)(iarc0+iarc1);
+            lpfloat localVisibility = (lpfloat)projectedNormalVecLength * (lpfloat)(iarc0+iarc1);
+            visibility += localVisibility;
+
+#ifdef XE_GTAO_COMPUTE_BENT_NORMALS
+            // see "Algorithm 2 Extension that computes bent normals b."
+            lpfloat t0 = (6*sin(h0-n)-sin(3*h0-n)+6*sin(h1-n)-sin(3*h1-n)+16*sin(n)-3*(sin(h0+n)+sin(h1+n)))/12;
+            lpfloat t1 = (-cos(3 * h0-n)-cos(3 * h1-n) +8 * cos(n)-3 * (cos(h0+n) +cos(h1+n)))/12;
+            lpfloat3 localBentNormal = lpfloat3( directionVec.x * (lpfloat)t0, directionVec.y * (lpfloat)t0, -lpfloat(t1) );
+            localBentNormal = (lpfloat3)mul( XeGTAO_RotFromToMatrix( lpfloat3(0,0,-1), viewVec ), localBentNormal ) * projectedNormalVecLength;
+            bentNormal += localBentNormal;
+#endif
         }
-        res.Visibility /= (lpfloat)sliceCount;
-        res.Visibility = (lpfloat)max( 0, pow( res.Visibility, consts.FinalValuePower ) );
+        visibility /= (lpfloat)sliceCount;
+        visibility = pow( visibility, (lpfloat)consts.FinalValuePower );
+        visibility = max( (lpfloat)0.03, visibility ); // disallow total occlusion (which wouldn't make any sense anyhow since pixel is visible but also helps with packing bent normals)
+
+#ifdef XE_GTAO_COMPUTE_BENT_NORMALS
+        bentNormal = normalize(bentNormal) ;
+#endif
     }
 
-    return res;
+#if defined(XE_GTAO_SHOW_DEBUG_VIZ) && defined(XE_GTAO_COMPUTE_BENT_NORMALS)
+    [branch] if (IsUnderCursorRange(pixCoord, int2(1, 1)))
+    {
+        float3 dbgWorldViewNorm = mul((float3x3)g_globals.ViewInv, viewspaceNormal).xyz;
+        float3 dbgWorldBentNorm = mul((float3x3)g_globals.ViewInv, bentNormal).xyz;
+        DebugDraw3DSphereCone( dbgWorldPos, dbgWorldViewNorm, 0.3, VA_PI*0.5 - acos(saturate(visibility)), float4( 0.2, 0.2, 0.2, 0.5 ) );
+        DebugDraw3DSphereCone( dbgWorldPos, dbgWorldBentNorm, 0.3, VA_PI*0.5 - acos(saturate(visibility)), float4( 0.0, 1.0, 0.0, 0.7 ) );
+    }
+#endif
+
+    XeGTAO_OutputWorkingTerm( pixCoord, visibility, bentNormal, outWorkingAOTerm );
 }
 
-lpfloat DepthMIPFilterMin( lpfloat depth0, lpfloat depth1, lpfloat depth2, lpfloat depth3, const GTAOConstants consts )
-{
-    return min( min( depth0, depth1 ), min( depth2, depth3 ) );
-}
-lpfloat DepthMIPFilterMax( lpfloat depth0, lpfloat depth1, lpfloat depth2, lpfloat depth3, const GTAOConstants consts )
-{
-    return max( max( depth0, depth1 ), max( depth2, depth3 ) );
-}
-lpfloat DepthMIPFilterAvg( lpfloat depth0, lpfloat depth1, lpfloat depth2, lpfloat depth3, const GTAOConstants consts )
-{
-    return 0.25 * (depth0+depth1+depth2+depth3);
-}
-lpfloat DepthMIPFilterRotGrid( uint2 pos, lpfloat depth0, lpfloat depth1, lpfloat depth2, lpfloat depth3, const GTAOConstants consts )
-{
-    pos = pos % 2;
-    uint g = pos.y * 2 + pos.x;
-    lpfloat4 weights = lpfloat4( g==0, g==1, g==2, g==3 );
-    return dot( weights, lpfloat4( depth0, depth1, depth2, depth3 ) );
-}
-lpfloat DepthMIPFilterWeightedAvg( lpfloat depth0, lpfloat depth1, lpfloat depth2, lpfloat depth3, const GTAOConstants consts )
+// weighted average depth filter
+lpfloat XeGTAO_DepthMIPFilter( lpfloat depth0, lpfloat depth1, lpfloat depth2, lpfloat depth3, const GTAOConstants consts )
 {
     lpfloat maxDepth = max( max( depth0, depth1 ), max( depth2, depth3 ) );
 
@@ -492,24 +600,10 @@ lpfloat DepthMIPFilterWeightedAvg( lpfloat depth0, lpfloat depth1, lpfloat depth
     lpfloat weightSum = weight0 + weight1 + weight2 + weight3;
     return (weight0 * depth0 + weight1 * depth1 + weight2 * depth2 + weight3 * depth3) / weightSum;
 }
-lpfloat DepthMIPFilter( uint2 pos, lpfloat depth0, lpfloat depth1, lpfloat depth2, lpfloat depth3, const GTAOConstants consts )
-{
-#if 0   // min
-    return DepthMIPFilterMin( depth0, depth1, depth2, depth3, consts );
-#elif 0 // average
-    return DepthMIPFilterAvg( depth0, depth1, depth2, depth3, consts );
-#elif 0 // use max
-    return DepthMIPFilterMax( depth0, depth1, depth2, depth3, consts );
-#elif 0 // use rotated grid
-    return DepthMIPFilterRotGrid( pixCoordDest, depth0, depth1, depth2, depth3, consts );
-#else // use weighted average around max (default)
-    return DepthMIPFilterWeightedAvg( depth0, depth1, depth2, depth3, consts );
-#endif
-}
 
 // This is also a good place to do non-linear depth conversion for cases where one wants the 'radius' (effectively the threshold between near-field and far-field GI), 
 // is required to be non-linear (i.e. very large outdoors environments).
-lpfloat ClampDepth( float depth )
+lpfloat XeGTAO_ClampDepth( float depth )
 {
 #ifdef XE_GTAO_USE_HALF_FLOAT_PRECISION
     return (lpfloat)clamp( depth, 0.0, 65504.0 );
@@ -525,17 +619,17 @@ void XeGTAO_PrefilterDepths16x16( uint2 dispatchThreadID /*: SV_DispatchThreadID
     const uint2 baseCoord = dispatchThreadID;
     const uint2 pixCoord = baseCoord * 2;
     float4 depths4 = sourceNDCDepth.GatherRed( depthSampler, float2( pixCoord * consts.ViewportPixelSize ), int2(1,1) );
-    lpfloat depth0 = ClampDepth( ScreenSpaceToViewSpaceDepth( depths4.w, consts ) );
-    lpfloat depth1 = ClampDepth( ScreenSpaceToViewSpaceDepth( depths4.z, consts ) );
-    lpfloat depth2 = ClampDepth( ScreenSpaceToViewSpaceDepth( depths4.x, consts ) );
-    lpfloat depth3 = ClampDepth( ScreenSpaceToViewSpaceDepth( depths4.y, consts ) );
+    lpfloat depth0 = XeGTAO_ClampDepth( XeGTAO_ScreenSpaceToViewSpaceDepth( depths4.w, consts ) );
+    lpfloat depth1 = XeGTAO_ClampDepth( XeGTAO_ScreenSpaceToViewSpaceDepth( depths4.z, consts ) );
+    lpfloat depth2 = XeGTAO_ClampDepth( XeGTAO_ScreenSpaceToViewSpaceDepth( depths4.x, consts ) );
+    lpfloat depth3 = XeGTAO_ClampDepth( XeGTAO_ScreenSpaceToViewSpaceDepth( depths4.y, consts ) );
     outDepth0[ pixCoord + uint2(0, 0) ] = (lpfloat)depth0;
     outDepth0[ pixCoord + uint2(1, 0) ] = (lpfloat)depth1;
     outDepth0[ pixCoord + uint2(0, 1) ] = (lpfloat)depth2;
     outDepth0[ pixCoord + uint2(1, 1) ] = (lpfloat)depth3;
 
     // MIP 1
-    lpfloat dm1 = DepthMIPFilter( baseCoord, depth0, depth1, depth2, depth3, consts );
+    lpfloat dm1 = XeGTAO_DepthMIPFilter( depth0, depth1, depth2, depth3, consts );
     outDepth1[ baseCoord ] = (lpfloat)dm1;
     g_scratchDepths[ groupThreadID.x ][ groupThreadID.y ] = dm1;
 
@@ -550,7 +644,7 @@ void XeGTAO_PrefilterDepths16x16( uint2 dispatchThreadID /*: SV_DispatchThreadID
         lpfloat inBL = g_scratchDepths[groupThreadID.x+0][groupThreadID.y+1];
         lpfloat inBR = g_scratchDepths[groupThreadID.x+1][groupThreadID.y+1];
 
-        lpfloat dm2 = DepthMIPFilter( uint2(0,0), inTL, inTR, inBL, inBR, consts );
+        lpfloat dm2 = XeGTAO_DepthMIPFilter( inTL, inTR, inBL, inBR, consts );
         outDepth2[ baseCoord / 2 ] = (lpfloat)dm2;
         g_scratchDepths[ groupThreadID.x ][ groupThreadID.y ] = dm2;
     }
@@ -566,7 +660,7 @@ void XeGTAO_PrefilterDepths16x16( uint2 dispatchThreadID /*: SV_DispatchThreadID
         lpfloat inBL = g_scratchDepths[groupThreadID.x+0][groupThreadID.y+2];
         lpfloat inBR = g_scratchDepths[groupThreadID.x+2][groupThreadID.y+2];
 
-        lpfloat dm3 = DepthMIPFilter( uint2(0,0), inTL, inTR, inBL, inBR, consts );
+        lpfloat dm3 = XeGTAO_DepthMIPFilter( inTL, inTR, inBL, inBR, consts );
         outDepth3[ baseCoord / 4 ] = (lpfloat)dm3;
         g_scratchDepths[ groupThreadID.x ][ groupThreadID.y ] = dm3;
     }
@@ -582,13 +676,13 @@ void XeGTAO_PrefilterDepths16x16( uint2 dispatchThreadID /*: SV_DispatchThreadID
         lpfloat inBL = g_scratchDepths[groupThreadID.x+0][groupThreadID.y+4];
         lpfloat inBR = g_scratchDepths[groupThreadID.x+4][groupThreadID.y+4];
 
-        lpfloat dm4 = DepthMIPFilter( uint2(0,0), inTL, inTR, inBL, inBR, consts );
+        lpfloat dm4 = XeGTAO_DepthMIPFilter( inTL, inTR, inBL, inBR, consts );
         outDepth4[ baseCoord / 8 ] = (lpfloat)dm4;
         //g_scratchDepths[ groupThreadID.x ][ groupThreadID.y ] = dm4;
     }
 }
 
-lpfloat4 UnpackEdges( lpfloat _packedVal )
+lpfloat4 XeGTAO_UnpackEdges( lpfloat _packedVal )
 {
     uint packedVal = (uint)(_packedVal * 255.5);
     lpfloat4 edgesLRTB;
@@ -599,32 +693,49 @@ lpfloat4 UnpackEdges( lpfloat _packedVal )
 
     return saturate( edgesLRTB );
 }
-void AddSample( lpfloat ssaoValue, lpfloat edgeValue, inout lpfloat sum, inout lpfloat sumWeight )
+
+#ifdef XE_GTAO_COMPUTE_BENT_NORMALS
+typedef lpfloat4 AOTermType;            // .xyz is bent normal, .w is visibility term
+#else
+typedef lpfloat AOTermType;             // .x is visibility term
+#endif
+
+void XeGTAO_AddSample( AOTermType ssaoValue, lpfloat edgeValue, inout AOTermType sum, inout lpfloat sumWeight )
 {
     lpfloat weight = edgeValue;    
 
     sum += (weight * ssaoValue);
     sumWeight += weight;
 }
-uint        Pack2( float2 val )
+
+void XeGTAO_Output( uint2 pixCoord, RWTexture2D<uint> outputTexture, AOTermType outputValue, const uniform bool finalApply )
 {
-    return (f32tof16( val.x ) << 16) | f32tof16( val.y );
-}
-lpfloat2  Unpack2( uint pval )
-{
-    return lpfloat2( f16tof32( (pval >> 16 ) /*& 0xFFFF*/ ), f16tof32( (pval  ) & 0xFFFF ) );
+#ifdef XE_GTAO_COMPUTE_BENT_NORMALS
+    lpfloat     visibility = outputValue.w * ((finalApply)?((lpfloat)XE_GTAO_OCCLUSION_TERM_SCALE):(1));
+    lpfloat3    bentNormal = normalize(outputValue.xyz);
+    outputTexture[pixCoord.xy] = XeGTAO_EncodeVisibilityBentNormal( visibility, bentNormal );
+#else
+    outputValue *=  (finalApply)?((lpfloat)XE_GTAO_OCCLUSION_TERM_SCALE):(1);
+    outputTexture[pixCoord.xy] = uint(outputValue * 255.0 + 0.5);
+#endif
 }
 
-groupshared uint g_scratch[XE_GTAO_DENOISE_EXTERIOR_THREADS_X][XE_GTAO_DENOISE_EXTERIOR_THREADS_Y];
-void XeGTAO_Denoise( uint2 groupThreadID /*: SV_GroupThreadID*/, uint2 groupID/* : SV_GroupID*/, const GTAOConstants consts, Texture2D<lpfloat> sourceVis, Texture2D<lpfloat> sourceEdges, SamplerState texSampler, RWTexture2D<lpfloat> outputTexture, const uniform bool finalApply )
+void XeGTAO_DecodeGatherPartial( const uint4 packedValue, out AOTermType outDecoded[4] )
 {
-    const int2 pixCoordBase = groupID * uint2( XE_GTAO_DENOISE_INTERIOR_X, XE_GTAO_DENOISE_INTERIOR_Y ) + groupThreadID * int2( 2, 1 ) - int2( 1, 1 );
-    const uint2 threadCoord = groupThreadID;
+    for( int i = 0; i < 4; i++ )
+#ifdef XE_GTAO_COMPUTE_BENT_NORMALS
+        XeGTAO_DecodeVisibilityBentNormal( packedValue[i], outDecoded[i].w, outDecoded[i].xyz );
+#else
+        outDecoded[i] = lpfloat(packedValue[i]) / lpfloat(255.0);
+#endif
+}
 
+void XeGTAO_Denoise( const uint2 pixCoordBase, const GTAOConstants consts, Texture2D<uint> sourceAOTerm, Texture2D<lpfloat> sourceEdges, SamplerState texSampler, RWTexture2D<uint> outputTexture, const uniform bool finalApply )
+{
     const lpfloat blurAmount = (finalApply)?((lpfloat)consts.DenoiseBlurBeta):((lpfloat)consts.DenoiseBlurBeta/(lpfloat)5.0);
     const lpfloat diagWeight = 0.85 * 0.5;
 
-    lpfloat2 vis;   // pixel pixCoordBase and pixel pixCoordBase + int2( 1, 0 )
+    AOTermType aoTerm[2];   // pixel pixCoordBase and pixel pixCoordBase + int2( 1, 0 )
     lpfloat4 edgesC_LRTB[2];
     lpfloat weightTL[2];
     lpfloat weightTR[2];
@@ -636,22 +747,23 @@ void XeGTAO_Denoise( uint2 groupThreadID /*: SV_GroupThreadID*/, uint2 groupID/*
     lpfloat4 edgesQ0        = sourceEdges.GatherRed( texSampler, gatherCenter, int2( 0, 0 ) );
     lpfloat4 edgesQ1        = sourceEdges.GatherRed( texSampler, gatherCenter, int2( 2, 0 ) );
     lpfloat4 edgesQ2        = sourceEdges.GatherRed( texSampler, gatherCenter, int2( 1, 2 ) );
-    lpfloat4 visQ0          = sourceVis.GatherRed( texSampler, gatherCenter, int2( 0, 0 ) );
-    lpfloat4 visQ1          = sourceVis.GatherRed( texSampler, gatherCenter, int2( 2, 0 ) );    
-    lpfloat4 visQ2          = sourceVis.GatherRed( texSampler, gatherCenter, int2( 0, 2 ) );    
-    lpfloat4 visQ3          = sourceVis.GatherRed( texSampler, gatherCenter, int2( 2, 2 ) );    
+
+    AOTermType visQ0[4];    XeGTAO_DecodeGatherPartial( sourceAOTerm.GatherRed( texSampler, gatherCenter, int2( 0, 0 ) ), visQ0 );
+    AOTermType visQ1[4];    XeGTAO_DecodeGatherPartial( sourceAOTerm.GatherRed( texSampler, gatherCenter, int2( 2, 0 ) ), visQ1 );
+    AOTermType visQ2[4];    XeGTAO_DecodeGatherPartial( sourceAOTerm.GatherRed( texSampler, gatherCenter, int2( 0, 2 ) ), visQ2 );
+    AOTermType visQ3[4];    XeGTAO_DecodeGatherPartial( sourceAOTerm.GatherRed( texSampler, gatherCenter, int2( 2, 2 ) ), visQ3 );
 
     for( int side = 0; side < 2; side++ )
     {
         const int2 pixCoord = int2( pixCoordBase.x + side, pixCoordBase.y );
 
-        lpfloat4 edgesL_LRTB  = UnpackEdges( (side==0)?(edgesQ0.x):(edgesQ0.y) );
-        lpfloat4 edgesT_LRTB  = UnpackEdges( (side==0)?(edgesQ0.z):(edgesQ1.w) );
-        lpfloat4 edgesR_LRTB  = UnpackEdges( (side==0)?(edgesQ1.x):(edgesQ1.y) );
-        lpfloat4 edgesB_LRTB  = UnpackEdges( (side==0)?(edgesQ2.w):(edgesQ2.z) );
-        
-        edgesC_LRTB[side]       = UnpackEdges( (side==0)?(edgesQ0.y):(edgesQ1.x) );
-    
+        lpfloat4 edgesL_LRTB  = XeGTAO_UnpackEdges( (side==0)?(edgesQ0.x):(edgesQ0.y) );
+        lpfloat4 edgesT_LRTB  = XeGTAO_UnpackEdges( (side==0)?(edgesQ0.z):(edgesQ1.w) );
+        lpfloat4 edgesR_LRTB  = XeGTAO_UnpackEdges( (side==0)?(edgesQ1.x):(edgesQ1.y) );
+        lpfloat4 edgesB_LRTB  = XeGTAO_UnpackEdges( (side==0)?(edgesQ2.w):(edgesQ2.z) );
+
+        edgesC_LRTB[side]     = XeGTAO_UnpackEdges( (side==0)?(edgesQ0.y):(edgesQ1.x) );
+
         // Edges aren't perfectly symmetrical: edge detection algorithm does not guarantee that a left edge on the right pixel will match the right edge on the left pixel (although
         // they will match in majority of cases). This line further enforces the symmetricity, creating a slightly sharper blur. Works real nice with TAA.
         edgesC_LRTB[side] *= lpfloat4( edgesL_LRTB.y, edgesR_LRTB.x, edgesT_LRTB.w, edgesB_LRTB.z );
@@ -662,11 +774,11 @@ void XeGTAO_Denoise( uint2 groupThreadID /*: SV_GroupThreadID*/, uint2 groupID/*
         edgesC_LRTB[side] = saturate( edgesC_LRTB[side] + edginess );
 #endif
 
-    #ifdef XE_GTAO_SHOW_EDGES
+#ifdef XE_GTAO_SHOW_EDGES
         g_outputDbgImage[pixCoord] = 1.0 - lpfloat4( edgesC_LRTB[side].x, edgesC_LRTB[side].y * 0.5 + edgesC_LRTB[side].w * 0.5, edgesC_LRTB[side].z, 1.0 );
         //g_outputDbgImage[pixCoord] = 1 - float4( edgesC_LRTB[side].z, edgesC_LRTB[side].w , 1, 0 );
         //g_outputDbgImage[pixCoord] = edginess.xxxx;
-    #endif
+#endif
 
         // for diagonals; used by first and second pass
         weightTL[side] = diagWeight * (edgesC_LRTB[side].x * edgesL_LRTB.z + edgesC_LRTB[side].z * edgesT_LRTB.x);
@@ -675,95 +787,43 @@ void XeGTAO_Denoise( uint2 groupThreadID /*: SV_GroupThreadID*/, uint2 groupID/*
         weightBR[side] = diagWeight * (edgesC_LRTB[side].y * edgesR_LRTB.w + edgesC_LRTB[side].w * edgesB_LRTB.y);
 
         // first pass
-        lpfloat ssaoValue     = (side==0)?(visQ0.y):(visQ1.x);
-        lpfloat ssaoValueL    = (side==0)?(visQ0.x):(visQ0.y);
-        lpfloat ssaoValueT    = (side==0)?(visQ0.z):(visQ1.w);
-        lpfloat ssaoValueR    = (side==0)?(visQ1.x):(visQ1.y);
-        lpfloat ssaoValueB    = (side==0)?(visQ2.z):(visQ3.w);
-        lpfloat ssaoValueTL   = (side==0)?(visQ0.w):(visQ0.z);
-        lpfloat ssaoValueBR   = (side==0)?(visQ3.w):(visQ3.z);
-        lpfloat ssaoValueTR   = (side==0)?(visQ1.w):(visQ1.z);
-        lpfloat ssaoValueBL   = (side==0)?(visQ2.w):(visQ2.z);
+        AOTermType ssaoValue     = (side==0)?(visQ0[1]):(visQ1[0]);
+        AOTermType ssaoValueL    = (side==0)?(visQ0[0]):(visQ0[1]);
+        AOTermType ssaoValueT    = (side==0)?(visQ0[2]):(visQ1[3]);
+        AOTermType ssaoValueR    = (side==0)?(visQ1[0]):(visQ1[1]);
+        AOTermType ssaoValueB    = (side==0)?(visQ2[2]):(visQ3[3]);
+        AOTermType ssaoValueTL   = (side==0)?(visQ0[3]):(visQ0[2]);
+        AOTermType ssaoValueBR   = (side==0)?(visQ3[3]):(visQ3[2]);
+        AOTermType ssaoValueTR   = (side==0)?(visQ1[3]):(visQ1[2]);
+        AOTermType ssaoValueBL   = (side==0)?(visQ2[3]):(visQ2[2]);
 
         lpfloat sumWeight = blurAmount;
-        lpfloat sum = ssaoValue * sumWeight;
+        AOTermType sum = ssaoValue * sumWeight;
 
-        AddSample( ssaoValueL, edgesC_LRTB[side].x, sum, sumWeight );
-        AddSample( ssaoValueR, edgesC_LRTB[side].y, sum, sumWeight );
-        AddSample( ssaoValueT, edgesC_LRTB[side].z, sum, sumWeight );
-        AddSample( ssaoValueB, edgesC_LRTB[side].w, sum, sumWeight );
+        XeGTAO_AddSample( ssaoValueL, edgesC_LRTB[side].x, sum, sumWeight );
+        XeGTAO_AddSample( ssaoValueR, edgesC_LRTB[side].y, sum, sumWeight );
+        XeGTAO_AddSample( ssaoValueT, edgesC_LRTB[side].z, sum, sumWeight );
+        XeGTAO_AddSample( ssaoValueB, edgesC_LRTB[side].w, sum, sumWeight );
 
-        AddSample( ssaoValueTL, weightTL[side], sum, sumWeight );
-        AddSample( ssaoValueTR, weightTR[side], sum, sumWeight );
-        AddSample( ssaoValueBL, weightBL[side], sum, sumWeight );
-        AddSample( ssaoValueBR, weightBR[side], sum, sumWeight );
+        XeGTAO_AddSample( ssaoValueTL, weightTL[side], sum, sumWeight );
+        XeGTAO_AddSample( ssaoValueTR, weightTR[side], sum, sumWeight );
+        XeGTAO_AddSample( ssaoValueBL, weightBL[side], sum, sumWeight );
+        XeGTAO_AddSample( ssaoValueBR, weightBR[side], sum, sumWeight );
 
-        vis[side] = sum / sumWeight;
-    }
-    
-    g_scratch[ threadCoord.x ][ threadCoord.y ] = Pack2( vis );
+        aoTerm[side] = sum / sumWeight;
 
-    GroupMemoryBarrierWithGroupSync( );
+        XeGTAO_Output( pixCoord, outputTexture, aoTerm[side], finalApply );
 
-    // avoid top and bottom overlapping border regions
-    if( (threadCoord.y>0) && (threadCoord.y<(XE_GTAO_DENOISE_EXTERIOR_THREADS_Y-1) ) )
-    {
-        lpfloat2 ssaoValue     = vis;
-        lpfloat2 ssaoValueL    = (lpfloat2)Unpack2(g_scratch[ threadCoord.x-1 ][ threadCoord.y   ]);
-        lpfloat2 ssaoValueT    = (lpfloat2)Unpack2(g_scratch[ threadCoord.x ]  [ threadCoord.y-1 ]);
-        lpfloat2 ssaoValueR    = (lpfloat2)Unpack2(g_scratch[ threadCoord.x+1 ][ threadCoord.y   ]);
-        lpfloat2 ssaoValueB    = (lpfloat2)Unpack2(g_scratch[ threadCoord.x ]  [ threadCoord.y+1 ]);
-        lpfloat2 ssaoValueTL   = (lpfloat2)Unpack2(g_scratch[ threadCoord.x-1 ][ threadCoord.y-1 ]);
-        lpfloat2 ssaoValueTR   = (lpfloat2)Unpack2(g_scratch[ threadCoord.x+1 ][ threadCoord.y-1 ]);
-        lpfloat2 ssaoValueBL   = (lpfloat2)Unpack2(g_scratch[ threadCoord.x-1 ][ threadCoord.y+1 ]);
-        lpfloat2 ssaoValueBR   = (lpfloat2)Unpack2(g_scratch[ threadCoord.x+1 ][ threadCoord.y+1 ]);
-
-        if( threadCoord.x > 0 ) // avoid overlapping border region (left)
+#ifdef XE_GTAO_SHOW_BENT_NORMALS
+        if( finalApply )
         {
-            int side = 0;
-            lpfloat sumWeight = blurAmount;
-            lpfloat sum = ssaoValue[side] * sumWeight;
-
-            AddSample( ssaoValueL [ 1 ], edgesC_LRTB[side].x, sum, sumWeight );
-            AddSample( ssaoValue  [ 1 ], edgesC_LRTB[side].y, sum, sumWeight );
-            AddSample( ssaoValueT [ 0 ], edgesC_LRTB[side].z, sum, sumWeight );
-            AddSample( ssaoValueB [ 0 ], edgesC_LRTB[side].w, sum, sumWeight );
-
-            AddSample( ssaoValueTL[ 1 ], weightTL[side], sum, sumWeight );
-            AddSample( ssaoValueT [ 1 ], weightTR[side], sum, sumWeight );
-            AddSample( ssaoValueBL[ 1 ], weightBL[side], sum, sumWeight );
-            AddSample( ssaoValueB [ 1 ], weightBR[side], sum, sumWeight );
-
-            lpfloat finalVis = sum / sumWeight;
-            if( finalApply )
-                finalVis = saturate( finalVis ); // due to a quirk of the algorithm, visibility for a single slice can be higher than 1 but with multiple will integrate to below or equal to 1; final visibility however cannot be higher than one
-            const int2 pixCoord = int2( pixCoordBase.x+side, pixCoordBase.y );
-            outputTexture[pixCoord.xy] = (lpfloat)finalVis;
+            g_outputDbgImage[pixCoord] = float4( DisplayNormalSRGB( aoTerm[side].xyz /** aoTerm[side].www*/ ), 1 );
         }
-        if( threadCoord.x<(XE_GTAO_DENOISE_EXTERIOR_THREADS_X-1) ) // avoid overlapping border region (right)
-        {
-            int side = 1;
-            lpfloat sumWeight = blurAmount;
-            lpfloat sum = ssaoValue[side] * sumWeight;
+#endif
 
-            AddSample( ssaoValue  [ 0 ], edgesC_LRTB[side].x, sum, sumWeight );
-            AddSample( ssaoValueR [ 0 ], edgesC_LRTB[side].y, sum, sumWeight );
-            AddSample( ssaoValueT [ 1 ], edgesC_LRTB[side].z, sum, sumWeight );
-            AddSample( ssaoValueB [ 1 ], edgesC_LRTB[side].w, sum, sumWeight );
-
-            AddSample( ssaoValueT [ 0 ], weightTL[side], sum, sumWeight );
-            AddSample( ssaoValueTR[ 0 ], weightTR[side], sum, sumWeight );
-            AddSample( ssaoValueB [ 0 ], weightBL[side], sum, sumWeight );
-            AddSample( ssaoValueBR[ 0 ], weightBR[side], sum, sumWeight );
-
-            lpfloat finalVis = sum / sumWeight;
-            if( finalApply )
-                finalVis = saturate( finalVis ); // due to a quirk of the algorithm, visibility for a single slice can be higher than 1 but with multiple will integrate to below or equal to 1; final visibility however cannot be higher than one
-            const int2 pixCoord = int2( pixCoordBase.x+side, pixCoordBase.y );
-            outputTexture[pixCoord.xy] = (lpfloat)finalVis;
-        }
     }
 }
+
 
 // Generic viewspace normal generate pass
 float3 XeGTAO_ComputeViewspaceNormal( const uint2 pixCoord, const GTAOConstants consts, Texture2D<float> sourceNDCDepth, SamplerState depthSampler )
@@ -774,20 +834,20 @@ float3 XeGTAO_ComputeViewspaceNormal( const uint2 pixCoord, const GTAOConstants 
     float4 valuesBR   = sourceNDCDepth.GatherRed( depthSampler, float2( pixCoord * consts.ViewportPixelSize ), int2( 1, 1 ) );
 
     // viewspace Z at the center
-    float viewspaceZ  = ScreenSpaceToViewSpaceDepth( valuesUL.y, consts ); //sourceViewspaceDepth.SampleLevel( depthSampler, normalizedScreenPos, 0 ).x; 
+    float viewspaceZ  = XeGTAO_ScreenSpaceToViewSpaceDepth( valuesUL.y, consts ); //sourceViewspaceDepth.SampleLevel( depthSampler, normalizedScreenPos, 0 ).x; 
 
     // viewspace Zs left top right bottom
-    const float pixLZ = ScreenSpaceToViewSpaceDepth( valuesUL.x, consts );
-    const float pixTZ = ScreenSpaceToViewSpaceDepth( valuesUL.z, consts );
-    const float pixRZ = ScreenSpaceToViewSpaceDepth( valuesBR.z, consts );
-    const float pixBZ = ScreenSpaceToViewSpaceDepth( valuesBR.x, consts );
+    const float pixLZ = XeGTAO_ScreenSpaceToViewSpaceDepth( valuesUL.x, consts );
+    const float pixTZ = XeGTAO_ScreenSpaceToViewSpaceDepth( valuesUL.z, consts );
+    const float pixRZ = XeGTAO_ScreenSpaceToViewSpaceDepth( valuesBR.z, consts );
+    const float pixBZ = XeGTAO_ScreenSpaceToViewSpaceDepth( valuesBR.x, consts );
 
-    lpfloat4 edgesLRTB  = CalculateEdges( (lpfloat)viewspaceZ, (lpfloat)pixLZ, (lpfloat)pixRZ, (lpfloat)pixTZ, (lpfloat)pixBZ );
+    lpfloat4 edgesLRTB  = XeGTAO_CalculateEdges( (lpfloat)viewspaceZ, (lpfloat)pixLZ, (lpfloat)pixRZ, (lpfloat)pixTZ, (lpfloat)pixBZ );
 
-    float3 CENTER   = NDCToViewspace( normalizedScreenPos, viewspaceZ, consts );
-    float3 LEFT     = NDCToViewspace( normalizedScreenPos + float2(-1,  0) * consts.ViewportPixelSize, pixLZ, consts );
-    float3 RIGHT    = NDCToViewspace( normalizedScreenPos + float2( 1,  0) * consts.ViewportPixelSize, pixRZ, consts );
-    float3 TOP      = NDCToViewspace( normalizedScreenPos + float2( 0, -1) * consts.ViewportPixelSize, pixTZ, consts );
-    float3 BOTTOM   = NDCToViewspace( normalizedScreenPos + float2( 0,  1) * consts.ViewportPixelSize, pixBZ, consts );
-    return CalculateNormal( edgesLRTB, CENTER, LEFT, RIGHT, TOP, BOTTOM );
+    float3 CENTER   = XeGTAO_NDCToViewspace( normalizedScreenPos, viewspaceZ, consts );
+    float3 LEFT     = XeGTAO_NDCToViewspace( normalizedScreenPos + float2(-1,  0) * consts.ViewportPixelSize, pixLZ, consts );
+    float3 RIGHT    = XeGTAO_NDCToViewspace( normalizedScreenPos + float2( 1,  0) * consts.ViewportPixelSize, pixRZ, consts );
+    float3 TOP      = XeGTAO_NDCToViewspace( normalizedScreenPos + float2( 0, -1) * consts.ViewportPixelSize, pixTZ, consts );
+    float3 BOTTOM   = XeGTAO_NDCToViewspace( normalizedScreenPos + float2( 0,  1) * consts.ViewportPixelSize, pixBZ, consts );
+    return XeGTAO_CalculateNormal( edgesLRTB, CENTER, LEFT, RIGHT, TOP, BOTTOM );
 }

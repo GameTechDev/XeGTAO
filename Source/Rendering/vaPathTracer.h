@@ -6,23 +6,13 @@
 //
 // Author(s):  Filip Strugar (filip.strugar@intel.com)
 //
-// ONGOING WORK
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
 #include "Rendering/vaRendering.h"
 
-#include "Rendering/vaShader.h"
-#include "Rendering/vaRenderBuffers.h"
-#include "Rendering/vaTexture.h"
-
 #include "Core/vaUI.h"
-
-#include "IntegratedExternals/vaImguiIntegration.h"
-
-#include "Rendering/Shaders/vaRaytracingShared.h"
-#include "Rendering/Shaders/vaPathTracerShared.h"
 
 namespace Vanilla
 {
@@ -30,26 +20,40 @@ namespace Vanilla
     class vaRenderMaterial;
     class vaRenderMesh;
     class vaPixelShader;
+    class vaGPUSort;
 
     class vaPathTracer : public vaRenderingModule//, public vaUIPanel
     {
     protected:
 
-        vaTypedConstantBufferWrapper< ShaderPathTracerConstants, true >
-                                                    m_constantBuffer;
+        shared_ptr<vaConstantBuffer>                m_constantBuffer;
 
         shared_ptr<vaShaderLibrary>                 m_shaderLibrary                 = nullptr;
-        shared_ptr<vaPixelShader>                   m_writeToOutputPS               = nullptr;
+        shared_ptr<vaPixelShader>                   m_PSWriteToOutput               = nullptr;
+
+        shared_ptr<vaComputeShader>                 m_CSKickoff                     = nullptr;
+        //shared_ptr<vaComputeShader>                 m_CSTickCounters                = nullptr;
 
         shared_ptr<vaTexture>                       m_radianceAccumulation;
         shared_ptr<vaTexture>                       m_viewspaceDepth;
 
+        shared_ptr<vaRenderBuffer>                  m_pathTracerControl;
+        shared_ptr<vaRenderBuffer>                  m_pathPayloads;
+        shared_ptr<vaRenderBuffer>                  m_pathGeometryHitInfoPayloads;
+        //shared_ptr<vaRenderBuffer>                  m_pathListUnsorted;             // path indices, 0...pathCount
+        shared_ptr<vaRenderBuffer>                  m_pathListSorted;               // path indices, sorted
+        shared_ptr<vaRenderBuffer>                  m_pathSortKeys;
+        //shared_ptr<vaRenderBuffer>                  m_pathSortKeysSorted;
+
+        shared_ptr<vaGPUSort>                       m_GPUSort;
+
         // these manage frame sample accumulation and track changes that require restarting accumulation
         vaCameraBase                                m_accumLastCamera;          
         int64                                       m_accumLastShadersID            = -1;
-        int                                         m_accumFrameTargetCount         = 128; //32768;     // stop at this number of samples per pixel
+        int                                         m_accumFrameTargetCount         = 256; //32768;     // stop at this number of samples per pixel
         int                                         m_accumFrameCount               = 0;        // current number of samples per pixel
-        int                                         m_maxBounces                    = 2;
+        int                                         m_maxBounces                    = 4;
+        constexpr static int                        c_maxBounceUpperBound           = 16;
 
         bool                                        m_enableAA                      = true;
 

@@ -29,7 +29,7 @@ vaASSAOLite::vaASSAOLite( const vaRenderingModuleParams & params ) :
     m_CSGenerate                                            { (params), (params), (params) },//(params), (params) },
     m_CSSmartBlur(params),
     m_CSApply(params),
-    m_constantBuffer( params )
+    m_constantBuffer( vaConstantBuffer::Create<ASSAO::ASSAOConstants>( params.RenderDevice, "ASSAOLiteConstants" ) )
 { 
     m_size = m_halfSize = vaVector2i( 0, 0 ); 
 	m_enableMLSSAO					= false;
@@ -137,14 +137,14 @@ void vaASSAOLite::UpdateWorkingTextures( int width, int height, bool generateNor
         allShaders.push_back( m_CSSmartBlur.get() );
         allShaders.push_back( m_CSApply.get() );
 
-        m_CSPrepareDepthsAndNormals->CreateShaderFromFile( shaderFileToUse, "CSPrepareDepthsAndNormals", m_staticShaderMacros, false );
+        m_CSPrepareDepthsAndNormals->CompileFromFile( shaderFileToUse, "CSPrepareDepthsAndNormals", m_staticShaderMacros, false );
 
-        m_CSGenerate[0]->CreateShaderFromFile( shaderFileToUse, "CSGenerateQ0", m_staticShaderMacros, false );
-        m_CSGenerate[1]->CreateShaderFromFile( shaderFileToUse, "CSGenerateQ1", m_staticShaderMacros, false );
-        m_CSGenerate[2]->CreateShaderFromFile( shaderFileToUse, "CSGenerateQ2", m_staticShaderMacros, false );
+        m_CSGenerate[0]->CompileFromFile( shaderFileToUse, "CSGenerateQ0", m_staticShaderMacros, false );
+        m_CSGenerate[1]->CompileFromFile( shaderFileToUse, "CSGenerateQ1", m_staticShaderMacros, false );
+        m_CSGenerate[2]->CompileFromFile( shaderFileToUse, "CSGenerateQ2", m_staticShaderMacros, false );
 
-        m_CSSmartBlur->CreateShaderFromFile( shaderFileToUse, "CSSmartBlur", m_staticShaderMacros, false );
-        m_CSApply->CreateShaderFromFile( shaderFileToUse, "CSApply", m_staticShaderMacros, false );
+        m_CSSmartBlur->CompileFromFile( shaderFileToUse, "CSSmartBlur", m_staticShaderMacros, false );
+        m_CSApply->CompileFromFile( shaderFileToUse, "CSApply", m_staticShaderMacros, false );
 
         // wait until shaders are compiled! this allows for parallel compilation
         for( auto sh : allShaders ) sh->WaitFinishIfBackgroundCreateActive();
@@ -205,7 +205,7 @@ void vaASSAOLite::UpdateConstants( vaRenderDeviceContext & renderContext, const 
 
     ASSAO::ASSAOUpdateConstants( consts, m_size.x, m_size.y, m_settings, &viewMatrix._11, &projMatrix._11, true );
       
-    m_constantBuffer.Upload( renderContext, consts );
+    m_constantBuffer->Upload<ASSAO::ASSAOConstants>( renderContext, consts );
 }
 
 vaDrawResultFlags vaASSAOLite::Compute( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & outputAO, const vaMatrix4x4 & viewMatrix, const vaMatrix4x4 & projMatrix, const shared_ptr<vaTexture> & inputDepth, const shared_ptr<vaTexture> & inputNormals )

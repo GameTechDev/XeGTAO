@@ -54,7 +54,7 @@ vaRenderMesh::vaRenderMesh( const vaRenderingModuleParams & params )
     m_vertexBuffer              = GetRenderDevice().CreateModule<vaRenderBuffer>();
 
     {
-        std::shared_lock managerLock( m_renderMeshManager.Mutex() );
+        std::unique_lock managerLock( m_renderMeshManager.Mutex() );
         m_globalIndex = m_renderMeshManager.Meshes().Insert( this );
     }
 
@@ -64,7 +64,7 @@ vaRenderMesh::vaRenderMesh( const vaRenderingModuleParams & params )
 vaRenderMesh::~vaRenderMesh( )
 {
     {
-        std::shared_lock managerLock( m_renderMeshManager.Mutex() );
+        std::unique_lock managerLock( m_renderMeshManager.Mutex() );
         m_renderMeshManager.Meshes().Remove( m_globalIndex );
     }
 }
@@ -666,9 +666,15 @@ vaRenderMeshManager::vaRenderMeshManager( const vaRenderingModuleParams & params
     // m_renderMeshes.SetAddedCallback( std::bind( &vaRenderMeshManager::RenderMeshesTrackeeAddedCallback, this, std::placeholders::_1 ) );
     // m_renderMeshes.SetBeforeRemovedCallback( std::bind( &vaRenderMeshManager::RenderMeshesTrackeeBeforeRemovedCallback, this, std::placeholders::_1, std::placeholders::_2 ) );
     
-    m_simpleConstantBuffers = vaRenderBuffer::Create<ShaderInstanceConstants>( GetRenderDevice(), 1024, vaRenderBufferFlags::None, "SimpleInstancesConstantBuffer" );
+    // m_simpleConstantBuffers = vaRenderBuffer::Create<ShaderInstanceConstants>( GetRenderDevice(), 1024, vaRenderBufferFlags::None, "SimpleInstancesConstantBuffer" );
 
     m_constantBuffer = vaRenderBuffer::Create<ShaderMeshConstants>( GetRenderDevice(), m_constantBufferMaxCount, vaRenderBufferFlags::None, "ShaderMeshConstants" );
+}
+
+void vaRenderMeshManager::PostCreateInitialize( )
+{
+    // creates instance so any Scene referrering to it can find it; if faster startup times needed remove and handle on demand instead, somehow
+    UnitSphere( );
 }
 
 vaRenderMeshManager::~vaRenderMeshManager( )
@@ -679,7 +685,7 @@ vaRenderMeshManager::~vaRenderMeshManager( )
     //m_renderMeshesMap.clear();
 
     {
-        std::shared_lock managerLock( Mutex() );
+        std::unique_lock managerLock( Mutex() );
         for( int i = (int)m_meshes.PackedArray().size()-1; i>=0; i-- )
             m_meshes.At(m_meshes.PackedArray()[i])->UIDObject_Untrack();
 
@@ -1194,6 +1200,16 @@ shared_ptr<vaRenderMesh> vaRenderMesh::CreateTeapot( vaRenderDevice & device, co
     return Create( device, transform, vertices, normals, texcoords0, texcoords1, indices, windingOrder, uid );
 }
 
+std::vector<vaVertexInputElementDesc> vaRenderMesh::GetStandardInputLayout( )
+{
+    std::vector<vaVertexInputElementDesc> inputElements;
+    inputElements.push_back( { "SV_Position", 0,    vaResourceFormat::R32G32B32_FLOAT,       0, vaVertexInputElementDesc::AppendAlignedElement, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } );
+    inputElements.push_back( { "COLOR", 0,          vaResourceFormat::R8G8B8A8_UNORM,        0, vaVertexInputElementDesc::AppendAlignedElement, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } );
+    inputElements.push_back( { "NORMAL", 0,         vaResourceFormat::R32G32B32A32_FLOAT,    0, vaVertexInputElementDesc::AppendAlignedElement, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } );
+    inputElements.push_back( { "TEXCOORD", 0,       vaResourceFormat::R32G32B32A32_FLOAT,    0, vaVertexInputElementDesc::AppendAlignedElement, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } );
+    return inputElements;
+}
+
 bool vaRenderMesh::UIPropertiesDraw( vaApplicationBase & application )
 {
     bool hadChanges = false;
@@ -1381,6 +1397,7 @@ bool vaRenderMesh::UIPropertiesDraw( vaApplicationBase & application )
     return hadChanges;
 }
 
+#if 0 // this is gone to reduce complexity
 vaDrawResultFlags vaRenderMeshManager::DrawSimple( vaRenderDeviceContext & renderContext, const vaRenderOutputs & renderOutputs, vaRenderMaterialShaderType shaderType, const vaDrawAttributes & _drawAttributes, vaBlendMode blendMode, vaRenderMeshDrawFlags drawFlags, const std::vector<vaRenderInstanceSimple> & instances )
 {
     VA_TRACE_CPUGPU_SCOPE( DrawSingle, renderContext );
@@ -1522,6 +1539,7 @@ vaDrawResultFlags vaRenderMeshManager::DrawSimple( vaRenderDeviceContext & rende
     }
     return drawResults;
 }
+#endif
 
 vaDrawResultFlags vaRenderMeshManager::Draw( vaRenderDeviceContext & renderContext, const vaRenderOutputs & renderOutputs, vaRenderMaterialShaderType shaderType, const vaDrawAttributes & _drawAttributes, const vaRenderInstanceList & selection, vaBlendMode blendMode, vaRenderMeshDrawFlags drawFlags, 
     vaRenderInstanceList::SortHandle sortHandle/*, GlobalCustomizerType globalCustomizer*/ )
@@ -1650,6 +1668,8 @@ vaDrawResultFlags vaRenderMeshManager::Draw( vaRenderDeviceContext & renderConte
 
         renderItem.InstanceIndex = localInstance.InstanceIndex;
 
+        renderItem.GenericRootConst = ii;   // this is purely for testing/debugging - feel free to use the GenericRootConst for something else
+
         // Mesh part
         {
             //VA_TRACE_CPU_SCOPE( MESHSTUFF );
@@ -1760,7 +1780,7 @@ vaDrawResultFlags vaRenderMeshManager::Draw( vaRenderDeviceContext & renderConte
 shared_ptr<vaRenderMesh> vaRenderMeshManager::UnitSphere( )
 {
     if( m_unitSphere == nullptr )
-        m_unitSphere = vaRenderMesh::CreateSphere( GetRenderDevice(), vaMatrix4x4::Identity, 2, true );
+        m_unitSphere = vaRenderMesh::CreateSphere( GetRenderDevice(), vaMatrix4x4::Identity, 2, true, vaGUID("ee76827b-f32d-43f2-9cbf-9ea587b0c74d") );
 
     return m_unitSphere;
 }

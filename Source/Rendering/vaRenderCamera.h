@@ -23,7 +23,7 @@ namespace Vanilla
     public:
         struct ExposureSettings
         {
-            float   Exposure                        = -10.0f;           // EV100 - see https://google.github.io/filament/Filament.html#imagingpipeline/physicallybasedcamera (start underexposed for no particular reason)
+            float   Exposure                        = 0.0f;             // EV100 - see https://google.github.io/filament/Filament.html#imagingpipeline/physicallybasedcamera
             float   ExposureCompensation            = 0.0f;             // added post-autoexposure - use for user exposure adjustment
 
             float   ExposureMin                     = -20.0f;           // [ -20.0, +20.0   ]   - danger, the UI expect these to be consecutive in memory 
@@ -90,7 +90,7 @@ namespace Vanilla
         vaRenderCamera( vaRenderDevice & renderDevice, bool visibleInUI );
         virtual ~vaRenderCamera( );
         
-        // copying not supported for now (although vaCameraBase should be able to get all info from vaRenderCamera somehow?)
+        // copying not supported for now - use FromOther 
         vaRenderCamera( const vaRenderCamera & other )                  = delete;
         vaRenderCamera & operator = ( const vaRenderCamera & other )    = delete;
 
@@ -122,6 +122,7 @@ namespace Vanilla
 
         virtual vaLODSettings                       GetLODSettings( ) const override;
 
+        void                                        FromOther( const vaCameraBase & other );
 
     public:
     protected:

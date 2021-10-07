@@ -16,7 +16,7 @@
 
 using namespace Vanilla;
 
-void vaUploadBufferDX12::Construct( uint64 sizeInBytes, const string & resourceName )
+void vaUploadBufferDX12::Construct( uint64 sizeInBytes, const wstring & resourceName )
 {
     m_size          = sizeInBytes;
     
@@ -28,7 +28,7 @@ void vaUploadBufferDX12::Construct( uint64 sizeInBytes, const string & resourceN
         D3D12_RESOURCE_STATE_GENERIC_READ,
         nullptr,
         IID_PPV_ARGS( &m_resource ) ) );
-    m_resource->SetName( vaStringTools::SimpleWiden(resourceName).c_str() );
+    m_resource->SetName( resourceName.c_str() );
 
     assert( sizeInBytes <= UINT_MAX ); // looks like we can't use bigger than 4GB buffers? D3D12_CONSTANT_BUFFER_VIEW_DESC::SizeInBytes is UINT?
     m_CBV = { m_resource->GetGPUVirtualAddress( ), (UINT)m_size };
@@ -41,13 +41,13 @@ void vaUploadBufferDX12::Construct( uint64 sizeInBytes, const string & resourceN
     }
 }
 
-vaUploadBufferDX12::vaUploadBufferDX12( vaRenderDeviceDX12 & device, uint64 sizeInBytes, const string & resourceName )
+vaUploadBufferDX12::vaUploadBufferDX12( vaRenderDeviceDX12 & device, uint64 sizeInBytes, const wstring & resourceName )
     : m_device( device )
 {
     Construct( sizeInBytes, resourceName );
 }
 
-vaUploadBufferDX12::vaUploadBufferDX12( vaRenderDeviceDX12 & device, const void * initialContents, uint64 sizeInBytes, const string & resourceName )
+vaUploadBufferDX12::vaUploadBufferDX12( vaRenderDeviceDX12 & device, const void * initialContents, uint64 sizeInBytes, const wstring & resourceName )
     : m_device( device )
 {
     Construct( sizeInBytes, resourceName );
@@ -141,7 +141,7 @@ void vaConstantBufferDX12::AllocateNextUploadBuffer( )
             D3D12_RESOURCE_STATE_GENERIC_READ,
             nullptr,
             IID_PPV_ARGS(&resource)) );
-        resource->SetName( L"vaConstantBufferDX12_upload" );
+        resource->SetName( m_resourceName.c_str() ); // add upload suffix?
 
         m_uploadConstantBuffer = new DetachableUploadBuffer( m_deviceDX12, resource, m_actualTotalSizeInBytes );
     }
@@ -154,13 +154,14 @@ void vaConstantBufferDX12::SafeReleaseUploadBuffer( DetachableUploadBuffer * upl
     m_unusedBuffersPools[safeToReleasePool].push_back( uploadBuffer );
 }
 
-bool vaConstantBufferDX12::Create( int bufferSize, const void * initialData, bool dynamic, int deviceContextIndex )
+bool vaConstantBufferDX12::Create( int bufferSize, const string & name, const void * initialData, bool dynamic, int deviceContextIndex )
 {
     m_deviceContextIndex = deviceContextIndex;
 
     DestroyInternal(/*false*/);
 
     m_createdThis = std::make_shared<vaConstantBufferDX12*>( this );
+    m_resourceName = vaStringTools::SimpleWiden(name);
 
     assert( m_uploadConstantBuffer == nullptr );
 
@@ -279,7 +280,7 @@ vaVertIndBufferDX12::~vaVertIndBufferDX12( )
     m_unusedBuffersPool.clear();
 }
 
-void vaVertIndBufferDX12::Create( int elementCount, int elementSize, const void * initialData, const string & resourceName )
+void vaVertIndBufferDX12::Create( int elementCount, int elementSize, const wstring & resourceName, const void * initialData )
 {
     assert( !IsMapped() );
 
@@ -325,7 +326,7 @@ void vaVertIndBufferDX12::Create( int elementCount, int elementSize, const void 
             D3D12_RESOURCE_STATE_GENERIC_READ,      // TODO - resource state tracking
             nullptr,
             IID_PPV_ARGS(&resource)) );
-        resource->SetName( L"vaVertIndBufferDX12_upload" );
+        resource->SetName( m_resourceName.c_str() ); // add upload suffix?
 
         m_buffer = new DetachableBuffer( m_device, resource, m_dataSize, actualBufferSize );
     }
@@ -416,7 +417,7 @@ bool vaVertIndBufferDX12::Map( vaResourceMapType mapType )
     {
         int elementCount = m_elementCount;
         int elementSize = m_elementSize;
-        Create( elementCount, elementSize, nullptr, m_resourceName ); // will destroy and re-create
+        Create( elementCount, elementSize, m_resourceName, nullptr ); // will destroy and re-create
     }
 
     // Copy the triangle data to the vertex buffer.
@@ -486,6 +487,7 @@ bool vaRenderBufferDX12::CreateInternal( uint64 elementCount, uint32 structByteS
     m_elementByteSize                = structByteSize;
     m_elementCount                  = elementCount;
     m_resourceFormat                = resourceFormat;
+    m_resourceName                  =  vaStringTools::SimpleWiden(name);
 
     D3D12_RESOURCE_DESC BufferDesc;
     BufferDesc.Dimension            = D3D12_RESOURCE_DIMENSION_BUFFER;
@@ -531,12 +533,16 @@ bool vaRenderBufferDX12::CreateInternal( uint64 elementCount, uint32 structByteS
     }
 
     HRESULT hr;
-    V( AsDX12(m_renderDevice).GetPlatformDevice()->CreateCommittedResource( &heapProps, heapFlags, &BufferDesc, initialResourceState, nullptr, IID_PPV_ARGS(& m_resource ) ) );
-    m_resource->SetName( vaStringTools::SimpleWiden(name).c_str() );
+    if( BufferDesc.Width > 0 )
+    {
+        V( AsDX12(m_renderDevice).GetPlatformDevice()->CreateCommittedResource( &heapProps, heapFlags, &BufferDesc, initialResourceState, nullptr, IID_PPV_ARGS(& m_resource ) ) );
+        m_resource->SetName( m_resourceName.c_str() );
 
-    m_desc = m_resource->GetDesc( );
-
-    m_rsth.RSTHAttach( m_resource.Get(), initialResourceState );
+        m_desc = m_resource->GetDesc( );
+        m_rsth.RSTHAttach( m_resource.Get(), initialResourceState );
+    }
+    else
+        m_desc = BufferDesc;
 
     if( !IsReadback() && !IsUpload() )
     {
@@ -617,23 +623,26 @@ bool vaRenderBufferDX12::CreateInternal( uint64 elementCount, uint32 structByteS
         //assert( m_resourceFormat == vaResourceFormat::Unknown );
     }
 
-    // map by default for readback/upload
-    if( IsReadback() )
+    if( m_resource != nullptr )
     {
-        CD3DX12_RANGE readRange( 0, m_dataSize );   // we intend to read it all
-        if( SUCCEEDED( hr = m_resource->Map( 0, &readRange, reinterpret_cast<void**>( &m_mappedData ) ) ) )
-            return true;
-        else
-            { assert( false ); m_mappedData = nullptr; return false; }
-    }
-    else if( IsUpload() )
-    {
-        assert( IsUpload( ) ); // only read supported
-        CD3DX12_RANGE readRange( 0, 0 );            // we do not intend to read
-        if( SUCCEEDED( hr = m_resource->Map( 0, &readRange, reinterpret_cast<void**>( &m_mappedData ) ) ) )
-            return true;
-        else
-            { assert( false ); m_mappedData = nullptr; return false; }
+        // map by default for readback/upload
+        if( IsReadback() )
+        {
+            CD3DX12_RANGE readRange( 0, m_dataSize );   // we intend to read it all
+            if( SUCCEEDED( hr = m_resource->Map( 0, &readRange, reinterpret_cast<void**>( &m_mappedData ) ) ) )
+                return true;
+            else
+                { assert( false ); m_mappedData = nullptr; return false; }
+        }
+        else if( IsUpload() )
+        {
+            assert( IsUpload( ) ); // only read supported
+            CD3DX12_RANGE readRange( 0, 0 );            // we do not intend to read
+            if( SUCCEEDED( hr = m_resource->Map( 0, &readRange, reinterpret_cast<void**>( &m_mappedData ) ) ) )
+                return true;
+            else
+                { assert( false ); m_mappedData = nullptr; return false; }
+        }
     }
 
     return true;
@@ -672,7 +681,7 @@ void vaRenderBufferDX12::Upload( vaRenderDeviceContext & renderContext, const vo
     assert( dataSize <= (m_dataSize-dstByteOffset) );
     assert( dataSize > 0 );
 
-    vaUploadBufferDX12 uploadBuffer( AsDX12(GetRenderDevice()), data, dataSize, "vaRenderBufferDX12_Update_Upload_Buffer_This_Name_Is_Horribly_Long" );
+    vaUploadBufferDX12 uploadBuffer( AsDX12(GetRenderDevice()), data, dataSize, m_resourceName );
 
     TransitionResource( AsDX12( renderContext ), D3D12_RESOURCE_STATE_COPY_DEST );
     AsDX12( renderContext ).GetCommandList( ).Get( )->CopyBufferRegion( m_resource.Get( ), dstByteOffset, uploadBuffer.GetResource(), 0, dataSize );
@@ -708,7 +717,7 @@ void vaRenderBufferDX12::TransitionResource( vaRenderDeviceContextBaseDX12& cont
     {
         // there should be no resource changes for raytracing acceleration structure - it's always D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE
         // is this intentional? if so, feel free to remove the assert
-        assert( false );
+        // assert( false );
         return; 
     }
     if( ( m_flags & vaRenderBufferFlags::VertexIndexBuffer ) != 0 )

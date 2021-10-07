@@ -177,7 +177,7 @@ void vaSceneRenderInstanceProcessor::SelectionProc( MainWorkNode & workNode, uin
                 showAsSelected      |= renderMesh->GetUIShowSelectedAppTickIndex( ) >= workNode.ApplicationTickIndex;
                 showAsSelected      |= renderMaterial->GetUIShowSelectedAppTickIndex( ) >= workNode.ApplicationTickIndex;
 
-                localList[localCount++] = { entity, renderMesh, renderMaterial, dist, meshLOD, false, isDecal, showAsSelected };
+                localList[localCount++] = { entity, renderMesh, renderMaterial,  dist, meshLOD, false, isDecal, showAsSelected };
             }
         }
     }
@@ -219,13 +219,16 @@ void vaSceneRenderInstanceProcessor::SelectionProc( MainWorkNode & workNode, uin
         renderInstance.OriginInfo.MeshAssetID       = ( renderInstance.Mesh->GetParentAsset( ) == nullptr ) ? ( 0xFFFFFFFF ) : ( static_cast<uint32>( renderInstance.Mesh->GetParentAsset( )->RuntimeIDGet( ) ) );
         renderInstance.OriginInfo.MaterialAssetID   = ( renderInstance.Material->GetParentAsset( ) == nullptr ) ? ( 0xFFFFFFFF ) : ( static_cast<uint32>( renderInstance.Material->GetParentAsset( )->RuntimeIDGet( ) ) );
 
-        const Scene::MaterialPicksLightEmissive* materialPicksLightEmissive = cregistry.try_get<Scene::MaterialPicksLightEmissive>( item.Entity );
-        if( materialPicksLightEmissive != nullptr )
+        const Scene::EmissiveMaterialDriver * emissiveDriver = cregistry.try_get<Scene::EmissiveMaterialDriver>( item.Entity );
+        if( emissiveDriver != nullptr )
         {
-            const Scene::LightPoint* lightPoint = cregistry.try_get<Scene::LightPoint>( item.Entity );
-            if( lightPoint != nullptr )
-                renderInstance.EmissiveAdd = vaVector4( lightPoint->Color * ( lightPoint->Intensity * materialPicksLightEmissive->IntensityMultiplier ), materialPicksLightEmissive->OriginalMultiplier );
+            // const Scene::LightPoint* lightPoint = cregistry.try_get<Scene::LightPoint>( item.Entity );
+            // if( lightPoint != nullptr )
+            //     renderInstance.EmissiveAdd = vaVector4( lightPoint->Color * ( lightPoint->Intensity * materialPicksLightEmissive->IntensityMultiplier ), materialPicksLightEmissive->OriginalMultiplier );
+            renderInstance.EmissiveMul = emissiveDriver->EmissiveMultiplier;
         }
+        else
+            renderInstance.EmissiveMul = {1,1,1};
 
         // if( isWireframe )
         // {
@@ -353,7 +356,7 @@ vaSceneRenderInstanceProcessor::MainWorkNode::MainWorkNode( vaSceneRenderInstanc
     : Processor( processor ), Scene( scene ), BoundsView( scene.Registry().view<const Scene::WorldBounds>( ) ),
     vaSceneAsync::WorkNode( "CreateRenderLists", {"bounds_done_marker"}, {"renderlists_done_marker"},
         Scene::AccessPermissions::ExportPairLists<
-            const Scene::WorldBounds, const Scene::TransformWorld, const Scene::RenderMesh, const Scene::MaterialPicksLightEmissive, 
+            const Scene::WorldBounds, const Scene::TransformWorld, const Scene::RenderMesh, const Scene::EmissiveMaterialDriver, 
             const Scene::LightPoint, const Scene::Name, const Scene::Relationship, const Scene::IgnoreByIBLTag> () )
 { 
 }

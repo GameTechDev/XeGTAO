@@ -42,6 +42,7 @@ namespace Vanilla
 
         // we've got to multi-buffer these because the older ones must be kept alive until they finish rendering
         shared_ptr<vaRenderBuffer>          m_topLevelAccelerationStructure[vaRenderDevice::c_BackbufferCount];
+        shared_ptr<vaRenderBuffer>          m_nullAccelerationStructure; // null descriptor
 
         int64                               m_lastFrameIndex                    = -1;
         int                                 m_currentBackbuffer                 = 0;
@@ -95,6 +96,8 @@ namespace Vanilla
         void                                UpdateAndSetToGlobals( vaRenderDeviceContext & renderContext, vaShaderItemGlobals & shaderItemGlobals, const vaDrawAttributes & drawAttributes );
 
         Settings &                          Settings( )                                                 { return m_settings; }
+
+        const shared_ptr<vaRenderBuffer> &  GetNullAccelerationStructure( ) const                       { return m_nullAccelerationStructure; }
 
     protected:
         virtual void                        UIPanelTick( vaApplicationBase & application ) override;

@@ -88,6 +88,7 @@
     <ClCompile Include="..\..\Source\Rendering\vaAssetPack.cpp" />
     <ClCompile Include="..\..\Source\Rendering\vaDebugCanvas.cpp" />
     <ClCompile Include="..\..\Source\Rendering\vaGBuffer.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaGPUSort.cpp" />
     <ClCompile Include="..\..\Source\Rendering\vaGPUTimer.cpp" />
     <ClCompile Include="..\..\Source\Rendering\vaIBL.cpp" />
     <ClCompile Include="..\..\Source\Rendering\vaPathTracer.cpp" />
@@ -115,6 +116,7 @@
     <ClCompile Include="..\..\Source\Rendering\vaTextureHelpers.cpp" />
     <ClCompile Include="..\..\Source\Scene\vaAssetImporter.cpp" />
     <ClCompile Include="..\..\Source\Scene\vaAssetImporter_Assimp.cpp" />
+    <ClCompile Include="..\..\Source\Scene\vaAssetImporter_cgltf.cpp" />
     <ClCompile Include="..\..\Source\Scene\vaCameraBase.cpp" />
     <ClCompile Include="..\..\Source\Scene\vaCameraControllers.cpp" />
     <ClCompile Include="..\..\Source\Scene\vaScene.cpp" />
@@ -223,6 +225,7 @@
     <ClInclude Include="..\..\Source\Rendering\vaCanvasImpl.h" />
     <ClInclude Include="..\..\Source\Rendering\vaDebugCanvas.h" />
     <ClInclude Include="..\..\Source\Rendering\vaGBuffer.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaGPUSort.h" />
     <ClInclude Include="..\..\Source\Rendering\vaGPUTimer.h" />
     <ClInclude Include="..\..\Source\Rendering\vaIBL.h" />
     <ClInclude Include="..\..\Source\Rendering\vaPathTracer.h" />
@@ -454,6 +457,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaGTAO_RT.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaGPUSort.hlsl">
       <FileType>Document</FileType>
     </ClInclude>
   </ItemGroup>

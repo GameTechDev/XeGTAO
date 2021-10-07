@@ -238,6 +238,8 @@ namespace Vanilla
         static shared_ptr<vaRenderMesh>                 CreateCylinder( vaRenderDevice & device, const vaMatrix4x4 & transform, float height, float radiusBottom, float radiusTop, int tessellation, bool openTopBottom, bool shareVertices, const vaGUID & uid = vaCore::GUIDCreate() );
         static shared_ptr<vaRenderMesh>                 CreateTeapot( vaRenderDevice & device, const vaMatrix4x4 & transform, const vaGUID & uid = vaCore::GUIDCreate() );
 
+        static std::vector<struct vaVertexInputElementDesc>    GetStandardInputLayout( );
+
     protected:
         //////////////////////////////////////////////////////////////////////////
         // Mutex needs locking when you use these!
@@ -340,10 +342,10 @@ namespace Vanilla
 
         std::vector<PerWorkerData>                      m_perWorkerData;
 
-        //// used only for DrawSingle
-        //vaTypedConstantBufferWrapper< ShaderInstanceConstants, true >
-        //                                                m_constantBuffer;
-        shared_ptr<vaRenderBuffer>                      m_simpleConstantBuffers;
+        // //// used only for DrawSingle
+        // //vaTypedConstantBufferWrapper< ShaderInstanceConstants, true >
+        // //                                                m_constantBuffer;
+        // shared_ptr<vaRenderBuffer>                      m_simpleConstantBuffers;
 
         // meshes useful for general debugging
         shared_ptr<vaRenderMesh>                        m_unitSphere        = nullptr;
@@ -368,8 +370,10 @@ namespace Vanilla
         const vaSparseArray< vaRenderMesh * > &         Meshes( ) const                                                         { return m_meshes; }
 
     public:
+#if 0 // this is gone to reduce complexity
         // very simple single instance draw - slow but does the job
         virtual vaDrawResultFlags                       DrawSimple( vaRenderDeviceContext & renderContext, const vaRenderOutputs & renderOutputs, vaRenderMaterialShaderType shaderType, const vaDrawAttributes & drawAttributes, vaBlendMode blendMode, vaRenderMeshDrawFlags drawFlags, const std::vector<vaRenderInstanceSimple> & instances );
+#endif
 
         virtual vaDrawResultFlags                       Draw( vaRenderDeviceContext & renderContext, const vaRenderOutputs & renderOutputs, vaRenderMaterialShaderType shaderType, const vaDrawAttributes & drawAttributes, const vaRenderInstanceList & selection, vaBlendMode blendMode, vaRenderMeshDrawFlags drawFlags, 
                                                                 vaRenderInstanceList::SortHandle sortHandle = vaRenderInstanceList::EmptySortHandle );
@@ -385,6 +389,9 @@ namespace Vanilla
         shared_ptr<vaRenderMesh>                        UnitSphere( );
 
     protected:
+        friend vaRenderDevice;
+        void                                            PostCreateInitialize( );
+
         virtual string                                  UIPanelGetDisplayName( ) const override                                 { return "Meshes"; } //vaStringTools::Format( "vaRenderMaterialManager (%d meshes)", m_renderMaterials.size( ) ); }
         virtual void                                    UIPanelTick( vaApplicationBase & application ) override;
     };

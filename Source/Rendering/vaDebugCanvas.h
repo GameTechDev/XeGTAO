@@ -114,9 +114,8 @@ namespace Vanilla
         //
     public:
         // 'DrawText' name is messy because thats #defined somewhere in windows.h or related headers :/
-        virtual void        DrawText( float x, float y, const char * text, ... );
-        virtual void        DrawText( float x, float y, unsigned int penColor, const char * text, ... );
         virtual void        DrawText( float x, float y, unsigned int penColor, unsigned int shadowColor, const char * text, ... );
+        void                DrawText3D( const vaCameraBase & camera, const vaVector3 & position3D, const vaVector2 & screenOffset, unsigned int penColor, unsigned int shadowColor, const char * text, ... );
         //virtual void        GetTextWidth( const char * text );
         //virtual void        GetTextWidth( const wchar_t * text );
         virtual void        DrawLine( float x0, float y0, float x1, float y1, unsigned int penColor );

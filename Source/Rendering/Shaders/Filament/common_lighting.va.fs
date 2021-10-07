@@ -64,11 +64,10 @@ float computeMicroShadowing(float NoL, float ao)
 #if 0 // from the paper - different from Filament and looks wrong
     float aperture = 2.0 * ao * ao;
     return saturate( abs(NoL) + aperture - 1.0 );
-#elif 0 // filament version
+#else // filament version
     float aperture = inversesqrt(1.0000001 - ao);
+    NoL += 0.1; // when using bent normals, avoids overshadowing - bent normals are just approximation anyhow
     return saturate(NoL * aperture);
-#else // my hack 
-    return lerp( ao, 1, saturate(NoL) );
 #endif
 #else
     return 1;

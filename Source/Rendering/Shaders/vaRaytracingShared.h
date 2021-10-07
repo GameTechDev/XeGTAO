@@ -18,67 +18,73 @@
 #endif
 
 
-#define VA_RAYTRACING_SHADER_CALLABLES_PERMATERIAL      1	// effectively, stride
-#define VA_RAYTRACING_SHADER_CALLABLES_SHADE_OFFSET     0	// effectively, ID of the specific callable shader
+#define VA_RAYTRACING_SHADER_CALLABLES_PERMATERIAL          1	// effectively, stride
+#define VA_RAYTRACING_SHADER_CALLABLES_SHADE_OFFSET         0	// effectively, ID of the specific callable shader
+
+// Miss shader-based API path to allow for callables that support TraceRay; use VA_RAYTRACING_SHADER_MISSCALLABLES_SHADE_OFFSET and null acceleration structure to invoke; see https://microsoft.github.io/DirectX-Specs/d3d/Raytracing.html#callable-shaders
+#define VA_RAYTRACING_SHADER_MISS_CALLABLES_SHADE_OFFSET    2	// effectively, ID of the specific callable shader  (first two are for vaRaytraceItem::Miss and MissSecondary)
+
 
 // nice 32bit random primes from here: https://asecuritysite.com/encryption/random3?val=32
 #define VA_RAYTRACING_HASH_SEED_AA                      0x09FFF95B
 #define VA_RAYTRACING_HASH_SEED_DIR_INDIR_LIGHTING_1D   0x2FB8FF47      // these are 1D (choice) and 2D (sample) used by both direct and indirect lighting - this can be done because:
 #define VA_RAYTRACING_HASH_SEED_DIR_INDIR_LIGHTING_2D   0x74DDDA53      // Turquin - From Ray to Path Tracing: "Note that you can and should reuse the same sample for light and material sampling at a given depth, since they are independent integral computations, merely combined together in a weighted sum by MIS."
 #define VA_RAYTRACING_HASH_SEED_RUSSIAN_ROULETTE        0x1D6F5FC9
-#define VA_RAYTRACING_HASH_SEED_PLACEHOLDER1            0xD19ED69B
+#define VA_RAYTRACING_HASH_SEED_LIGHTING_SPEC           0xD19ED69B      // used for tree traversal or etc
 #define VA_RAYTRACING_HASH_SEED_PLACEHOLDER2            0xFBD0A37F
 #define VA_RAYTRACING_HASH_SEED_PLACEHOLDER3            0xC6456085
 #define VA_RAYTRACING_HASH_SEED_PLACEHOLDER4            0x8FCEC1EF
 
-#define VA_RAYTRACING_FLAG_NOT_USED_AT_THE_MOMENT       (1 << 0)        // this is a visibility only ray - no closest hit shader; this flag serves dual purpose: miss shader clears it to indicate a miss
-#define VA_RAYTRACING_FLAG_LAST_BOUNCE                  (1 << 1)        // 
-#define VA_RAYTRACING_FLAG_PATH_REGULARIZATION          (1 << 2)
-#define VA_RAYTRACING_FLAG_SHOW_DEBUG_PATH_VIZ          (1 << 3)
-#define VA_RAYTRACING_FLAG_SHOW_DEBUG_LIGHT_VIZ         (1 << 4)
-#define VA_RAYTRACING_FLAG_SHOW_DEBUG_PATH_DETAIL_VIZ   (1 << 5)
+//#define VA_RAYTRACING_BOUCE_COUNT_MASK                  (0xFFFF)        // surely no more than 65535 bounces?
+#define VA_RAYTRACING_FLAG_NOT_USED_AT_THE_MOMENT       (1 << 16)       // this is a visibility only ray - no closest hit shader; this flag serves dual purpose: miss shader clears it to indicate a miss
+#define VA_RAYTRACING_FLAG_LAST_BOUNCE                  (1 << 17)       // 
+#define VA_RAYTRACING_FLAG_PATH_REGULARIZATION          (1 << 18)
+#define VA_RAYTRACING_FLAG_SHOW_DEBUG_PATH_VIZ          (1 << 19)
+#define VA_RAYTRACING_FLAG_SHOW_DEBUG_LIGHT_VIZ         (1 << 20)
+#define VA_RAYTRACING_FLAG_SHOW_DEBUG_PATH_DETAIL_VIZ   (1 << 21)
+#define VA_RAYTRACING_FLAG_STOPPED                      (1 << 22)       // 
 
 #ifndef VA_COMPILED_AS_SHADER_CODE
 namespace Vanilla
 {
 #endif
 
-    // for visibility rays - not actually used at the moment to avoid shader complexity but it would be an easy optimization
-    // WARNING: changing this at runtime requires C++ code rebuild due to sizeof() while setting up raytracing PSO
-    struct ShaderRayPayloadBase
+    // used for individual path tracing rays or visibility rays
+    struct ShaderMultiPassRayPayload
     {
-        vaVector2i              DispatchRaysIndex;          // set by caller, useful for debugging or outputting (effectively pixel pos)
-        float                   ConeSpreadAngle;            // set by caller, updated by callee: see RayTracingGems, Chapter 20 Texture Level of Detail Strategies for Real-Time Ray Tracing
-        float                   ConeWidth;                  // set by caller, updated by callee: see RayTracingGems, Chapter 20 Texture Level of Detail Strategies for Real-Time Ray Tracing
+        uint                    PathIndex;                  // a.k.a. path index; (1<31) used as a visibility flag
+        float                   ConeSpreadAngle;
+        float                   ConeWidth;      
     };
 
-    // for path tracing
+    // for visibility rays - not actually used at the moment to avoid shader complexity but it would be an easy optimization
     // WARNING: changing this at runtime requires C++ code rebuild due to sizeof() while setting up raytracing PSO
-    struct ShaderPathTracerRayPayload : ShaderRayPayloadBase
+    struct ShaderRayPayloadGeneric
     {
+        vaVector2i              PixelPos;                   // set by caller, useful for debugging or outputting
+        float                   ConeSpreadAngle;            // set by caller, updated by callee: see RayTracingGems, Chapter 20 Texture Level of Detail Strategies for Real-Time Ray Tracing
+        float                   ConeWidth;                  // set by caller, updated by callee: see RayTracingGems, Chapter 20 Texture Level of Detail Strategies for Real-Time Ray Tracing
         vaVector3               AccumulatedRadiance;        // initialized by caller, updated by callee
         uint                    HashSeed;                   // set by caller, updated on the way
         vaVector3               Beta;                       // initialized by caller, updated by callee; a.k.a. accumulatedBSDF - Beta *= BSDFSample::F / BSDFSample::PDF
         uint                    Flags;                      // Various VA_RAYTRACING_FLAG_* flags
         vaVector3               NextRayOrigin;              // fill in to continue path tracing or ignore
-        int                     BounceCount;                // each bounce adds one! (intentionally int)
+        int                     BounceIndex;                // each bounce adds one! (intentionally int)
         vaVector3               NextRayDirection;           // fill in to continue path tracing
         float                   AccumulatedRayTravel;       // sometimes useful
-        uint                    DebugViewType;              // debugging (see ShaderDebugViewType)
-        float                   MaxRoughness;               // max roughness on the path so far - used as a "poor man's path regularization" - for a proper solution see https://www2.in.tu-clausthal.de/~cgstore/publications/2019_Jendersie_brdfregularization.pdf
-        float                   LastSpecularness;           // In pbrt this is a binary. Here it's a [0,1] scalar measure of amount of 'perfect specular response' - not tightly defined yet but could be something like 1 - solid_angle_subtending_standard_deviation_of_all_reflected_light / (4*PI). Currently it's 'totally an ad-hoc heuristic; I should come back and formalize it :)
-        float                   PathSpecularness;           // PathSpecularness = PathSpecularness*LastSpecularness
     };
 
-    // not really used in practice - at the moment configured for a callable that gets called instead of a ClosestHit
-    // WARNING: changing this at runtime requires C++ code rebuild due to sizeof() while setting up raytracing PSO
-    struct ShaderCallablePayload
+
+    // this contains all that is needed to compute hit (and continue path tracing); it is a bit chunky but precision is needed on all of these
+    struct ShaderGeometryHitPayload
     {
-        ShaderPathTracerRayPayload  RayPayload;
-        uint                    InstanceIndex;              // specifies the object instance        ( InstanceIndex()  )
+        vaVector3               RayDirLength;               // ray direction * ray length           ( WorldRayDirection( ) * RayTCurrent() )
+        //vaVector3               RayOrigin;                  // ray origin                           ( WorldRayOrigin( ) )
         uint                    PrimitiveIndex;             // specifies the triangle               ( PrimitiveIndex() )
-        vaVector3               RayOrigin;                  // ray origin                           ( WorldRayOrigin( ) )
-        vaVector3               RayDirLength;               // ray direction                        ( WorldRayDirection( ) * RayTCurrent() )
+        vaVector2               Barycentrics;               // BuiltInTriangleIntersectionAttributes::barycentrics
+        uint                    InstanceIndex;              // specifies the object instance        ( InstanceIndex()  )
+        uint                    MaterialIndex;              // stored in InstanceID( )
+        //uint                    SortKey;                    // how to sort path dispatch order <- moved to separate buffer
     };
 
 
@@ -102,7 +108,7 @@ struct BSDFSample
 
 RaytracingAccelerationStructure g_raytracingScene   : register( T_CONCATENATER( SHADERGLOBAL_SRV_SLOT_RAYTRACING_ACCELERATION ), space0 );
 
-void LoadHitSurfaceInteraction( const uint2 dispatchRaysIndex, const float2 barycentrics, const uint instanceIndex, const uint primitiveIndex, const float3 rayDir, const float rayLength, const float rayConeSpreadAngle, const float rayConeWidth, out ShaderInstanceConstants instanceConstants, out ShaderMeshConstants meshConstants, out ShaderMaterialConstants materialConstants, out SurfaceInteraction surface )
+void LoadHitSurfaceInteraction( /*const uint2 dispatchRaysIndex,*/ const float2 barycentrics, const uint instanceIndex, const uint primitiveIndex, const float3 rayDirLength, const float rayConeSpreadAngle, const float rayConeWidth, out ShaderInstanceConstants instanceConstants, out ShaderMeshConstants meshConstants, out ShaderMaterialConstants materialConstants, out SurfaceInteraction surface )
 {
     instanceConstants = LoadInstanceConstants( instanceIndex );
     materialConstants = g_materialConstants[instanceConstants.MaterialGlobalIndex];
@@ -133,7 +139,7 @@ void LoadHitSurfaceInteraction( const uint2 dispatchRaysIndex, const float2 bary
     interpB = RenderMeshVertexShader( vertB, instanceConstants );
     interpC = RenderMeshVertexShader( vertC, instanceConstants );
 
-    surface = SurfaceInteraction::ComputeAtRayHit( interpA, interpB, interpC, barycentrics, rayDir * rayLength, rayConeSpreadAngle, rayConeWidth, meshConstants.FrontFaceIsClockwise );
+    surface = SurfaceInteraction::ComputeAtRayHit( interpA, interpB, interpC, barycentrics, rayDirLength, rayConeSpreadAngle, rayConeWidth, meshConstants.FrontFaceIsClockwise );
 
 #if 0 // debugging
     [branch] if( IsUnderCursorRange( dispatchRaysIndex, int2(1,1) ) )
@@ -147,11 +153,12 @@ void LoadHitSurfaceInteraction( const uint2 dispatchRaysIndex, const float2 bary
 }
 
 // Generate a ray in world space for a camera pixel corresponding to an index from the dispatched 2D grid.
-inline void GenerateCameraRay( uint2 pixelCoords, float2 subPixelJitter, out float3 origin, out float3 direction, out float coneSpreadAngle )
+// TODO: add near/far clip planes
+inline void GenerateCameraRay( uint2 pixelCoords, float2 viewportSize, float2 subPixelJitter, out float3 origin, out float3 direction, out float coneSpreadAngle )
 {
     // should we use 
     float2 xy           = pixelCoords + 0.5f + subPixelJitter; // center in the middle of the pixel.
-    float2 screenPos    = xy / DispatchRaysDimensions().xy * float2( 2.0, -2.0 ) + float2( -1.0, 1.0 );
+    float2 screenPos    = xy / viewportSize * float2( 2.0, -2.0 ) + float2( -1.0, 1.0 );
 
     // Unproject the pixel coordinate into a ray. Could just use orthonormal camera basis - but this gives us any potential jitter applied to projection matrix too.
     float4 world        = mul( g_globals.ViewProjInv, float4(screenPos, 0, 1) );

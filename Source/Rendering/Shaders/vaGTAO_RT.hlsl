@@ -68,15 +68,15 @@ void AORaygen()
     float2 subPixelJitter = float2(0,0); // no AA
 
     // Generate a ray for a camera pixel corresponding to an index from the dispatched 2D grid.
-    GenerateCameraRay(DispatchRaysIndex().xy, subPixelJitter, rayOrigin, rayDir, rayConeSpreadAngle);
+    GenerateCameraRay( DispatchRaysIndex().xy, g_globals.ViewportSize.xy, subPixelJitter, rayOrigin, rayDir, rayConeSpreadAngle );
 
     // seed based on current pixel - no need for hash, it gets hashed first thing in the ray processing
     uint  hashSeed = Hash32( DispatchRaysIndex().x );
     hashSeed = Hash32Combine( hashSeed, DispatchRaysIndex().y );
     hashSeed = Hash32( hashSeed );
 
-    ShaderPathTracerRayPayload rayPayload;
-    rayPayload.DispatchRaysIndex    = DispatchRaysIndex().xy;
+    ShaderRayPayloadGeneric rayPayload;
+    rayPayload.PixelPos             = DispatchRaysIndex().xy;
     rayPayload.ConeSpreadAngle      = rayConeSpreadAngle;
     rayPayload.ConeWidth            = 0;                        // it's 0 at pinhole camera focal point
     rayPayload.AccumulatedRadiance  = float3( 1, 0, 1 );        // diffuse AO goes into .x, .z used for debugging (if 0, dump AO to debug, otherwise nothing)
@@ -85,11 +85,8 @@ void AORaygen()
     rayPayload.Flags                = 0;
     rayPayload.NextRayOrigin        = rayOrigin;
     rayPayload.NextRayDirection     = rayDir;
-    rayPayload.BounceCount          = -1;
+    rayPayload.BounceIndex          = -1;
     rayPayload.AccumulatedRayTravel = 0;
-    rayPayload.LastSpecularness     = 1.0;
-    rayPayload.PathSpecularness     = 1.0;
-    rayPayload.MaxRoughness         = 0.0;
 
     // Trace the camera ray first (alternative to figuring out the starting point from depth & normal)
     RayDesc nextRay;
@@ -105,9 +102,9 @@ void AORaygen()
 
     // reset to 0, we're only counting from here
     rayPayload.AccumulatedRayTravel = 0;
-    rayPayload.BounceCount          = 0;
+    rayPayload.BounceIndex          = 0;
 
-    while( rayPayload.BounceCount < g_refRTAOConsts.MaxBounces && rayPayload.AccumulatedRayTravel < g_refRTAOConsts.TotalRaysLength && length( rayPayload.NextRayDirection ) > 0 ) 
+    while( rayPayload.BounceIndex < g_refRTAOConsts.MaxBounces && rayPayload.AccumulatedRayTravel < g_refRTAOConsts.TotalRaysLength && length( rayPayload.NextRayDirection ) > 0 ) 
     {
         nextRay.Origin      = rayPayload.NextRayOrigin;
         nextRay.Direction   = rayPayload.NextRayDirection;
@@ -133,26 +130,26 @@ void AORaygen()
 
             rayPayload.AccumulatedRadiance.x *= g_refRTAOConsts.Albedo; //albedo;
         }
-        rayPayload.BounceCount++;
+        rayPayload.BounceIndex++;
     };
 
     CommitPixel( rayPayload.AccumulatedRadiance );
 }
 
 [shader("closesthit")]
-void AOClosestHit( inout ShaderPathTracerRayPayload rayPayload, in BuiltInTriangleIntersectionAttributes attr )
+void AOClosestHit( inout ShaderRayPayloadGeneric rayPayload, in BuiltInTriangleIntersectionAttributes attr )
 {
     ShaderInstanceConstants     instanceConstants;
     ShaderMeshConstants         meshConstants;
     ShaderMaterialConstants     materialConstants;
     SurfaceInteraction          surface;
 
-    LoadHitSurfaceInteraction( rayPayload.DispatchRaysIndex.xy, attr.barycentrics, InstanceIndex(), PrimitiveIndex(), WorldRayDirection(), RayTCurrent(), rayPayload.ConeSpreadAngle, rayPayload.ConeWidth, instanceConstants, meshConstants, materialConstants, surface );
+    LoadHitSurfaceInteraction( /*rayPayload.DispatchRaysIndex.xy,*/ attr.barycentrics, InstanceIndex( ), PrimitiveIndex( ), WorldRayDirection( ) * RayTCurrent( ), rayPayload.ConeSpreadAngle, rayPayload.ConeWidth, instanceConstants, meshConstants, materialConstants, surface );
 
 #ifdef DEBUG_DRAW_RAYS
-    [branch] if( rayPayload.BounceCount == -1 && IsUnderCursorRange( rayPayload.DispatchRaysIndex.xy, int2(1,1) ) )
+    [branch] if( rayPayload.BounceIndex == -1 && IsUnderCursorRange( rayPayload.DispatchRaysIndex.xy, int2(1,1) ) )
     {
-        float4 rayDebugColor = float4( GradientRainbow( rayPayload.BounceCount / 10.0 ), 1 );
+        float4 rayDebugColor = float4( GradientRainbow( rayPayload.BounceIndex / 10.0 ), 1 );
         DebugDraw3DCylinder( WorldRayOrigin( ), surface.WorldspacePos.xyz, 
            rayPayload.ConeWidth * 0.5, surface.RayConeWidth * 0.5, rayDebugColor );
         DebugDraw3DSphere( surface.WorldspacePos.xyz, surface.RayConeWidth, float4( 0, 0.5, 0, 0.8 ) );
@@ -169,7 +166,7 @@ void AOClosestHit( inout ShaderPathTracerRayPayload rayPayload, in BuiltInTriang
     // In the future try using shading normal as well
     const float3x3 tangentToWorld = surface.TangentToWorld( );
 
-    if( rayPayload.BounceCount == -1 )
+    if( rayPayload.BounceIndex == -1 )
     {
         // bounce 0 needs to dump out AO training/inferencing data
         float4 normalsDepth;
@@ -216,11 +213,11 @@ void AOClosestHit( inout ShaderPathTracerRayPayload rayPayload, in BuiltInTriang
 }
 
 [shader("miss")]
-void AOMiss(inout ShaderPathTracerRayPayload rayPayload)
+void AOMiss(inout ShaderRayPayloadGeneric rayPayload)
 {
 #ifdef DEBUG_DRAW_RAYS
-    float4 rayDebugColor = float4( GradientRainbow( rayPayload.BounceCount / 10.0 ), 0.3 );
-    [branch] if( rayPayload.BounceCount == 0 && IsUnderCursorRange( rayPayload.DispatchRaysIndex.xy, int2(1,1) ) )
+    float4 rayDebugColor = float4( GradientRainbow( rayPayload.BounceIndex / 10.0 ), 0.3 );
+    [branch] if( rayPayload.BounceIndex == 0 && IsUnderCursorRange( rayPayload.DispatchRaysIndex.xy, int2(1,1) ) )
     {
         float approxEndConeWidth = rayPayload.ConeWidth*0.5 * (1+rayPayload.ConeSpreadAngle * RayTCurrent());
         DebugDraw3DCylinder( WorldRayOrigin(), WorldRayOrigin() + WorldRayDirection() * RayTCurrent(), rayPayload.ConeWidth*0.5, approxEndConeWidth, rayDebugColor );
@@ -228,7 +225,7 @@ void AOMiss(inout ShaderPathTracerRayPayload rayPayload)
     }
 #endif
 
-    if( rayPayload.BounceCount == -1 )
+    if( rayPayload.BounceIndex == -1 )
     {
         // bounce 0 needs to dump out AO training/inferencing data, even if it's sky!
         g_outputNormalsDepth[DispatchRaysIndex().xy] = float4( 0, 0, -1, 100001.0 );

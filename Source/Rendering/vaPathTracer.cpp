@@ -18,6 +18,9 @@
 
 #include "Rendering/vaRenderDevice.h"
 #include "Rendering/vaRenderGlobals.h"
+#include "Rendering/vaShader.h"
+#include "Rendering/vaRenderBuffers.h"
+#include "Rendering/vaTexture.h"
 
 #include "Rendering/vaSceneLighting.h"
 
@@ -27,19 +30,31 @@
 #include "Rendering/vaRenderMesh.h"
 #include "Rendering/vaAssetPack.h"
 
+#include "Rendering/Shaders/vaRaytracingShared.h"
+#include "Rendering/Shaders/vaPathTracerShared.h"
+
+#include "Rendering/vaSceneRaytracing.h"
+
+#include "Rendering/vaGPUSort.h"
+
 using namespace Vanilla;
 
 vaPathTracer::vaPathTracer( const vaRenderingModuleParams & params ) : 
     vaRenderingModule( params )
     //    , vaUIPanel( "PathTracer", 10, true, vaUIPanel::DockLocation::DockedLeftBottom )
-    , m_constantBuffer( params )
+    , m_constantBuffer( vaConstantBuffer::Create<ShaderPathTracerConstants>( params.RenderDevice, "ShaderPathTracerConstants" ) )
 {
+    // manually created material for the mirror
     m_divergenceMirrorMaterial = GetRenderDevice().GetMaterialManager().CreateRenderMaterial( );
-
     m_divergenceMirrorMaterial->SetupFromPreset( "FilamentStandard" );
-
     m_divergenceMirrorMaterial->SetInputSlotDefaultValue( "Roughness", 0.0f );
     m_divergenceMirrorMaterial->SetInputSlotDefaultValue( "Metallic", 1.0f );
+
+    m_pathTracerControl = vaRenderBuffer::Create<ShaderPathTracerControl>( GetRenderDevice(), 1, vaRenderBufferFlags::None, "PathTracerControl" );
+
+#if VA_USE_RAY_SORTING
+    m_GPUSort = GetRenderDevice().CreateModule<vaGPUSort>( );
+#endif
 }
 
 vaPathTracer::~vaPathTracer( ) 
@@ -64,7 +79,7 @@ void vaPathTracer::UITick( vaApplicationBase & )
 
         if( ImGui::InputInt( "Max bounces", &m_maxBounces ) )
             m_accumFrameCount = 0;
-        m_maxBounces = vaMath::Clamp( m_maxBounces, 0, 1024 );
+        m_maxBounces = vaMath::Clamp( m_maxBounces, 0, c_maxBounceUpperBound );
         if( ImGui::IsItemHovered( ) ) ImGui::SetTooltip( "How many times does the ray bounce before stopping" );
 
         if( ImGui::InputInt( "Accumulation target count", &m_accumFrameTargetCount ) )
@@ -209,6 +224,8 @@ vaDrawResultFlags vaPathTracer::Draw( vaRenderDeviceContext & renderContext, vaD
 
     skybox;
 
+    assert( drawAttributes.Raytracing != nullptr );
+
     // this will cause bugs - path tracing (at the moment) does not support primary ray AO from SSAO
     assert( drawAttributes.Lighting->GetAOMap( ) == nullptr );
 
@@ -220,11 +237,17 @@ vaDrawResultFlags vaPathTracer::Draw( vaRenderDeviceContext & renderContext, vaD
     {
         vaShaderMacroContaner macros = { { "VA_RAYTRACING", "" } };
 
-        m_shaderLibrary = GetRenderDevice().CreateModule<vaShaderLibrary>( );
-        m_shaderLibrary->CreateShaderFromFile( "vaPathTracer.hlsl", "", macros, true ); //, { "VA_RTAO_MAX_NUM_BOUNCES", vaStringTools::Format("%d", maxNumBounces) } }, true );
+        std::vector<shared_ptr<vaShader>> allShaders;
 
-        m_writeToOutputPS = GetRenderDevice().CreateModule<vaPixelShader>( );
-        m_writeToOutputPS->CreateShaderFromFile( "vaPathTracer.hlsl", "WriteToOutputPS", macros, true );
+        allShaders.push_back( m_shaderLibrary   = vaShaderLibrary::CreateFromFile(  GetRenderDevice(), "vaPathTracer.hlsl", "", macros, true ) ); //, { "VA_RTAO_MAX_NUM_BOUNCES", vaStringTools::Format("%d", maxNumBounces) } }, true );
+
+        allShaders.push_back( m_PSWriteToOutput = vaPixelShader::CreateFromFile(    GetRenderDevice(), "vaPathTracer.hlsl", "PSWriteToOutput", macros, true ) );
+
+        allShaders.push_back( m_CSKickoff       = vaComputeShader::CreateFromFile(  GetRenderDevice(), "vaPathTracer.hlsl", "CSKickoff", macros, true ) );
+
+        // wait until shaders are compiled! this allows for parallel compilation but ensures all are compiled after this point
+        for( auto sh : allShaders ) sh->WaitFinishIfBackgroundCreateActive();
+
         m_accumFrameCount   = 0;        // restart accumulation (if any)
     }
 
@@ -234,12 +257,26 @@ vaDrawResultFlags vaPathTracer::Draw( vaRenderDeviceContext & renderContext, vaD
         || m_accumLastShadersID != shaderContentsID )
         m_accumFrameCount       = 0;    // restart accumulation (if any)
 
+    const uint startingRayCount = ((outputColor->GetWidth() + (VA_PATH_TRACER_DISPATCH_TILE_SIZE-1))/VA_PATH_TRACER_DISPATCH_TILE_SIZE) * ((outputColor->GetHeight() + (VA_PATH_TRACER_DISPATCH_TILE_SIZE-1))/VA_PATH_TRACER_DISPATCH_TILE_SIZE)
+                                    * VA_PATH_TRACER_DISPATCH_TILE_SIZE*VA_PATH_TRACER_DISPATCH_TILE_SIZE;
+
     // per-framebuffer-resize init
     if( m_radianceAccumulation == nullptr || m_radianceAccumulation->GetSize( ) != outputColor->GetSize( ) )
     {
-        m_radianceAccumulation = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R32G32B32A32_FLOAT, outputColor->GetWidth(), outputColor->GetHeight(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
-        m_viewspaceDepth = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R32_FLOAT, outputColor->GetWidth(), outputColor->GetHeight(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
-        m_accumFrameCount   = 0;        // restart accumulation (if any)
+        m_radianceAccumulation  = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R32G32B32A32_FLOAT, outputColor->GetWidth(), outputColor->GetHeight(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
+        m_viewspaceDepth        = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R32_FLOAT, outputColor->GetWidth(), outputColor->GetHeight(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
+        m_accumFrameCount       = 0;    // restart accumulation (if any)
+
+        m_pathGeometryHitInfoPayloads   = vaRenderBuffer::Create<ShaderGeometryHitPayload>( GetRenderDevice(), startingRayCount, vaRenderBufferFlags::None, "PathGeometryHitInfoPayloads" );
+        m_pathPayloads                  = vaRenderBuffer::Create<ShaderPathPayload>( GetRenderDevice(), startingRayCount, vaRenderBufferFlags::None, "PathPayloads" );
+
+        std::vector<uint32> unsortedPaths( startingRayCount, 0 ); 
+        std::iota(unsortedPaths.begin(), unsortedPaths.end(), 0);   // set indices to {0, 1, ..., startingRayCount-1}
+        //m_pathListUnsorted              = vaRenderBuffer::Create( GetRenderDevice(), startingRayCount, vaResourceFormat::R32_UINT, vaRenderBufferFlags::None, "PathListUnsorted",   unsortedPaths.data() );
+        m_pathListSorted                = vaRenderBuffer::Create( GetRenderDevice(), startingRayCount, vaResourceFormat::R32_UINT, vaRenderBufferFlags::None, "PathListSorted",     unsortedPaths.data() );
+
+        m_pathSortKeys                  = vaRenderBuffer::Create( GetRenderDevice(), startingRayCount, vaResourceFormat::R32_UINT, vaRenderBufferFlags::None, "PathKeys",   nullptr );
+        //m_pathSortKeysSorted            = vaRenderBuffer::Create( GetRenderDevice(), startingRayCount, vaResourceFormat::R32_UINT, vaRenderBufferFlags::None, "PathKeysSorted",     nullptr );
     }
     
 
@@ -253,6 +290,10 @@ vaDrawResultFlags vaPathTracer::Draw( vaRenderDeviceContext & renderContext, vaD
         m_accumLastCamera       = drawAttributes.Camera;
         m_accumLastShadersID    = shaderContentsID;
     }
+
+#ifndef VA_USE_RAY_SORTING
+#error VA_USE_RAY_SORTING must be defined to 0 or 1
+#endif
 
     // constants buffer
     ShaderPathTracerConstants constants;
@@ -271,9 +312,13 @@ vaDrawResultFlags vaPathTracer::Draw( vaRenderDeviceContext & renderContext, vaD
         constants.AccumFrameTargetCount     = m_accumFrameTargetCount;
         constants.EnableAA                  = m_enableAA?1:0;
 
-        constants.DispatchRaysWidth         = m_radianceAccumulation->GetWidth( );
-        constants.DispatchRaysHeight        = m_radianceAccumulation->GetHeight( );
-        constants.DispatchRaysDepth         = 1;
+        constants.ViewportX                 = m_radianceAccumulation->GetWidth( );
+        constants.ViewportY                 = m_radianceAccumulation->GetHeight( );
+        constants.StartPathCount            = m_radianceAccumulation->GetWidth( ) * m_radianceAccumulation->GetHeight( );
+        constants.Padding0                  = 0;
+        //constants.DispatchRaysWidth         = m_radianceAccumulation->GetWidth( );
+        //constants.DispatchRaysHeight        = m_radianceAccumulation->GetHeight( );
+        //constants.DispatchRaysDepth         = 1;
 
         constants.DebugViewType             = m_debugViz;
         constants.Flags                     = 0;
@@ -285,38 +330,97 @@ vaDrawResultFlags vaPathTracer::Draw( vaRenderDeviceContext & renderContext, vaD
 
         constants.DebugPathVizDim           = m_debugPathVizDim;
         
-        m_constantBuffer.Upload( renderContext, constants );
+        m_constantBuffer->Upload( renderContext, constants );
     }
 
     vaRenderOutputs uavInputsOutputs;
-    uavInputsOutputs.UnorderedAccessViews[0] = outputColor;
-    uavInputsOutputs.UnorderedAccessViews[1] = m_radianceAccumulation;
-    uavInputsOutputs.UnorderedAccessViews[2] = m_viewspaceDepth;
+    uavInputsOutputs.UnorderedAccessViews[0] = m_radianceAccumulation;
+    uavInputsOutputs.UnorderedAccessViews[1] = m_viewspaceDepth;
+    uavInputsOutputs.UnorderedAccessViews[2] = m_pathGeometryHitInfoPayloads;
+    uavInputsOutputs.UnorderedAccessViews[3] = m_pathPayloads;
+    uavInputsOutputs.UnorderedAccessViews[4] = m_pathTracerControl;
+    //uavInputsOutputs.UnorderedAccessViews[5] = m_pathListUnsorted;                
+    uavInputsOutputs.UnorderedAccessViews[6] = m_pathListSorted;                // this could/should be a SRV
+    uavInputsOutputs.UnorderedAccessViews[7] = m_pathSortKeys;
     
-    // this sets global noise seed used by shaders that use noise
+    // used in shaders for Noise3D - gets added to object space noise and is not related to path tracing sampling noise
     vaRandom accumulateNoise( m_accumFrameCount );
     drawAttributes.Settings.Noise       = vaVector2( accumulateNoise.NextFloat( ), accumulateNoise.NextFloat( ) );
 
-    // PATH TRACING HAPPENS HERE
-    {
-        VA_TRACE_CPUGPU_SCOPE( PathTracing, renderContext );
+    // globals
+    vaRaytraceItem raytraceItem;
+    raytraceItem.ConstantBuffers[VA_PATH_TRACER_CONSTANTBUFFER_SLOT] = m_constantBuffer;
+    raytraceItem.ShaderResourceViews[VA_PATH_TRACER_SKYBOX_SRV_SLOT] = (skybox==nullptr)?(nullptr):(skybox->GetCubemap());
+    raytraceItem.ShaderResourceViews[VA_PATH_TRACER_NULL_ACC_STRUCT] = drawAttributes.Raytracing->GetNullAccelerationStructure( );
+    raytraceItem.ShaderLibrary                  = m_shaderLibrary;
+    raytraceItem.RayGen              = "Raygen";
+    raytraceItem.AnyHit              = "";
+    raytraceItem.Miss                = "Miss";
+    raytraceItem.MissSecondary       = "MissVisibility";
+#if VA_USE_RAY_SORTING
+    raytraceItem.ClosestHit          = "ClosestHit";
+    raytraceItem.MaterialClosestHit  = "";
+    raytraceItem.MaterialMissCallable= "PathTraceSurfaceResponse";
+#else
+    raytraceItem.ClosestHit          = "";
+    raytraceItem.MaterialClosestHit  = "PathTraceClosestHit";
+#endif
+    raytraceItem.MaxRecursionDepth              = VA_PATH_TRACER_MAX_RECURSION;
+    raytraceItem.MaxPayloadSize                 = sizeof(ShaderMultiPassRayPayload);
+    vaComputeItem computeItem;
+    computeItem.ConstantBuffers[VA_PATH_TRACER_CONSTANTBUFFER_SLOT] = m_constantBuffer;
+    //computeItem.ShaderResourceViews[VA_PATH_TRACER_SKYBOX_SRV_SLOT] = (skybox==nullptr)?(nullptr):(skybox->GetCubemap());
 
-        vaRaytraceItem raytraceItem;
-        raytraceItem.ConstantBuffers[VA_PATH_TRACER_CONSTANTBUFFER_SLOT] = m_constantBuffer;
-        raytraceItem.ShaderResourceViews[VA_PATH_TRACER_SKYBOX_SRV_SLOT] = (skybox==nullptr)?(nullptr):(skybox->GetCubemap());
-        raytraceItem.ShaderLibrary                  = m_shaderLibrary;
-        raytraceItem.ShaderEntryRayGen              = "Raygen";
-        raytraceItem.ShaderEntryAnyHit              = "";
-        raytraceItem.ShaderEntryMiss                = "Miss";
-        raytraceItem.ShaderEntryMissSecondary       = "MissVisibility";
-        raytraceItem.ShaderEntryMaterialClosestHit  = "ClosestHitPathTrace";
-        raytraceItem.MaxRecursionDepth              = VA_PATH_TRACER_MAX_RECURSION;
-        raytraceItem.SetDispatch( constants.DispatchRaysWidth, constants.DispatchRaysHeight, constants.DispatchRaysDepth );
-        drawResults |= renderContext.ExecuteSingleItem( raytraceItem, uavInputsOutputs, &drawAttributes );
+    // initialize control buffer!
+    {
+        ShaderPathTracerControl control;
+        control.CurrentRayCount     = constants.StartPathCount; // <- not dynamically updating
+        control.NextRayCount        = constants.StartPathCount; // <- not dynamically updating
+        m_pathTracerControl->UploadSingle( renderContext, control, 0 );
+    }
+
+    {   // initialize ("kickoff")
+#if VA_USE_RAY_SORTING
+        VA_TRACE_CPUGPU_SCOPE( RaygenKickoff, renderContext );
+        vaRaytraceItem raytraceItemKickoff = raytraceItem;
+        raytraceItemKickoff.RayGen = "RaygenKickoff";
+        raytraceItemKickoff.SetDispatch( startingRayCount );
+        drawResults |= renderContext.ExecuteSingleItem( raytraceItemKickoff, uavInputsOutputs, &drawAttributes );
+#else
+        VA_TRACE_CPUGPU_SCOPE( Kickoff, renderContext );
+        computeItem.ComputeShader = m_CSKickoff;
+        computeItem.SetDispatch( (constants.StartPathCount + 31)/32 );
+        drawResults |= renderContext.ExecuteSingleItem( computeItem, uavInputsOutputs, &drawAttributes );
+#endif
+    }
+
+    for( int bounce = 0; bounce <= m_maxBounces; bounce++ ) // <= because first ray is primary ray - if we start from a raster pass then it will be different
+    {
+        VA_TRACE_CPUGPU_SCOPE_CUSTOMNAME( pass, vaStringTools::Format( "pass_%d", bounce ).c_str(), renderContext );
+        // {   // manage counters
+        //     VA_TRACE_CPUGPU_SCOPE( TickCounters, renderContext );
+        //     computeItem.ComputeShader = m_CSTickCounters;
+        //     computeItem.SetDispatch( 1 );
+        //     drawResults |= renderContext.ExecuteSingleItem( computeItem, uavInputsOutputs, nullptr );
+        // }
+
+#if VA_USE_RAY_SORTING
+        const uint32 maxSortKey = std::as_const(GetRenderDevice().GetMaterialManager()).Materials().Count()+1;
+        m_GPUSort->Sort( renderContext, m_pathSortKeys, m_pathListSorted, startingRayCount, maxSortKey );
+#endif
+
+        {   // raygen pass
+            VA_TRACE_CPUGPU_SCOPE( PathTracing, renderContext );
+
+            raytraceItem.SetDispatch( startingRayCount );
+
+            drawResults |= renderContext.ExecuteSingleItem( raytraceItem, uavInputsOutputs, &drawAttributes );
+        }
     }
 
     // raytracing no longer needed
-    drawAttributes.Raytracing = nullptr;
+    vaDrawAttributes nonRTAttrs = drawAttributes;
+    nonRTAttrs.Raytracing = nullptr;
 
     // apply to render target
     // (used to be a compute shader - this makes more sense when outputting depth)
@@ -326,14 +430,14 @@ vaDrawResultFlags vaPathTracer::Draw( vaRenderDeviceContext & renderContext, vaD
         graphicsItem.ConstantBuffers[VA_PATH_TRACER_CONSTANTBUFFER_SLOT] = m_constantBuffer;
         graphicsItem.ShaderResourceViews[VA_PATH_TRACER_RADIANCE_SRV_SLOT] = m_radianceAccumulation;
         graphicsItem.ShaderResourceViews[VA_PATH_TRACER_VIEWSPACE_DEPTH_SRV_SLOT] = m_viewspaceDepth;
-        graphicsItem.PixelShader = m_writeToOutputPS;
+        graphicsItem.PixelShader        = m_PSWriteToOutput;
         //graphicsItem.SetDispatch( (outputColor->GetWidth( ) + 7) / 8, (outputColor->GetHeight( ) + 7) / 8, 1 );
         graphicsItem.BlendMode          = vaBlendMode::Opaque;
         graphicsItem.DepthEnable        = true;
         graphicsItem.DepthWriteEnable   = true;
         graphicsItem.DepthFunc          = vaComparisonFunc::Always;
 
-        drawResults |= renderContext.ExecuteSingleItem( graphicsItem, vaRenderOutputs::FromRTDepth( outputColor, outputDepth ), &drawAttributes );
+        drawResults |= renderContext.ExecuteSingleItem( graphicsItem, vaRenderOutputs::FromRTDepth( outputColor, outputDepth ), &nonRTAttrs );
     }
 
     m_accumFrameCount = std::min( m_accumFrameCount+1, m_accumFrameTargetCount );

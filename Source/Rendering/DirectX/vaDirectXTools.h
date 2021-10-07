@@ -645,11 +645,13 @@ namespace Vanilla
         wstring                             ItemMaterialAnyHit          = L"";
         wstring                             ItemMaterialClosestHit      = L"";
         wstring                             ItemMaterialCallable        = L"";
+        wstring                             ItemMaterialMissCallable    = L"";
         //
         // per-vaSceneRaytracing, per-material shader library (libraries) identifier - they contain all material-related raytracing stuff
         int64                               MaterialsSLUniqueContentsID = -1;
         //
-        int                                 MaxRecursionDepth           = 0;
+        uint32                              MaxRecursionDepth           = 0;
+        uint32                              MaxPayloadSize              = 0;
         //
 
         vaRaytracePSODescDX12( )            { }

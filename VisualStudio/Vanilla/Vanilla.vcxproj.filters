@@ -20,7 +20,6 @@
   <ItemGroup>
     <None Include="..\..\README.md" />
     <None Include="..\..\CONTRIBUTING.md" />
-    <None Include="..\..\INTEGRATION.md" />
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="..\..\Source\Project\default.camerastate" />

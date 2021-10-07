@@ -265,11 +265,9 @@ namespace Vanilla
             vaLayerMode                 LayerMode               = vaLayerMode::Opaque;
             int32                       DecalSortOrder          = 0;
             float                       AlphaTestThreshold      = 0.5f;             // to be moved to Inputs if needed
-            bool                        ReceiveShadows          = true;
             bool                        CastShadows             = true;
             bool                        Wireframe               = false;
             bool                        AdvancedSpecularShader  = true;
-            bool                        SpecialEmissiveLight    = false;            // only add emissive within light sphere, and then scale with light itself; this is to allow emissive materials to be 'controlled' by the light - useful for models that represent light emitters (lamps, etc.)
             float                       LocalIBLNormalBasedBias = 0;                // see vaSceneLighting.hlsl transitionNormalBias - it's super-hacky and temporary
             float                       LocalIBLBasedBias       = 0;
             bool                        VRSPreferHorizontal     = true;             // whether to prefer 2x1/4x2 over 1x2/2x4 rates

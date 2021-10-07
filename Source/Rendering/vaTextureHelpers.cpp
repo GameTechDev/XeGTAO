@@ -19,6 +19,11 @@
 #include "IntegratedExternals/vaImguiIntegration.h"
 #include "IntegratedExternals/imgui/imgui_internal.h"
 
+#include "Rendering/vaRenderBuffers.h"
+#include "Rendering/vaShader.h"
+
+#include "Rendering/Shaders/vaHelperToolsShared.h"
+
 using namespace Vanilla;
 
 void vaTexturePool::FillDesc( ItemDesc & desc, const shared_ptr< vaTexture > texture )
@@ -130,7 +135,7 @@ void vaTexturePool::ClearAll( )
 
 vaTextureTools::vaTextureTools( vaRenderDevice & device ) //: vaRenderingModule( vaRenderingModuleParams(device) )
     :
-    m_UIDrawShaderConstants( device ),
+    m_UIDrawShaderConstants( vaConstantBuffer::Create<UITextureDrawShaderConstants>( device, "UITextureDrawShaderConstants" ) ),
     m_UIDrawTexture2DPS( device ),
     m_UIDrawTexture2DArrayPS( device ),
     m_UIDrawTextureCubePS( device )
@@ -162,9 +167,9 @@ vaTextureTools::vaTextureTools( vaRenderDevice & device ) //: vaRenderingModule(
     }
 
 
-    m_UIDrawTexture2DPS->CreateShaderFromFile(      "vaHelperTools.hlsl", "UIDrawTexture2DPS", vaShaderMacroContaner{}, false );
-    m_UIDrawTexture2DArrayPS->CreateShaderFromFile( "vaHelperTools.hlsl", "UIDrawTexture2DArrayPS", vaShaderMacroContaner{}, false );
-    m_UIDrawTextureCubePS->CreateShaderFromFile(    "vaHelperTools.hlsl", "UIDrawTextureCubePS", vaShaderMacroContaner{}, false );
+    m_UIDrawTexture2DPS->CompileFromFile(      "vaHelperTools.hlsl", "UIDrawTexture2DPS", vaShaderMacroContaner{}, false );
+    m_UIDrawTexture2DArrayPS->CompileFromFile( "vaHelperTools.hlsl", "UIDrawTexture2DArrayPS", vaShaderMacroContaner{}, false );
+    m_UIDrawTextureCubePS->CompileFromFile(    "vaHelperTools.hlsl", "UIDrawTextureCubePS", vaShaderMacroContaner{}, false );
 
     m_textures[(int)CommonTextureName::BlueNoise64x64x1_3spp] = vaTexture::CreateFromImageFile( device, "bluenoise_8bpc_RGB1_0.dds", vaTextureLoadFlags::PresumeDataIsLinear, vaResourceBindSupportFlags::ShaderResource, vaTextureContentsType::GenericLinear );
 
@@ -241,7 +246,7 @@ void vaTextureTools::UIDrawImages( vaRenderDeviceContext & renderContext, const 
         consts.ShowAlpha            = (item.ShowAlpha)?(1):(0);
         consts.ContentsType         = (int)texture->GetContentsType();
 
-        m_UIDrawShaderConstants.Upload( renderContext, consts );
+        m_UIDrawShaderConstants->Upload( renderContext, consts );
 
         // texture->SetToAPISlotSRV( renderContext, TEXTURE_UI_DRAW_TOOL_TEXTURE_SLOT0 );
         renderItem.ShaderResourceViews[TEXTURE_UI_DRAW_TOOL_TEXTURE_SLOT0] = texture;

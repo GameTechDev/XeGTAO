@@ -192,13 +192,6 @@ void ParticleMaterialAccumulateLights( const in float3 worldspacePos, const in S
         diffTerm = lerp( max( diffTerm, 0 ), 1, material.SubsurfaceScatterHack );
 #endif
 
-#if VA_RM_SPECIAL_EMISSIVE_LIGHT
-        // only add emissive within light sphere, and then scale with light itself; this is to allow emissive materials to be 'controlled' by
-        // the light - useful for models that represent light emitters (lamps, etc.)
-        if( pixelToLightLength < light.Size )
-            diffuseAccum  += material.Emissive.rgb * (light.Intensity * light.Color);
-#endif
-
         // // debugging shadows
         // if( light.CubeShadowIndex >= 0 )
         // {
@@ -229,7 +222,7 @@ void ParticleMaterialAccumulateLights( const in float3 worldspacePos, const in S
                 attenuation *= spotAttenuation*spotAttenuation;
             //}
             
-#if VA_RM_ACCEPTSHADOWS
+#if !defined(RAYTRACED_SHADOWS)
             [branch]
             if( light.CubeShadowIndex >= 0 )
             {
@@ -312,7 +305,7 @@ float3 ParticleMaterialFinalizeLight( float3 worldspacePos, SurfaceValues materi
     // start calculating final colour
     float3 lightAccum       = 0;
 
-    lightAccum  += material.Albedo.rgb * g_lighting.AmbientLightIntensity.rgb;
+    //lightAccum  += material.Albedo.rgb * g_lighting.AmbientLightIntensity.rgb;
     lightAccum  += diffuseAccum;
 
     // these are not diminished by alpha so "un-alpha" them here (should probably use premult alpha blending mode and multiply above by alpha instead)
@@ -335,10 +328,6 @@ float4 ParticleColor( const ShadedVertex interpolants, SurfaceValues material, c
 
     // not needed for particles
     // BasicMaterialAccumulateReflections( interpolants.worldspacePos.xyz, material, reflectedAccum );
-
-#if VA_RM_SPECIAL_EMISSIVE_LIGHT
-    material.Emissive.rgb = 0;
-#endif
 
     float3 lightAccum = ParticleMaterialFinalizeLight( interpolants.WorldspacePos.xyz, material, diffuseAccum );
 

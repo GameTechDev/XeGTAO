@@ -14,21 +14,11 @@
 
 #pragma once
 
-#include "Core/vaCoreIncludes.h"
-
-#include "vaRendering.h"
-
-#include "Rendering/vaTexture.h"
-
-#include "Rendering/Shaders/vaLightingShared.h"
-
 #include "Core/vaUI.h"
 
-#include "Rendering/vaRenderBuffers.h"
+#include "Core/Misc/vaResourceFormats.h"
 
-#include "Core/vaXMLSerialization.h"
-
-#include "Rendering/Shaders/vaIBLShared.h"
+#include "vaRendering.h"
 
 #include "Scene/vaSceneComponents.h"
 
@@ -178,7 +168,7 @@ namespace Vanilla
         float                                           m_intensity;
 
         // vaTypedConstantBufferWrapper< IBLProbeConstants, true >
-        //                                                 m_constantsBuffer;
+        //                                                 m_constantBuffer;
 
         // for importing!
         shared_ptr<vaComputeShader>                     m_CSEquirectangularToCubemap;
@@ -199,7 +189,7 @@ namespace Vanilla
 
     protected:
         friend class vaSceneLighting;
-        void                                            UpdateShaderConstants( /*vaRenderDeviceContext & renderContext, */const vaDrawAttributes & drawAttributes, IBLProbeConstants & outShaderConstants );
+        void                                            UpdateShaderConstants( /*vaRenderDeviceContext & renderContext, */const vaDrawAttributes & drawAttributes, struct IBLProbeConstants & outShaderConstants );
         void                                            SetToGlobals( vaShaderItemGlobals & shaderItemGlobals, bool distantIBLSlots );
 
     public:

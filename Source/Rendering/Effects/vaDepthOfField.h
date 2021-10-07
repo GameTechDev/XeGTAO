@@ -59,11 +59,12 @@ namespace Vanilla
     protected:
         DoFSettings                 m_settings;
 
-        vaTypedConstantBufferWrapper<DepthOfFieldShaderConstants> m_constantsBuffer;
         vaAutoRMI<vaComputeShader>  m_CSResolve;
         vaAutoRMI<vaComputeShader>  m_CSSplitPlanes;
         vaAutoRMI<vaComputeShader>  m_CSFarBlur[3];   // bokeh, gauss horiz, gauss vert
         vaAutoRMI<vaComputeShader>  m_CSNearBlur[3];  // bokeh, gauss horiz, gauss vert
+
+        shared_ptr<vaConstantBuffer> m_constantBuffer;
 
         //shared_ptr<vaTexture>       m_offscreenColorBlurA;
         //shared_ptr<vaTexture>       m_offscreenColorBlurB;

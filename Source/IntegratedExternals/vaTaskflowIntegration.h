@@ -30,9 +30,6 @@ namespace Vanilla
         friend tf::ObjectPool<tf::Node>& tf::get_node_pool( );
         tf::ObjectPool<tf::Node>        m_pool;
 
-    public:
-        static const uint32             c_chunkBaseSize     = 128;
-
     protected:
         friend class vaCore;
         explicit vaTF( int threadsToUse = 0 );

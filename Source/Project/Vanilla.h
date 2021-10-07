@@ -172,6 +172,7 @@ namespace Vanilla
         void                                    ScriptedGTAOAutoTune( vaApplicationBase & application ) ;
         void                                    ScriptedCameras( vaApplicationBase & application ) ;
         void                                    ScriptedAutoBench( vaApplicationBase & application ) ;
+        void                                    ScriptedDemo( vaApplicationBase & application ) ;
 
     private:
         //void                                    RandomizeCurrentPoissonDisk( int count = SSAO_MAX_SAMPLES );

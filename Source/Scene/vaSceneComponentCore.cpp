@@ -18,6 +18,8 @@
 
 #include "Core/System/vaFileTools.h"
 
+#include "Core/vaSerializer.h"
+
 
 using namespace Vanilla;
 
@@ -113,10 +115,10 @@ bool Components::UIAddRemoveResetDisabled( int typeIndex )
     return vaSceneComponentRegistry::GetInstance( ).m_components[typeIndex].UIAddRemoveResetDisabled;
 }
 
-bool Components::Serialize( int typeIndex, entt::registry & registry, entt::entity entity, class vaSerializer & serializer )
+bool Components::Serialize( int typeIndex, entt::registry & registry, entt::entity entity, SerializeArgs & args, class vaSerializer & serializer )
 {
     assert( HasSerialize( typeIndex ) );
-    return vaSceneComponentRegistry::GetInstance( ).m_components[typeIndex].SerializerCallback( registry, entity, serializer );
+    return vaSceneComponentRegistry::GetInstance( ).m_components[typeIndex].SerializerCallback( registry, entity, args, serializer );
 }
 
 void Components::UITick( int typeIndex, entt::registry & registry, entt::entity entity, Scene::UIArgs & uiArgs )
@@ -259,6 +261,124 @@ void AccessPermissions::Release( const std::vector<int> & readWriteComponents, c
     }
 }
 
+UIDRegistry::UIDRegistry( entt::registry & registry ) : m_registry( registry )
+{
+    m_registry.on_destroy<Scene::UID>( ).connect<&UIDRegistry::OnDestroy>( this );
+    m_registry.on_update<Scene::UID>( ).connect<&UIDRegistry::OnDisallowedOperation>( this );
+    m_registry.on_construct<Scene::UID>( ).connect<&UIDRegistry::OnEmplace>( this );
+}
+UIDRegistry::~UIDRegistry( )
+{
+    m_registry.on_destroy<Scene::UID>( ).disconnect<&UIDRegistry::OnDestroy>( this );
+    m_registry.on_update<Scene::UID>( ).disconnect<&UIDRegistry::OnDisallowedOperation>( this );
+    m_registry.on_construct<Scene::UID>( ).disconnect<&UIDRegistry::OnEmplace>( this );
+    assert( m_UIDMap.empty() );
+}
+
+bool EntityReference::Serialize( SerializeArgs & args, vaSerializer & serializer, const string & key )
+{
+    UID serializationUID = vaGUID::Null;
+    if( serializer.IsReading() )
+    {
+        m_entity = entt::null;
+        if( serializer.Serialize<vaGUID>( key, serializationUID ) && (serializationUID != vaGUID::Null) )
+        {
+            args.LoadedReferences.push_back( {this, serializationUID} );
+            return true;
+        }
+        return true;
+    } else if( serializer.IsWriting() )
+    {
+        if( m_entity != entt::null && !args.UIDRegistry.Registry().valid(m_entity) )
+        {
+            m_entity = entt::null;
+            VA_LOG( "EntityReference::Serialize - found a non-valid reference, resetting to entt::null" );
+        }
+
+        // we could avoid writing anything if the entity is not null, but let's write NULL GUID instead so it's more human-readable (TODO: revise later)
+        if( m_entity != entt::null )
+        {
+            const Scene::UID * uid = args.UIDRegistry.Registry().try_get<Scene::UID>( m_entity );
+            if( uid == nullptr )
+            {
+                assert( false ); // all referenced entities must have Scene::UID component; this can be created with UIDRegistry::GetOrCreate( entity )
+                return false;
+            }
+            serializationUID = *uid;
+        }
+        return serializer.Serialize<vaGUID>( key, (vaGUID&)serializationUID );
+    }
+    assert( false ); return false;
+}
+
+void UIDRegistry::OnDisallowedOperation( entt::registry & registry, entt::entity )
+{
+    assert( &registry == &m_registry ); registry;
+    assert( false );    // you're doing something that's not allowed
+}
+
+void UIDRegistry::OnDestroy( entt::registry & registry, entt::entity entity )
+{
+    assert( vaThreading::IsMainThread( ) && m_registry.ctx<Scene::AccessPermissions>().GetState( ) != Scene::AccessPermissions::State::Concurrent );
+    assert( &registry == &m_registry );
+    // remove from the map
+    const Scene::UID & uid = registry.get<Scene::UID>( entity );
+    size_t erasedCount = m_UIDMap.erase( uid );
+    assert( erasedCount == 1 ); erasedCount;
+}
+
+void UIDRegistry::OnEmplace( entt::registry & registry, entt::entity entity )
+{
+    assert( vaThreading::IsMainThread( ) && m_registry.ctx<Scene::AccessPermissions>().GetState( ) != Scene::AccessPermissions::State::Concurrent );
+    assert( &registry == &m_registry );
+    // add to the map
+    const Scene::UID & uid = registry.get<Scene::UID>( entity );
+    auto ret = m_UIDMap.insert( {uid, entity} );
+    assert( ret.second ); // messing with Scene::UID manually is disallowed and will cause these
+}
+
+Scene::UID UIDRegistry::GetOrCreate( entt::entity entity )
+{
+    assert( vaThreading::IsMainThread( ) && m_registry.ctx<Scene::AccessPermissions>().GetState( ) != Scene::AccessPermissions::State::Concurrent );
+    assert( m_registry.valid( entity ) );
+    const Scene::UID * uid = m_registry.try_get<Scene::UID>( entity );
+    if( uid == nullptr )
+    {
+        Scene::UID newUID = vaGUID::Create( );
+        m_registry.emplace<Scene::UID>( entity, newUID );
+        return newUID;
+    }
+    return *uid;
+}
+
+entt::entity UIDRegistry::Find( const Scene::UID & uid ) const
+{
+    auto it = m_UIDMap.find( uid );
+    if( it == m_UIDMap.end() )
+        return entt::null;
+    else
+        return it->second;
+}
+//
+//entt::entity vaScene::UIDToEntity( const Scene::UID & serializationID )
+//{
+//    assert( vaThreading::IsMainThread( ) && m_registry.ctx<Scene::AccessPermissions>().GetState( ) != Scene::AccessPermissions::State::Concurrent );
+//    return Find( serializationID );
+//}
+//
+//Scene::UID vaScene::EntityToUID( entt::entity entity )
+//{
+//    assert( vaThreading::IsMainThread( ) && m_registry.ctx<Scene::AccessPermissions>().GetState( ) != Scene::AccessPermissions::State::Concurrent );
+//    const Scene::UID * uid = m_registry.try_get<Scene::UID>( entity );
+//    if( uid == nullptr )
+//    {
+//        Scene::UID newUID = vaGUID::Create( );
+//        m_registry.emplace<Scene::UID>( entity, newUID );
+//        return newUID;
+//    }
+//    else
+//        return *uid;
+//}
 
 vaSceneComponentRegistry::vaSceneComponentRegistry( )
 {
@@ -266,6 +386,7 @@ vaSceneComponentRegistry::vaSceneComponentRegistry( )
 
     //int a = Components::RuntimeID<Relationship>( );
     RegisterComponent< DestroyTag > ( );
+    RegisterComponent< UID >( "UID" );
     RegisterComponent< Name >( "Name" );            // <- just an example on how you can use a custom name - perhaps you want to shorten the name to something more readable or even substitute a component for another
     RegisterComponent< Relationship >( );
     RegisterComponent< TransformLocalIsWorldTag >( );
@@ -282,7 +403,7 @@ vaSceneComponentRegistry::vaSceneComponentRegistry( )
     RegisterComponent< LightAmbient >( );
     //RegisterComponent< LightDirectional >( );
     RegisterComponent< LightPoint >( );
-    RegisterComponent< MaterialPicksLightEmissive >( );
+    RegisterComponent< EmissiveMaterialDriver >( );
     RegisterComponent< SkyboxTexture >( );
     RegisterComponent< IgnoreByIBLTag >( );
     RegisterComponent< RenderCamera >( );

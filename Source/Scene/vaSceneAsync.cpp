@@ -535,8 +535,8 @@ int vaSceneAsync::FindActiveNodeIndex( const string & name )
 bool vaSceneAsync::WaitAsyncComplete( const string & nodeName )
 {
     assert( vaThreading::IsMainThread( ) );
-    if( !m_isAsync )
-        { assert( false ); return false; } // can only be used between begin and end
+    if( !m_isAsync )    // I guess this is fine? 
+        return true;
     int nodeIndex = FindActiveNodeIndex( nodeName );
     if( nodeIndex == -1 )
         { assert( false ); return false; } // node not found?

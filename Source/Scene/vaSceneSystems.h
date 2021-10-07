@@ -66,6 +66,8 @@ namespace Vanilla
         // used for concurrent processing of entities
         void                        UpdateTransforms( entt::registry & registry, entt::entity entity, class UniqueStaticAppendConsumeList & outBoundsDirtyList ) noexcept;
 
+        void                        UIHighlight( entt::registry & registry, entt::entity entity );
+
         // Allows adding entities to this list in a multithreaded way; have to reset it before use to pre-allocate storage
         // and reset values to 0.
         // Main feature (compared to just StaticAppendList) is that it will stop you from adding an item twice!

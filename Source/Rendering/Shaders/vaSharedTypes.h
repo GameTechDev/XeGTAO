@@ -21,6 +21,7 @@ namespace Vanilla
 #endif
 
 #define SHADER_INSTANCE_INDEX_ROOT_CONSTANT_SLOT            16
+#define SHADER_GENERIC_ROOT_CONSTANT_SLOT                   17
 
 // for vaShaderItemGlobals (for stuff that is set less frequently than vaGraphicsItem/vaComputeItem - mostly used for vaDrawAttributes-based subsystems)
 #define SHADERGLOBAL_SRV_SLOT_BASE                          32
@@ -118,8 +119,8 @@ namespace Vanilla
 #define SHADERGLOBAL_MATERIAL_DFG_LOOKUPTABLE_TEXTURESLOT   (9)
 
 #define LIGHTINGGLOBAL_SIMPLELIGHTS_SLOT                    (10)
-#define LIGHTINGGLOBAL_SLC_NODES_SLOT                       (11)
-#define LIGHTINGGLOBAL_SLC_BLAS_SLOT                        (12)
+#define LIGHTINGGLOBAL_LIGHT_TREE_SLOT                      (11)
+#define LIGHTINGGLOBAL_UNUSED_SLOT                          (12)
 
 #define SHADERGLOBAL_DEPTH_TEXTURESLOT                      (13)
 
@@ -137,8 +138,8 @@ namespace Vanilla
 #define SHADERGLOBAL_AOMAP_TEXTURESLOT_V                        40
 #define SHADERGLOBAL_MATERIAL_DFG_LOOKUPTABLE_TEXTURESLOT_V     41
 #define LIGHTINGGLOBAL_SIMPLELIGHTS_SLOT_V                      42
-#define LIGHTINGGLOBAL_SLC_NODES_SLOT_V                         43
-#define LIGHTINGGLOBAL_SLC_BLAS_SLOT_V                          44
+#define LIGHTINGGLOBAL_LIGHT_TREE_SLOT_V                         43
+#define LIGHTINGGLOBAL_UNUSED_SLOT_V                          44
 #define SHADERGLOBAL_DEPTH_TEXTURESLOT_V                        45
 //#define SHADERGLOBAL_RAYTRACING_ACCELERATION_STRUCT_V           47
 #if (   (SHADERGLOBAL_SRV_SLOT_BASE+SHADERGLOBAL_MATERIAL_DFG_LOOKUPTABLE_TEXTURESLOT   ) != SHADERGLOBAL_MATERIAL_DFG_LOOKUPTABLE_TEXTURESLOT_V    \
@@ -152,8 +153,8 @@ namespace Vanilla
     ||  (SHADERGLOBAL_SRV_SLOT_BASE+LIGHTINGGLOBAL_DISTANTIBL_IRRADIANCEMAP_TEXTURESLOT ) != LIGHTINGGLOBAL_DISTANTIBL_IRRADIANCEMAP_TEXTURESLOT_V  \
     ||  (SHADERGLOBAL_SRV_SLOT_BASE+SHADERGLOBAL_AOMAP_TEXTURESLOT                      ) != SHADERGLOBAL_AOMAP_TEXTURESLOT_V                       \
     ||  (SHADERGLOBAL_SRV_SLOT_BASE+LIGHTINGGLOBAL_SIMPLELIGHTS_SLOT                    ) != LIGHTINGGLOBAL_SIMPLELIGHTS_SLOT_V                     \
-    ||  (SHADERGLOBAL_SRV_SLOT_BASE+LIGHTINGGLOBAL_SLC_NODES_SLOT                       ) != LIGHTINGGLOBAL_SLC_NODES_SLOT_V                        \
-    ||  (SHADERGLOBAL_SRV_SLOT_BASE+LIGHTINGGLOBAL_SLC_BLAS_SLOT                        ) != LIGHTINGGLOBAL_SLC_BLAS_SLOT_V                         \
+    ||  (SHADERGLOBAL_SRV_SLOT_BASE+LIGHTINGGLOBAL_LIGHT_TREE_SLOT                      ) != LIGHTINGGLOBAL_LIGHT_TREE_SLOT_V                        \
+    ||  (SHADERGLOBAL_SRV_SLOT_BASE+LIGHTINGGLOBAL_UNUSED_SLOT                        ) != LIGHTINGGLOBAL_UNUSED_SLOT_V                         \
     ||  (SHADERGLOBAL_SRV_SLOT_BASE+SHADERGLOBAL_DEPTH_TEXTURESLOT                      ) != SHADERGLOBAL_DEPTH_TEXTURESLOT_V                       \
         )
 //|| ( SHADERGLOBAL_SRV_SLOT_BASE + SHADERGLOBAL_RAYTRACING_ACCELERATION_STRUCT ) != SHADERGLOBAL_RAYTRACING_ACCELERATION_STRUCT_V          
@@ -271,6 +272,7 @@ struct DrawOriginInfo
 #endif
 };
 
+// Making this any bigger is very costly so consider creating a separate table for something like CustomMaterialParams
 struct ShaderInstanceConstants
 {
     // world transform
@@ -280,20 +282,22 @@ struct ShaderInstanceConstants
     // (for more info see : https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/geometry/transforming-normals or http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/ )
     vaMatrix4x3             NormalWorld;    // 3 floats are unused here - consider reusing for something
 
-    // // used for highlights, wireframe, lights, etc; rgb is added, alpha multiplies the original; for ex: " finalColor.rgb = finalColor.rgb * instance.EmissiveAdd.a + instance.EmissiveAdd.rgb; "
-    // vaVector4               EmissiveAdd;
-
     DrawOriginInfo          OriginInfo;
 
     // Easy way to transmit some per-object (per selection item) value that can have a different meaning based on materials/etc. 
     // Can also be used as an index into a separate table ('asuint') or whatever.
-    // vaVector4        CustomParam;        
+    // vaVector4        CustomParam; 
 
     uint                    MaterialGlobalIndex;        // <- these two can be packed to uint16
     uint                    MeshGlobalIndex;            // <- these two can be packed to uint16
-    uint                    Dummy0;
     // used for highlights, wireframe, lights, etc; rgb is added, alpha multiplies the original; for ex: " finalColor.rgb = finalColor.rgb * instance.EmissiveAdd.a + instance.EmissiveAdd.rgb; "
     uint                    EmissiveAddPacked;          // packed into R10G10B10FLOAT_A2_UNORM
+
+#define VA_INSTANCE_FLAG_TRANSPARENT            ( 1 << 0 )
+    uint                    Flags;
+
+    vaVector3               EmissiveMultiplier;         // if using light to drive emissive
+    float                   Dummy;                      
 };
 
 // Per-mesh constants
@@ -398,8 +402,8 @@ struct ShaderFeedbackStatic
 // Dynamic part for shader feedback - this ALWAYS gets copied to readback buffer but only ShaderFeedbackStatic::DynamicItemCounter number get read/processed
 struct ShaderFeedbackDynamic
 {
-    //there's a constant per-frame size cost to copying these back to the CPU memory; 32 * 1024 is already pushing it a bit - some compression needed for more!
-    const static int        MaxItems                    = 32 * 1024;
+    //there's a constant per-frame size cost to copying these back to the CPU memory; 16 * 1024 is already pushing it a bit - some compression needed for more!
+    const static int        MaxItems                    = 16 * 1024;
 
     enum Types
     {
@@ -444,7 +448,7 @@ struct ShaderFeedbackDynamic
 enum class ShaderDebugViewType : uint
 {
     None                            ,
-    BounceCount                     ,            // Could be used as OverdrawCount for rasterization
+    BounceIndex                     ,            // Could be used as OverdrawCount for rasterization
     ViewspaceDepth                  ,            // viewspace depth (in path tracing, only primary ray a.k.a. bounce 0)
     SurfacePropsBegin               ,            // everything between SurfacePropsBegin and SurfacePropsEnd reduces the bounce count to 0
     GeometryTexcoord0               = SurfacePropsBegin,
@@ -511,11 +515,15 @@ StructuredBuffer<ShaderMaterialConstants>   g_materialConstants     : register( 
 StructuredBuffer<ShaderInstanceConstants>   g_instanceConstants     : register( T_CONCATENATER( SHADERGLOBAL_INSTANCE_CONSTANTBUFFERS_TEXTURESLOT_V ) );
 
 #ifndef VA_RAYTRACING
-struct ShaderInstanceIndexConstant { uint        InstanceIndex; };
+struct ShaderInstanceIndexConstant  { uint InstanceIndex; };
 ConstantBuffer<ShaderInstanceIndexConstant> g_instanceIndex         : register( B_CONCATENATER( SHADER_INSTANCE_INDEX_ROOT_CONSTANT_SLOT ) );
 #endif
 
 Texture2D<float>                            g_globalDepthTexture    : register( T_CONCATENATER( SHADERGLOBAL_DEPTH_TEXTURESLOT_V ) );
+
+struct ShaderGenericRootConstant    { uint Value; };
+ConstantBuffer<ShaderGenericRootConstant>   g_genericRootConstBuff  : register( B_CONCATENATER( SHADER_GENERIC_ROOT_CONSTANT_SLOT ) );
+static const uint                           g_genericRootConst = g_genericRootConstBuff.Value;
 
 
 // removing this because it doesn't work from callable shaders and etc. and can cause more confusion than help

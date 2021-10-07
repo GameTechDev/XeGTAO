@@ -19,29 +19,29 @@ vaConstantBuffer::vaConstantBuffer( vaRenderDevice & device ) : vaRenderingModul
 
 // static helpers
 
-shared_ptr<vaConstantBuffer> vaConstantBuffer::Create( vaRenderDevice & device, int bufferSize, const void * initialData, bool dynamicUpload, int deviceContextIndex )
+shared_ptr<vaConstantBuffer> vaConstantBuffer::Create( vaRenderDevice & device, int bufferSize, const string & name, const void * initialData, bool dynamicUpload, int deviceContextIndex )
 {
     if( deviceContextIndex == -1 )
         deviceContextIndex = device.GetMainContext()->GetInstanceIndex();
     shared_ptr<vaConstantBuffer> ret = device.CreateModule<vaConstantBuffer>( );
-    bool ok = ret->Create( bufferSize, initialData, dynamicUpload, deviceContextIndex );
+    bool ok = ret->Create( bufferSize, name, initialData, dynamicUpload, deviceContextIndex );
     assert( ok );
     if( !ok )
         ret = nullptr;
     return ret;
 }
 
-shared_ptr<vaDynamicVertexBuffer> vaDynamicVertexBuffer::Create( vaRenderDevice & device, int vertexCount, int vertexSize, const void * initialData, const string & name )
+shared_ptr<vaDynamicVertexBuffer> vaDynamicVertexBuffer::Create( vaRenderDevice & device, int vertexCount, int vertexSize, const string & name, const void * initialData )
 {
     shared_ptr<vaDynamicVertexBuffer>  ret = device.CreateModule<vaDynamicVertexBuffer>( );
-    bool ok = ret->Create( vertexCount, vertexSize, initialData, name );
+    bool ok = ret->Create( vertexCount, vertexSize, name, initialData );
     assert( ok );
     if( !ok )
         ret = nullptr;
     return ret;
 }
 
-shared_ptr<vaRenderBuffer> vaRenderBuffer::Create( vaRenderDevice & device, uint64 elementCount, uint32 structByteSize, vaRenderBufferFlags flags, void * initialData, const string & name )
+shared_ptr<vaRenderBuffer> vaRenderBuffer::Create( vaRenderDevice & device, uint64 elementCount, uint32 structByteSize, vaRenderBufferFlags flags, const string & name, void * initialData )
 {
     shared_ptr<vaRenderBuffer>  ret = device.CreateModule<vaRenderBuffer>( );
     bool ok = ret->Create( elementCount, structByteSize, flags, name );
@@ -52,7 +52,7 @@ shared_ptr<vaRenderBuffer> vaRenderBuffer::Create( vaRenderDevice & device, uint
         ret->DeferredUpload( initialData, 0, ret->GetDataSize( ) );
     return ret;
 }
-shared_ptr<vaRenderBuffer> vaRenderBuffer::Create( vaRenderDevice & device, uint64 elementCount, vaResourceFormat format, vaRenderBufferFlags flags, void * initialData, const string & name )
+shared_ptr<vaRenderBuffer> vaRenderBuffer::Create( vaRenderDevice & device, uint64 elementCount, vaResourceFormat format, vaRenderBufferFlags flags, const string & name, void * initialData )
 {
     shared_ptr<vaRenderBuffer>  ret = device.CreateModule<vaRenderBuffer>( );
     bool ok = ret->Create( elementCount, format, flags, name );

@@ -10,14 +10,7 @@
 
 #pragma once
 
-#include "Core/vaCoreIncludes.h"
-
 #include "Rendering/vaRendering.h"
-
-#include "Rendering/vaTriangleMesh.h"
-#include "Rendering/vaTexture.h"
-
-#include "Rendering/Shaders/vaSharedTypes.h"
 
 namespace Vanilla
 {
@@ -285,8 +278,7 @@ namespace Vanilla
         //vaAutoRMI<vaPixelShader>                m_pixelShaderGenerateVolumeShadow;        // for volumetric shadow - not maintained anymore
         bool                                    m_shadersDirty                      = true;
         //       
-        vaTypedConstantBufferWrapper< ShaderInstanceConstants, true >
-                                                m_shaderConstants;
+        shared_ptr<vaConstantBuffer>            m_constantBuffer;
         //
         shared_ptr<vaDynamicVertexBuffer>       m_dynamicBuffer;
         static const int                        m_dynamicBufferMaxElementCount      = 2 * 1024 * 1024;

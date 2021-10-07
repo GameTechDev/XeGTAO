@@ -58,7 +58,7 @@ void vaSceneRaytracing::UpdateAndSetToGlobals( vaRenderDeviceContext & renderCon
     // UpdateShaderConstants( renderContext, drawAttributes );
 
     // assert( shaderItemGlobals.ConstantBuffers[RAY] == nullptr );
-    // shaderItemGlobals.ConstantBuffers[LIGHTINGGLOBAL_CONSTANTSBUFFERSLOT] = m_constantsBuffer.GetBuffer( );
+    // shaderItemGlobals.ConstantBuffers[LIGHTINGGLOBAL_CONSTANTSBUFFERSLOT] = m_constantBuffer.GetBuffer( );
     shaderItemGlobals.RaytracingAcceleationStructSRV = m_topLevelAccelerationStructure[m_currentBackbuffer];
 
     shaderItemGlobals.ShaderResourceViews[SHADERGLOBAL_INSTANCE_CONSTANTBUFFERS_TEXTURESLOT] = m_instanceStorage->GetInstanceRenderBuffer();

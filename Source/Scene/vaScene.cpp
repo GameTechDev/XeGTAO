@@ -79,7 +79,7 @@ namespace Vanilla
                 for( uint32 depth = 0; depth < Scene::Relationship::c_MaxDepthLevels; depth++ )
                     Scene.m_listHierarchyDirtyTransforms[depth].StartAppending( );
 
-                return { (uint32)Scene.m_listDirtyTransforms.Count(), vaTF::c_chunkBaseSize * 8 };
+                return { (uint32)Scene.m_listDirtyTransforms.Count(), VA_GOOD_PARALLEL_FOR_CHUNK_SIZE * 4 };
             }
             else
             {
@@ -96,7 +96,7 @@ namespace Vanilla
 
                 // set up wide parameters
                 assert( depth >= 0 && depth < Scene::Relationship::c_MaxDepthLevels );
-                return { (uint32)Scene.m_listHierarchyDirtyTransforms[depth].Count( ), vaTF::c_chunkBaseSize * 4 };
+                return { (uint32)Scene.m_listHierarchyDirtyTransforms[depth].Count( ), VA_GOOD_PARALLEL_FOR_CHUNK_SIZE * 2 };
             }
         }
         //
@@ -108,7 +108,7 @@ namespace Vanilla
                 // continue from Narrow pass 0, we categorizes transform-dirty entities to hierarchy-depth-based buckets
                 for( uint32 index = itemBegin; index < itemEnd; index++ )
                 {
-                    const auto& cregistry = std::as_const( Scene.Registry() );
+                    const auto& cregistry = Scene.CRegistry();
                     entt::entity entity = Scene.m_listDirtyTransforms[index];
                     const Scene::Relationship* relationship = cregistry.try_get<Scene::Relationship>( entity );
                     uint32 depth = ( relationship != nullptr ) ? ( relationship->Depth ) : ( 0 );
@@ -153,7 +153,7 @@ namespace Vanilla
                 Scene.m_listDirtyBounds.StartConsuming( );
                 Scene.m_listDirtyBoundsUpdatesFailed.StartAppending( );
                 // return wide item counts
-                return { (uint32)Scene.m_listDirtyBounds.Count(), vaTF::c_chunkBaseSize * 2 }; 
+                return { (uint32)Scene.m_listDirtyBounds.Count(), VA_GOOD_PARALLEL_FOR_CHUNK_SIZE }; 
             }
             else
             {
@@ -181,6 +181,55 @@ namespace Vanilla
             }
             else
             { assert ( false );}
+        }
+    };
+
+    struct EmissiveMaterialDriverUpdateWorkNode : vaSceneAsync::WorkNode
+    {
+        vaScene &               Scene;
+        entt::basic_view< entt::entity, entt::exclude_t<>, const Scene::EmissiveMaterialDriver>
+                                View;
+
+        EmissiveMaterialDriverUpdateWorkNode( const string & name, vaScene & scene, const std::vector<string> & predecessors, const std::vector<string> & successors ) 
+            : Scene( scene ), View( scene.Registry().view<std::add_const_t<Scene::EmissiveMaterialDriver>>( ) ),
+            vaSceneAsync::WorkNode( name, predecessors, successors, Scene::AccessPermissions::ExportPairLists<
+                const Scene::TransformWorld, const Scene::LightPoint, Scene::EmissiveMaterialDriver >() )
+        { 
+        }
+
+        // Asynchronous narrow processing; called after ExecuteWide, returned std::pair<uint, uint> will be used to immediately repeat ExecuteWide if non-zero
+        virtual std::pair<uint, uint>   ExecuteNarrow( const uint32 pass, vaSceneAsync::ConcurrencyContext & ) override
+        {
+            if( pass == 0 )
+            {   // first pass: start
+                return std::make_pair( (uint32)View.size(), VA_GOOD_PARALLEL_FOR_CHUNK_SIZE * 4 );    // <- is this safe use of the entt View?
+            }
+            else return {0,0};
+        }
+        //
+        // Asynchronous wide processing; items run in chunks to minimize various overheads
+        virtual void                    ExecuteWide( const uint32 pass, const uint32 itemBegin, const uint32 itemEnd, vaSceneAsync::ConcurrencyContext & ) override
+        {
+            assert( pass == 0 ); pass;
+            for( uint32 index = itemBegin; index < itemEnd; index++ )
+            {
+                entt::entity entity = View[index];                                          // <- is this safe use of the entt View?
+                assert( Scene.Registry().valid( entity ) );                                 // if this fires, you've corrupted the data somehow - possibly destroying elements outside of DestroyTag path?
+                Scene::EmissiveMaterialDriver & emissiveDriver = Scene.Registry().get<Scene::EmissiveMaterialDriver>( entity );
+                if( emissiveDriver.ReferenceLightEntity != entt::null )
+                {
+                    const Scene::LightPoint * referenceLight = Scene.CRegistry().try_get<Scene::LightPoint>( emissiveDriver.ReferenceLightEntity );
+                    if( referenceLight == nullptr )
+                    {
+                        // not sure how to usefully warn...
+                        VA_WARN( "EmissiveMaterialDriver has a non-entt::null ReferenceLightEntity but it contains no LightPoint component" );
+                    }
+                    else
+                    {
+                        emissiveDriver.EmissiveMultiplier = referenceLight->Color * (referenceLight->Intensity * referenceLight->FadeFactor * emissiveDriver.ReferenceLightMultiplier);
+                    }
+                }
+            }
         }
     };
 }
@@ -223,6 +272,8 @@ vaScene::vaScene( const string & name, const vaGUID UID )
         assert( s_instanceCount == 1 );
         new vaSceneComponentRegistry();
     }
+
+    m_registry.set<Scene::UIDRegistry>( m_registry );
 
     //m_registry.set<Scene::RuntimeIDContext>( m_registry );
     m_registry.set<Scene::AccessPermissions>();
@@ -276,7 +327,10 @@ vaScene::vaScene( const string & name, const vaGUID UID )
 
     m_asyncWorkNodes.push_back( std::make_shared<TransformsUpdateWorkNode>( "TransformsUpdate", *this, strvec{ "motion_done_marker" }, strvec{ "transforms_done_marker" } ) );
 
-    m_asyncWorkNodes.push_back( std::make_shared<DirtyBoundsUpdateWorkNode>( "DirtyBoundsUpdate", *this, strvec{ "TransformsUpdate" }, strvec{ "bounds_done_marker" } ) );
+    m_asyncWorkNodes.push_back( std::make_shared<DirtyBoundsUpdateWorkNode>( "DirtyBoundsUpdate", *this, strvec{ "transforms_done_marker" }, strvec{ "bounds_done_marker" } ) );
+
+    // no reason why this can't run in parallel with 'DirtyBoundsUpdate'?
+    m_asyncWorkNodes.push_back( std::make_shared<EmissiveMaterialDriverUpdateWorkNode>( "EmissiveMaterialDriverUpdate", *this, strvec{ "transforms_done_marker" }, strvec{ "bounds_done_marker" } ) );
 
     for( auto & workNodes : m_asyncWorkNodes )
         m_async.AddWorkNode( workNodes );
@@ -333,6 +387,8 @@ vaScene::~vaScene( )
     s_instanceCount--;
     if( s_instanceCount == 0 )
         delete vaSceneComponentRegistry::GetInstancePtr();
+
+    m_registry.unset<Scene::UIDRegistry>( );
 }
 
 // the only purpose of these for now is learning exactly how these callbacks work - these will likely be removed
@@ -470,51 +526,6 @@ void vaScene::UIOpenProperties( entt::entity entity, int preferredPropPanel )
 // {
 // }
 
-
-bool vaScene::Serialize( vaXMLSerializer & serializer )
-{
-    serializer;
-    /*
-    auto scene = m_scene.lock( );
-    assert( scene != nullptr );
-
-    // element opened by the parent, just fill in attributes
-
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "Name", m_name ) );
-
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<vaVector4>( "TransformR0", m_localTransform.Row( 0 ) ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<vaVector4>( "TransformR1", m_localTransform.Row( 1 ) ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<vaVector4>( "TransformR2", m_localTransform.Row( 2 ) ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<vaVector4>( "TransformR3", m_localTransform.Row( 3 ) ) );
-
-    // VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<vaVector3>( "AABBMin", m_boundingBox.Min ) );
-    // VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<vaVector3>( "AABBSize", m_boundingBox.Size ) );
-
-    assert( serializer.GetVersion( ) > 0 );
-    serializer.SerializeArray( "RenderMeshes", m_renderMeshes );
-
-    VERIFY_TRUE_RETURN_ON_FALSE( scene->SerializeObjectsRecursive( serializer, "ChildObjects", m_children, this->shared_from_this( ) ) );
-
-    if( serializer.IsReading( ) )
-    {
-        m_lastSceneTickIndex = -1;
-        m_computedWorldTransform = vaMatrix4x4::Identity;
-        m_computedLocalBoundingBox = vaBoundingBox::Degenerate;
-        m_computedGlobalBoundingBox = vaBoundingBox::Degenerate;
-        m_cachedRenderMeshes.resize( m_renderMeshes.size( ) );
-
-        m_localTransform.Row( 0 ).w = 0.0f;
-        m_localTransform.Row( 1 ).w = 0.0f;
-        m_localTransform.Row( 2 ).w = 0.0f;
-        m_localTransform.Row( 3 ).w = 1.0f;
-
-        SetLocalTransform( m_localTransform );
-    }
-    */
-    return true;
-}
-
-
 bool vaScene::SaveJSON( const string & filePath )
 {
     Scene::DestroyTagged( m_registry ); // <- don't save any of the about to be destroyed ones
@@ -542,6 +553,13 @@ void vaScene::UIPanelTick( vaApplicationBase& application )
 #ifdef VA_IMGUI_INTEGRATION_ENABLED
 
     auto textColorDisabled = ImGui::GetStyleColorVec4( ImGuiCol_TextDisabled );
+
+    Scene::UIHighlightRequest * nextHighlight = m_registry.try_ctx<Scene::UIHighlightRequest>( );
+    if( nextHighlight != nullptr && nextHighlight->Entity != entt::null )
+    {
+        UIHighlight( nextHighlight->Entity );
+        m_registry.unset<Scene::UIHighlightRequest>( );
+    }
 
     ImGui::PushItemWidth( 200.0f );
 
@@ -620,13 +638,13 @@ void vaScene::UIPanelTick( vaApplicationBase& application )
         if( ImGui::IsItemHovered( ) ) ImGui::SetTooltip( "Filter by Component" );
         m_uiEntitiesFilterByComponent = false;
 
-        DragDropNodeData currentDragDrop    = { vaGUID::Null, entt::null };
+        Scene::DragDropNodeData currentDragDrop    = { vaGUID::Null, entt::null };
         auto ddpld = ImGui::GetDragDropPayload();
-        if( ddpld != nullptr && ddpld->IsDataType( DragDropNodeData::PayloadTypeName() ) )
+        if( ddpld != nullptr && ddpld->IsDataType( Scene::DragDropNodeData::PayloadTypeName() ) )
         {
-            assert( ddpld->DataSize == sizeof(DragDropNodeData) );
-            if( UID() == reinterpret_cast<DragDropNodeData*>( ddpld->Data )->SceneUID )
-                currentDragDrop = *reinterpret_cast<DragDropNodeData*>( ddpld->Data );
+            assert( ddpld->DataSize == sizeof(Scene::DragDropNodeData) );
+            if( UID() == reinterpret_cast<Scene::DragDropNodeData*>( ddpld->Data )->SceneUID )
+                currentDragDrop = *reinterpret_cast<Scene::DragDropNodeData*>( ddpld->Data );
         }
         bool acceptedDragDrop                       = false;
         entt::entity acceptedDragDropTargetEntity   = entt::null;   // entt::null means ROOT!
@@ -657,10 +675,11 @@ void vaScene::UIPanelTick( vaApplicationBase& application )
                 {
                     if( ImGui::BeginDragDropTarget( ) )
                     {
-                        if( const ImGuiPayload* payload = ImGui::AcceptDragDropPayload( DragDropNodeData::PayloadTypeName( ) ) )
+                        if( const ImGuiPayload* payload = ImGui::AcceptDragDropPayload( Scene::DragDropNodeData::PayloadTypeName( ) ) )
                         {
-                            assert( payload->DataSize == sizeof( DragDropNodeData ) );
-                            assert( ( *reinterpret_cast<DragDropNodeData*>( payload->Data ) ) == currentDragDrop );
+                            assert( payload->DataSize == sizeof( Scene::DragDropNodeData ) );
+                            assert( ( *reinterpret_cast<Scene::DragDropNodeData*>( payload->Data ) ) == currentDragDrop );
+                            assert( reinterpret_cast<Scene::DragDropNodeData*>( payload->Data )->SceneUID == m_registry.ctx<Scene::UID>() );
                             acceptedDragDrop = true;
                             acceptedDragDropTargetEntity = entity;
                         }
@@ -672,8 +691,8 @@ void vaScene::UIPanelTick( vaApplicationBase& application )
             {
                 if( ImGui::BeginDragDropSource( ImGuiDragDropFlags_None ) )
                 {
-                    DragDropNodeData ddsource{ UID(), entity };
-                    ImGui::SetDragDropPayload( DragDropNodeData::PayloadTypeName( ), &ddsource, sizeof( ddsource ) );        // Set payload to carry the index of our item (could be anything)
+                    Scene::DragDropNodeData ddsource{ UID(), entity };
+                    ImGui::SetDragDropPayload( Scene::DragDropNodeData::PayloadTypeName( ), &ddsource, sizeof( ddsource ) );        // Set payload to carry the index of our item (could be anything)
                     ImGui::EndDragDropSource( );
                 }
             }

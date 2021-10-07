@@ -145,7 +145,6 @@
       <FileType>Document</FileType>
     </CopyFileToFolders>
     <None Include="..\..\CONTRIBUTING.md" />
-    <None Include="..\..\INTEGRATION.md" />
     <None Include="..\..\README.md" />
   </ItemGroup>
   <ItemGroup>

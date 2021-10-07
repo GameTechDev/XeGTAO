@@ -1500,6 +1500,8 @@
     <ClInclude Include="..\..\Source\IntegratedExternals\assimp\include\assimp\ZipArchiveIOSystem.h" />
     <ClInclude Include="..\..\Source\IntegratedExternals\assimp\vaAssimpIntegrationSpecifics.h" />
     <ClInclude Include="..\..\Source\IntegratedExternals\bullet\vaBulletIntegrationSpecifics.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\cgltf\cgltf.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\cgltf\cgltf_write.h" />
     <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSTextureLoader\DDSTextureLoader.h" />
     <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSTextureLoader\DDSTextureLoader12.h" />
     <ClInclude Include="..\..\Source\IntegratedExternals\DirectXTex\DDSView\shaders\ps1D.h" />

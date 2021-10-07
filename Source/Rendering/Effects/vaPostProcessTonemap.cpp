@@ -12,6 +12,14 @@
 
 #include "IntegratedExternals/vaImguiIntegration.h"
 
+#include "Rendering/vaShader.h"
+#include "Rendering/vaRenderCamera.h"
+#include "Rendering/vaTexture.h"
+#include "Rendering/Effects/vaPostProcessBlur.h"
+#include "Rendering/Shaders/vaSharedTypes.h"
+#include "Rendering/Shaders/vaPostProcessShared.h"
+
+
 using namespace Vanilla;
 
 vaPostProcessTonemap::vaPostProcessTonemap( const vaRenderingModuleParams & params )
@@ -25,7 +33,7 @@ vaPostProcessTonemap::vaPostProcessTonemap( const vaRenderingModuleParams & para
     m_CSHalfResDownsampleAndAvgLum( params ),
     m_PSAddBloom( params ),
     m_CSDebugColorTest( params ),
-    m_constantsBuffer( params )
+    m_constantBuffer( vaConstantBuffer::Create<PostProcessTonemapConstants>( params.RenderDevice, "PostProcessTonemapConstants" ) )
 {
     m_avgLuminance1x1 = vaTexture::Create2D( params.RenderDevice, vaResourceFormat::R32_FLOAT, 1, 1, 1, 1, 1, vaResourceBindSupportFlags::UnorderedAccess, vaResourceAccessFlags::Default );
 
@@ -79,7 +87,7 @@ void vaPostProcessTonemap::UpdateConstants( vaRenderDeviceContext & renderContex
 
         consts.Dummy0                   = 0.0f;
 
-        m_constantsBuffer.Upload( renderContext, consts );
+        m_constantBuffer->Upload( renderContext, consts );
     }
 }
 
@@ -99,17 +107,17 @@ void vaPostProcessTonemap::UpdateShaders( bool waitCompileShaders )
     {
         m_shadersDirty = false;
 
-        m_PSPassThrough->CreateShaderFromFile( "vaPostProcessTonemap.hlsl", "PSPassThrough", m_staticShaderMacros, false );
-        m_PSTonemap->CreateShaderFromFile( "vaPostProcessTonemap.hlsl", "PSTonemap", m_staticShaderMacros, false );
-        m_PSTonemapWithLumaExport->CreateShaderFromFile( "vaPostProcessTonemap.hlsl", "PSTonemapWithLumaExport", m_staticShaderMacros, false );
+        m_PSPassThrough->CompileFromFile( "vaPostProcessTonemap.hlsl", "PSPassThrough", m_staticShaderMacros, false );
+        m_PSTonemap->CompileFromFile( "vaPostProcessTonemap.hlsl", "PSTonemap", m_staticShaderMacros, false );
+        m_PSTonemapWithLumaExport->CompileFromFile( "vaPostProcessTonemap.hlsl", "PSTonemapWithLumaExport", m_staticShaderMacros, false );
 
-        m_CSAvgLumHoriz->CreateShaderFromFile( "vaPostProcessTonemap.hlsl", "CSAvgLumHoriz", m_staticShaderMacros, false );
-        m_CSAvgLumVert->CreateShaderFromFile( "vaPostProcessTonemap.hlsl", "CSAvgLumVert", m_staticShaderMacros, false );
+        m_CSAvgLumHoriz->CompileFromFile( "vaPostProcessTonemap.hlsl", "CSAvgLumHoriz", m_staticShaderMacros, false );
+        m_CSAvgLumVert->CompileFromFile( "vaPostProcessTonemap.hlsl", "CSAvgLumVert", m_staticShaderMacros, false );
 
-        m_CSHalfResDownsampleAndAvgLum->CreateShaderFromFile( "vaPostProcessTonemap.hlsl", "CSHalfResDownsampleAndAvgLum", m_staticShaderMacros, false );
-        m_PSAddBloom->CreateShaderFromFile( "vaPostProcessTonemap.hlsl", "PSAddBloom", m_staticShaderMacros, false );
+        m_CSHalfResDownsampleAndAvgLum->CompileFromFile( "vaPostProcessTonemap.hlsl", "CSHalfResDownsampleAndAvgLum", m_staticShaderMacros, false );
+        m_PSAddBloom->CompileFromFile( "vaPostProcessTonemap.hlsl", "PSAddBloom", m_staticShaderMacros, false );
 
-        m_CSDebugColorTest->CreateShaderFromFile( "vaPostProcessTonemap.hlsl", "CSDebugColorTest", m_staticShaderMacros, false );
+        m_CSDebugColorTest->CompileFromFile( "vaPostProcessTonemap.hlsl", "CSDebugColorTest", m_staticShaderMacros, false );
     }
 
     if( waitCompileShaders )
@@ -153,7 +161,7 @@ vaDrawResultFlags vaPostProcessTonemap::TickAndApplyCameraPostProcess( vaRenderD
     {
         VA_TRACE_CPUGPU_SCOPE( GammaTest, renderContext );
         vaComputeItem computeItem; //computeItem.GlobalUAVBarrierBefore = false; computeItem.GlobalUAVBarrierAfter = false;
-        computeItem.ConstantBuffers[POSTPROCESS_TONEMAP_CONSTANTSBUFFERSLOT] = m_constantsBuffer;
+        computeItem.ConstantBuffers[POSTPROCESS_TONEMAP_CONSTANTSBUFFERSLOT] = m_constantBuffer;
         computeItem.ComputeShader = m_CSDebugColorTest;
         computeItem.SetDispatch( (preTonemapRadiance->GetWidth() + 8 - 1 ) / 8, (preTonemapRadiance->GetHeight() + 8 - 1 ) / 8, 1 );
         renderResults |= renderContext.ExecuteSingleItem( computeItem, vaRenderOutputs::FromUAVs(preTonemapRadiance), nullptr );
@@ -163,7 +171,7 @@ vaDrawResultFlags vaPostProcessTonemap::TickAndApplyCameraPostProcess( vaRenderD
     {
         VA_TRACE_CPUGPU_SCOPE( Downsample, renderContext );
         vaComputeItem computeItem; //computeItem.GlobalUAVBarrierBefore = false; computeItem.GlobalUAVBarrierAfter = false;
-        computeItem.ConstantBuffers[POSTPROCESS_TONEMAP_CONSTANTSBUFFERSLOT] = m_constantsBuffer;
+        computeItem.ConstantBuffers[POSTPROCESS_TONEMAP_CONSTANTSBUFFERSLOT] = m_constantBuffer;
         computeItem.ShaderResourceViews[POSTPROCESS_TONEMAP_TEXTURE_SLOT0]   = preTonemapRadiance;
         computeItem.ComputeShader = m_CSHalfResDownsampleAndAvgLum;
         computeItem.SetDispatch( (m_halfResRadiance->GetWidth() + 8 - 1 ) / 8, (m_halfResRadiance->GetHeight() + 8 - 1 ) / 8, 1 );
@@ -205,7 +213,7 @@ vaDrawResultFlags vaPostProcessTonemap::TickAndApplyCameraPostProcess( vaRenderD
 #endif
 
         vaComputeItem computeItem; //computeItem.GlobalUAVBarrierBefore = false; computeItem.GlobalUAVBarrierAfter = false;
-        computeItem.ConstantBuffers[POSTPROCESS_TONEMAP_CONSTANTSBUFFERSLOT] = m_constantsBuffer;
+        computeItem.ConstantBuffers[POSTPROCESS_TONEMAP_CONSTANTSBUFFERSLOT] = m_constantBuffer;
         {
             VA_TRACE_CPUGPU_SCOPE( AvgLumHoriz, renderContext );
             computeItem.ComputeShader = m_CSAvgLumHoriz;
@@ -236,7 +244,7 @@ vaDrawResultFlags vaPostProcessTonemap::TickAndApplyCameraPostProcess( vaRenderD
 
     vaGraphicsItem renderItem;
     m_renderDevice.FillFullscreenPassGraphicsItem( renderItem );
-    renderItem.ConstantBuffers[POSTPROCESS_TONEMAP_CONSTANTSBUFFERSLOT] = m_constantsBuffer;
+    renderItem.ConstantBuffers[POSTPROCESS_TONEMAP_CONSTANTSBUFFERSLOT] = m_constantBuffer;
 
     // Apply bloom as a separate pass
     // TODO: combine into tone mapping / resolve (WARNING, make sure it still works if additionalParams.SkipTonemapper true)
@@ -260,7 +268,7 @@ vaDrawResultFlags vaPostProcessTonemap::TickAndApplyCameraPostProcess( vaRenderD
         vaRenderOutputs renderOutputs = vaRenderOutputs::FromRTDepth( dstColor );
 
         m_renderDevice.FillFullscreenPassGraphicsItem( renderItem );
-        renderItem.ConstantBuffers[POSTPROCESS_TONEMAP_CONSTANTSBUFFERSLOT] = m_constantsBuffer;
+        renderItem.ConstantBuffers[POSTPROCESS_TONEMAP_CONSTANTSBUFFERSLOT] = m_constantBuffer;
         
         if( outExportLuma != nullptr )
             renderOutputs.UnorderedAccessViews[1]   = outExportLuma;

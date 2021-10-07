@@ -760,7 +760,7 @@ namespace Vanilla
     //     LayoutDXFromVA( m_inputLayoutDX12, m_inputLayout );
     // }
     //
-    void vaVertexShaderDX12::CreateShaderAndILFromFile( const string & _filePath, const string & entryPoint, const std::vector<vaVertexInputElementDesc> & inputLayoutElements, const vaShaderMacroContaner & macros, bool forceImmediateCompile )
+    void vaVertexShaderDX12::CompileVSAndILFromFile( const string & _filePath, const string & entryPoint, const std::vector<vaVertexInputElementDesc> & inputLayoutElements, const vaShaderMacroContaner & macros, bool forceImmediateCompile )
     {
         wstring filePath = vaStringTools::SimpleWiden( _filePath );
         const string shaderModel = string( GetSMPrefix( ) ) + "_" + GetSMVersion( );
@@ -778,10 +778,10 @@ namespace Vanilla
             m_inputLayoutDX12 = std::make_shared<vaInputLayoutDataDX12>( m_inputLayout );
         }
 
-        vaShaderDX12::CreateShaderFromFile( _filePath, entryPoint, macros, forceImmediateCompile );
+        vaShaderDX12::CompileFromFile( _filePath, entryPoint, macros, forceImmediateCompile );
     }
     //
-    void vaVertexShaderDX12::CreateShaderAndILFromBuffer( const string & shaderCode, const string & entryPoint, const std::vector<vaVertexInputElementDesc> & inputLayoutElements, const vaShaderMacroContaner & macros, bool forceImmediateCompile )
+    void vaVertexShaderDX12::CompileVSAndILFromBuffer( const string & shaderCode, const string & entryPoint, const std::vector<vaVertexInputElementDesc> & inputLayoutElements, const vaShaderMacroContaner & macros, bool forceImmediateCompile )
     {
         const string shaderModel = string( GetSMPrefix( ) ) + "_" + GetSMVersion( );
         assert( shaderCode != "" && entryPoint != "" && shaderModel != "" );
@@ -796,7 +796,7 @@ namespace Vanilla
             m_inputLayout = vaVertexInputLayoutDesc( inputLayoutElements );
             m_inputLayoutDX12 = std::make_shared<vaInputLayoutDataDX12>( m_inputLayout );
         }
-        vaShaderDX12::CreateShaderFromBuffer( shaderCode, entryPoint, macros, forceImmediateCompile );
+        vaShaderDX12::CompileFromBuffer( shaderCode, entryPoint, macros, forceImmediateCompile );
     }
     //
     void vaVertexShaderDX12::CreateShader( )

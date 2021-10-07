@@ -36,6 +36,7 @@ namespace Vanilla
     {
     protected:
         mutable bool                                m_debugShowNormals          = false;
+        mutable bool                                m_debugShowBentNormals      = false;
         mutable bool                                m_debugShowEdges            = false;
         mutable bool                                m_debugShowGTAODebugViz     = false;
 
@@ -46,8 +47,8 @@ namespace Vanilla
 
         shared_ptr<vaTexture>                       m_workingDepths;
         shared_ptr<vaTexture>                       m_workingDepthsMIPViews[XE_GTAO_DEPTH_MIP_LEVELS];
-        shared_ptr<vaTexture>                       m_workingVisibility;
-        shared_ptr<vaTexture>                       m_workingVisibilityPong;                    // only required to support "blurry" denoise level 
+        shared_ptr<vaTexture>                       m_workingAOTerm;            // AO alone or AO+BentNormals
+        shared_ptr<vaTexture>                       m_workingAOTermPong;        // same as ^, used for ping-ponging
         shared_ptr<vaTexture>                       m_workingEdges;
         shared_ptr<vaTexture>                       m_debugImage;
         shared_ptr<vaTexture>                       m_workingNormals;
@@ -56,22 +57,23 @@ namespace Vanilla
 
         mutable XeGTAO::GTAOSettings                m_settings;
 
-        bool                                        m_constantsMatchDefaults    = false;        // just an optimization thing - see XE_GTAO_USE_DEFAULT_CONSTANTS
+        bool                                        m_constantsMatchDefaults        = false;        // just an optimization thing - see XE_GTAO_USE_DEFAULT_CONSTANTS
+
+        bool                                        m_outputBentNormals             = false;        // as given in the last Compute( ... ) call
 
         // MSAA versions include 1-sample for non-MSAA
-        vaAutoRMI<vaComputeShader>                  m_CSGenerateNormals;                        // optional screen space normal generation from depth (and results could be reused elsewhere)
-        vaAutoRMI<vaComputeShader>                  m_CSPrefilterDepths16x16;                   // pass 1
-        vaAutoRMI<vaComputeShader>                  m_CSGTAOLow;                                // pass 2 - low quality
-        vaAutoRMI<vaComputeShader>                  m_CSGTAOMedium;                             // pass 2 - medium quality
-        vaAutoRMI<vaComputeShader>                  m_CSGTAOHigh;                               // pass 2 - high quality
-        vaAutoRMI<vaComputeShader>                  m_CSGTAOUltra;                              // pass 2 - ultra quality
-        vaAutoRMI<vaComputeShader>                  m_CSPreDenoise;                             // pass 3a - only required to support "blurry" denoise level 
-        vaAutoRMI<vaComputeShader>                  m_CSDenoise;                                // pass 3
+        shared_ptr<vaComputeShader>                 m_CSGenerateNormals;                        // optional screen space normal generation from depth (and results could be reused elsewhere)
+        shared_ptr<vaComputeShader>                 m_CSPrefilterDepths16x16;                   // pass 1
+        shared_ptr<vaComputeShader>                 m_CSGTAOLow;                                // pass 2 - low quality
+        shared_ptr<vaComputeShader>                 m_CSGTAOMedium;                             // pass 2 - medium quality
+        shared_ptr<vaComputeShader>                 m_CSGTAOHigh;                               // pass 2 - high quality
+        shared_ptr<vaComputeShader>                 m_CSGTAOUltra;                              // pass 2 - ultra quality
+        shared_ptr<vaComputeShader>                 m_CSDenoisePass;                            // pass 3 - one denoiser pass
+        shared_ptr<vaComputeShader>                 m_CSDenoiseLastPass;                        // pass 3 - last denoiser pass that outputs into the final output
 
         bool                                        m_shadersDirty                  = true;
 
-        vaTypedConstantBufferWrapper< XeGTAO::GTAOConstants, true >
-                                                    m_constantBuffer;
+        shared_ptr<vaConstantBuffer>                m_constantBuffer;
 
         std::vector< pair< string, string > >       m_staticShaderMacros;
 
@@ -99,7 +101,7 @@ namespace Vanilla
         virtual ~vaGTAO( ) { }
 
     public:
-        vaDrawResultFlags                           Compute( vaRenderDeviceContext & renderContext, const vaCameraBase & cameraBase, bool usingTAA, const shared_ptr<vaTexture> & outputAO, const shared_ptr<vaTexture> & inputDepth, const shared_ptr<vaTexture> & inputNormals = nullptr );
+        vaDrawResultFlags                           Compute( vaRenderDeviceContext & renderContext, const vaCameraBase & cameraBase, bool usingTAA, bool outputBentNormals, const shared_ptr<vaTexture> & outputAO, const shared_ptr<vaTexture> & inputDepth, const shared_ptr<vaTexture> & inputNormals = nullptr );
         vaDrawResultFlags                           ComputeReferenceRTAO( vaRenderDeviceContext & renderContext, const vaCameraBase & cameraBase, vaSceneRaytracing * sceneRaytracing, const shared_ptr<vaTexture> & inputDepth );
 
     public:
@@ -108,6 +110,8 @@ namespace Vanilla
 
         bool &                                      DebugShowNormals( )                                 { return m_debugShowNormals;        }
         bool &                                      DebugShowEdges( )                                   { return m_debugShowEdges;          }
+        bool &                                      DebugShowBentNormals( )                             { return m_debugShowBentNormals;    }
+        bool                                        DebugShowImage( )                                   { return m_debugShowNormals || m_debugShowBentNormals || m_debugShowEdges; }
         const shared_ptr<vaTexture>                 DebugImage( )                                       { return m_debugImage;              }
 
         bool &                                      ReferenceRTAOEnabled( )                             { return m_enableReferenceRTAO;  }

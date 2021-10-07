@@ -1352,7 +1352,7 @@ auto Subflow::async(F&& f, ArgsT&&... args) {
 
   Future<R> fu(p.get_future(), tpg);
 
-  auto node = node_pool.animate(
+  auto node = get_node_pool().animate(
     std::in_place_type_t<Node::Async>{},
     [p=make_moc(std::move(p)), f=std::forward<F>(f), args...] 
     (bool cancel) mutable {
@@ -1383,7 +1383,7 @@ void Subflow::silent_async(F&& f, ArgsT&&... args) {
 
   _parent->_join_counter.fetch_add(1);
 
-  auto node = node_pool.animate(
+  auto node = get_node_pool().animate(
     std::in_place_type_t<Node::SilentAsync>{},
     [f=std::forward<F>(f), args...] () mutable { 
       f(args...); 

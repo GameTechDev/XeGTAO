@@ -17,6 +17,8 @@
 
 #include "vaSharedTypes.h"
 
+// TODO: add a VA_SHADER_DEBUG_BUILD and #ifdef below? :)
+
 // useful if one wants to draw global debug stuff just once for ex.
 bool DebugOnce( )
 {
@@ -408,10 +410,11 @@ void DebugDraw3DArrow( float3 worldPosFrom, float3 worldPosTo, float worldRadius
     g_shaderFeedbackDynamic[index] = item;
 }
 
-void DebugDraw3DCone( float3 worldPosFrom, float3 worldPosTo, float halfAngle, float4 color )
-{
-    DebugDraw3DCylinder( worldPosFrom, worldPosTo, 0, length(worldPosTo-worldPosFrom) * tan( halfAngle ), float4( 0, 1, 0, 0.5 ) );
-}
+// this isn't really too useful
+//void DebugDraw3DCone( float3 worldPosFrom, float3 worldPosTo, float halfAngle, float4 color )
+//{
+//    DebugDraw3DCylinder( worldPosFrom, worldPosTo, 0, length(worldPosTo-worldPosFrom) * tan( halfAngle ), color );
+//}
 
 void DebugDraw3DSphereCone( float3 worldCenter, float3 worldDirection, float worldRadius, float halfAngle, float4 color )
 {

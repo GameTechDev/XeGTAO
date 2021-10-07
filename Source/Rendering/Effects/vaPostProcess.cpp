@@ -11,12 +11,14 @@
 #include "vaPostProcess.h"
 
 #include "Rendering/vaRenderingIncludes.h"
+#include "Rendering/Shaders/vaSharedTypes.h"
 
 using namespace Vanilla;
 
 vaPostProcess::vaPostProcess( const vaRenderingModuleParams & params ) : 
     m_pixelShaderSingleSampleMS{ (params), (params), (params), (params), (params), (params), (params), (params) },
-    vaRenderingModule( vaRenderingModuleParams( params ) ), m_constantsBuffer( params ), m_colorProcessHSBC( params ), m_colorProcessLumaForEdges( params ), m_downsample4x4to1x1( params ),
+    vaRenderingModule( vaRenderingModuleParams( params ) ), m_colorProcessHSBC( params ), m_colorProcessLumaForEdges( params ), m_downsample4x4to1x1( params ),
+    m_constantBuffer( vaConstantBuffer::Create<PostProcessConstants>( params.RenderDevice, "PostProcessConstants" ) ), 
     m_pixelShaderCompare( params ),
     m_pixelShaderCompareInSRGB( params ),
     m_vertexShaderStretchRect( params ),
@@ -38,30 +40,30 @@ vaPostProcess::vaPostProcess( const vaRenderingModuleParams & params ) :
     m_comparisonResultsGPU = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R32_UINT, POSTPROCESS_COMPARISONRESULTS_SIZE*3, 1, 1, 1, 1, vaResourceBindSupportFlags::UnorderedAccess | vaResourceBindSupportFlags::RenderTarget /* | vaResourceBindSupportFlags::ShaderResource*/, vaResourceAccessFlags::Default );
     m_comparisonResultsCPU = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R32_UINT, POSTPROCESS_COMPARISONRESULTS_SIZE*3, 1, 1, 1, 1, vaResourceBindSupportFlags::None, vaResourceAccessFlags::CPURead );
 
-    m_pixelShaderCompare->CreateShaderFromFile( "vaPostProcess.hlsl", "PSCompareTextures", m_staticShaderMacros, false );
+    m_pixelShaderCompare->CompileFromFile( "vaPostProcess.hlsl", "PSCompareTextures", m_staticShaderMacros, false );
 
     std::vector<std::pair<std::string, std::string>> srgbMacros = m_staticShaderMacros; srgbMacros.push_back( make_pair( string( "POSTPROCESS_COMPARE_IN_SRGB_SPACE" ), string( "1" ) ) );
-    m_pixelShaderCompareInSRGB->CreateShaderFromFile( "vaPostProcess.hlsl", "PSCompareTextures", srgbMacros, false );
+    m_pixelShaderCompareInSRGB->CompileFromFile( "vaPostProcess.hlsl", "PSCompareTextures", srgbMacros, false );
 
     std::vector<vaVertexInputElementDesc> inputElements;
     inputElements.push_back( { "SV_Position", 0, vaResourceFormat::R32G32B32A32_FLOAT, 0, 0, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } );
     inputElements.push_back( { "TEXCOORD", 0, vaResourceFormat::R32G32_FLOAT, 0, 16, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } );
 
-    m_vertexShaderStretchRect->CreateShaderAndILFromFile( "vaPostProcess.hlsl", "VSStretchRect", inputElements, m_staticShaderMacros, false );
-//    m_pixelShaderStretchRectLinear->CreateShaderFromFile( "vaPostProcess.hlsl", "PSStretchRectLinear", m_staticShaderMacros, false );
-//    m_pixelShaderStretchRectPoint->CreateShaderFromFile( "vaPostProcess.hlsl", "PSStretchRectPoint", m_staticShaderMacros, false );
+    m_vertexShaderStretchRect->CompileVSAndILFromFile( "vaPostProcess.hlsl", "VSStretchRect", inputElements, m_staticShaderMacros, false );
+//    m_pixelShaderStretchRectLinear->CompileFromFile( "vaPostProcess.hlsl", "PSStretchRectLinear", m_staticShaderMacros, false );
+//    m_pixelShaderStretchRectPoint->CompileFromFile( "vaPostProcess.hlsl", "PSStretchRectPoint", m_staticShaderMacros, false );
 
-    m_pixelShaderDepthToViewspaceLinear->CreateShaderFromFile( "vaPostProcess.hlsl", "PSDepthToViewspaceLinear", m_staticShaderMacros, false );
-    m_pixelShaderDepthToViewspaceLinearDS2x2Min->CreateShaderFromFile( "vaPostProcess.hlsl", "PSDepthToViewspaceLinearDS2x2", m_staticShaderMacros, false );
-    m_pixelShaderDepthToViewspaceLinearDS4x4Min->CreateShaderFromFile( "vaPostProcess.hlsl", "PSDepthToViewspaceLinearDS4x4", m_staticShaderMacros, false );
+    m_pixelShaderDepthToViewspaceLinear->CompileFromFile( "vaPostProcess.hlsl", "PSDepthToViewspaceLinear", m_staticShaderMacros, false );
+    m_pixelShaderDepthToViewspaceLinearDS2x2Min->CompileFromFile( "vaPostProcess.hlsl", "PSDepthToViewspaceLinearDS2x2", m_staticShaderMacros, false );
+    m_pixelShaderDepthToViewspaceLinearDS4x4Min->CompileFromFile( "vaPostProcess.hlsl", "PSDepthToViewspaceLinearDS4x4", m_staticShaderMacros, false );
     std::vector<std::pair<std::string, std::string>> maxMacros = m_staticShaderMacros; maxMacros.push_back( make_pair( string( "VA_DEPTHDOWNSAMPLE_USE_MAX" ), string( "" ) ) );
-    m_pixelShaderDepthToViewspaceLinearDS2x2Max->CreateShaderFromFile( "vaPostProcess.hlsl", "PSDepthToViewspaceLinearDS2x2", maxMacros, false );
-    m_pixelShaderDepthToViewspaceLinearDS4x4Max->CreateShaderFromFile( "vaPostProcess.hlsl", "PSDepthToViewspaceLinearDS4x4", maxMacros, false );
+    m_pixelShaderDepthToViewspaceLinearDS2x2Max->CompileFromFile( "vaPostProcess.hlsl", "PSDepthToViewspaceLinearDS2x2", maxMacros, false );
+    m_pixelShaderDepthToViewspaceLinearDS4x4Max->CompileFromFile( "vaPostProcess.hlsl", "PSDepthToViewspaceLinearDS4x4", maxMacros, false );
     std::vector<std::pair<std::string, std::string>> linAvgMacros = m_staticShaderMacros; linAvgMacros.push_back( make_pair( string( "VA_DEPTHDOWNSAMPLE_USE_LINEAR_AVERAGE" ), string( "" ) ) );
-    m_pixelShaderDepthToViewspaceLinearDS2x2LinAvg->CreateShaderFromFile( "vaPostProcess.hlsl", "PSDepthToViewspaceLinearDS2x2", linAvgMacros, false );
-    m_pixelShaderDepthToViewspaceLinearDS4x4LinAvg->CreateShaderFromFile( "vaPostProcess.hlsl", "PSDepthToViewspaceLinearDS4x4", linAvgMacros, false );
+    m_pixelShaderDepthToViewspaceLinearDS2x2LinAvg->CompileFromFile( "vaPostProcess.hlsl", "PSDepthToViewspaceLinearDS2x2", linAvgMacros, false );
+    m_pixelShaderDepthToViewspaceLinearDS4x4LinAvg->CompileFromFile( "vaPostProcess.hlsl", "PSDepthToViewspaceLinearDS4x4", linAvgMacros, false );
 
-    m_pixelShaderSmartOffscreenUpsampleComposite->CreateShaderFromFile( "vaPostProcess.hlsl", "PSSmartOffscreenUpsampleComposite", m_staticShaderMacros, false );
+    m_pixelShaderSmartOffscreenUpsampleComposite->CompileFromFile( "vaPostProcess.hlsl", "PSSmartOffscreenUpsampleComposite", m_staticShaderMacros, false );
     
     // this still lets the 3 compile in parallel
     m_vertexShaderStretchRect->WaitFinishIfBackgroundCreateActive( );
@@ -106,12 +108,12 @@ vaDrawResultFlags vaPostProcess::StretchRect( vaRenderDeviceContext & renderCont
     //consts.Param2.x = (float)viewport.Width
     //consts.Param2 = dstRect;
 
-    m_constantsBuffer.Update( renderContext, consts );
+    m_constantBuffer.Update( renderContext, consts );
 
     vaGraphicsItem renderItem;
     renderContext.FillFullscreenPassGraphicsItem( renderItem );
 
-    renderItem.ConstantBuffers[ POSTPROCESS_CONSTANTSBUFFERSLOT ]  = m_constantsBuffer;
+    renderItem.ConstantBuffers[ POSTPROCESS_CONSTANTSBUFFERSLOT ]  = m_constantBuffer;
     renderItem.ShaderResourceViews[ POSTPROCESS_TEXTURE_SLOT0 ]     = srcTexture;
 
     renderItem.VertexShader         = m_vertexShaderStretchRect;
@@ -148,7 +150,7 @@ vaDrawResultFlags vaPostProcess::DrawSingleSampleFromMSTexture( vaRenderDeviceCo
             std::vector< pair< string, string > > macros;
             macros.push_back( std::pair<std::string, std::string>( "VA_DRAWSINGLESAMPLEFROMMSTEXTURE_SAMPLE", vaStringTools::Format("%d", i ) ) );
         
-            m_pixelShaderSingleSampleMS[i]->CreateShaderFromFile( "vaPostProcess.hlsl", "SingleSampleFromMSTexturePS", macros, false );
+            m_pixelShaderSingleSampleMS[i]->CompileFromFile( "vaPostProcess.hlsl", "SingleSampleFromMSTexturePS", macros, false );
         }
         for( int i = 0; i < _countof( m_pixelShaderSingleSampleMS ); i++ )
             m_pixelShaderSingleSampleMS[i]->WaitFinishIfBackgroundCreateActive( );
@@ -168,7 +170,7 @@ vaDrawResultFlags vaPostProcess::DrawSingleSampleFromMSTexture( vaRenderDeviceCo
 //    if( !m_colorProcessPS->IsCreated( ) || srcTexture.GetSampleCount( ) != m_colorProcessPSSampleCount )
 //    {
 //        m_colorProcessPSSampleCount = srcTexture.GetSampleCount();
-//        m_colorProcessPS->CreateShaderFromFile( "vaPostProcess.hlsl", "ColorProcessPS", { ( pair< string, string >( "VA_POSTPROCESS_COLORPROCESS", "" ) ), ( pair< string, string >( "VA_POSTPROCESS_COLORPROCESS_MS_COUNT", vaStringTools::Format("%d", m_colorProcessPSSampleCount) ) ) } );
+//        m_colorProcessPS->CompileFromFile( "vaPostProcess.hlsl", "ColorProcessPS", { ( pair< string, string >( "VA_POSTPROCESS_COLORPROCESS", "" ) ), ( pair< string, string >( "VA_POSTPROCESS_COLORPROCESS_MS_COUNT", vaStringTools::Format("%d", m_colorProcessPSSampleCount) ) ) } );
 //    }
 //    srcTexture.SetToAPISlotSRV( renderContext, 0 );
 //    renderContext.FullscreenPassDraw( *m_colorProcessPS );
@@ -181,7 +183,7 @@ vaDrawResultFlags vaPostProcess::ColorProcessHSBC( vaRenderDeviceContext & rende
 
     if( m_colorProcessHSBC->IsEmpty( ) )
     {
-        m_colorProcessHSBC->CreateShaderFromFile( "vaPostProcess.hlsl", "ColorProcessHSBCPS", { ( pair< string, string >( "VA_POSTPROCESS_COLOR_HSBC", "" ) ) }, true );
+        m_colorProcessHSBC->CompileFromFile( "vaPostProcess.hlsl", "ColorProcessHSBCPS", { ( pair< string, string >( "VA_POSTPROCESS_COLOR_HSBC", "" ) ) }, true );
     }
 
     PostProcessConstants consts; memset( &consts, 0, sizeof(consts) );
@@ -191,11 +193,11 @@ vaDrawResultFlags vaPostProcess::ColorProcessHSBC( vaRenderDeviceContext & rende
     consts.Param1.w = vaMath::Clamp( contrast,      -1.0f, 1.0f );
     // hue goes from [-PI,+PI], saturation goes from [-1, 1], brightness goes from [-1, 1], contrast goes from [-1, 1]
     
-    m_constantsBuffer.Upload( renderContext, consts);
+    m_constantBuffer->Upload( renderContext, consts);
 
     vaGraphicsItem renderItem;
     m_renderDevice.FillFullscreenPassGraphicsItem( renderItem );
-    renderItem.ConstantBuffers[POSTPROCESS_CONSTANTSBUFFERSLOT]    = m_constantsBuffer;
+    renderItem.ConstantBuffers[POSTPROCESS_CONSTANTSBUFFERSLOT]    = m_constantBuffer;
     renderItem.ShaderResourceViews[ 0 ]                             = srcTexture;
     renderItem.PixelShader              = m_colorProcessHSBC;
     return renderContext.ExecuteSingleItem( renderItem, renderOutputs, nullptr );
@@ -220,7 +222,7 @@ vaDrawResultFlags vaPostProcess::SimpleBlurSharpen( vaRenderDeviceContext & rend
     VA_TRACE_CPUGPU_SCOPE( SimpleBlurSharpen, renderContext );
     if( m_simpleBlurSharpen->IsEmpty( ) )
     {
-        m_simpleBlurSharpen->CreateShaderFromFile( "vaPostProcess.hlsl", "SimpleBlurSharpen", { ( pair< string, string >( "VA_POSTPROCESS_SIMPLE_BLUR_SHARPEN", "" ) ) }, true );
+        m_simpleBlurSharpen->CompileFromFile( "vaPostProcess.hlsl", "SimpleBlurSharpen", { ( pair< string, string >( "VA_POSTPROCESS_SIMPLE_BLUR_SHARPEN", "" ) ) }, true );
     }
 
     assert( (srcTexture->GetSizeX() == dstTexture->GetSizeX() ) && (srcTexture->GetSizeY() == dstTexture->GetSizeY()) );
@@ -239,11 +241,11 @@ vaDrawResultFlags vaPostProcess::SimpleBlurSharpen( vaRenderDeviceContext & rend
     consts.Param1.z = 0.0f;
     consts.Param1.w = 0.0f;
 
-    m_constantsBuffer.Upload( renderContext, consts);
+    m_constantBuffer->Upload( renderContext, consts);
 
     vaGraphicsItem renderItem;
     m_renderDevice.FillFullscreenPassGraphicsItem( renderItem );
-    renderItem.ConstantBuffers[POSTPROCESS_CONSTANTSBUFFERSLOT]    = m_constantsBuffer;
+    renderItem.ConstantBuffers[POSTPROCESS_CONSTANTSBUFFERSLOT]    = m_constantBuffer;
     renderItem.ShaderResourceViews[ 0 ]                             = srcTexture;
     renderItem.PixelShader              = m_simpleBlurSharpen;
     vaDrawResultFlags renderResults = renderContext.ExecuteSingleItem( renderItem, vaRenderOutputs::FromRTDepth(dstTexture), nullptr );
@@ -257,7 +259,7 @@ vaDrawResultFlags vaPostProcess::ComputeLumaForEdges( vaRenderDeviceContext & re
 
     if( m_colorProcessLumaForEdges->IsEmpty( ) )
     {
-        m_colorProcessLumaForEdges->CreateShaderFromFile( "vaPostProcess.hlsl", "ColorProcessLumaForEdges", { ( pair< string, string >( "VA_POSTPROCESS_LUMA_FOR_EDGES", "" ) ) }, true );
+        m_colorProcessLumaForEdges->CompileFromFile( "vaPostProcess.hlsl", "ColorProcessLumaForEdges", { ( pair< string, string >( "VA_POSTPROCESS_LUMA_FOR_EDGES", "" ) ) }, true );
     }
 
     vaGraphicsItem renderItem;
@@ -284,14 +286,14 @@ vaDrawResultFlags vaPostProcess::Downsample4x4to1x1( vaRenderDeviceContext & ren
 
     if( m_downsample4x4to1x1->IsEmpty( ) )
     {
-        m_downsample4x4to1x1->CreateShaderFromFile( "vaPostProcess.hlsl", "Downsample4x4to1x1", { ( pair< string, string >( "VA_POSTPROCESS_DOWNSAMPLE", "" ) ) }, true );
+        m_downsample4x4to1x1->CompileFromFile( "vaPostProcess.hlsl", "Downsample4x4to1x1", { ( pair< string, string >( "VA_POSTPROCESS_DOWNSAMPLE", "" ) ) }, true );
     }
 
-    m_constantsBuffer.Upload( renderContext, consts );
+    m_constantBuffer->Upload( renderContext, consts );
 
     vaGraphicsItem renderItem;
     m_renderDevice.FillFullscreenPassGraphicsItem( renderItem );
-    renderItem.ConstantBuffers[POSTPROCESS_CONSTANTSBUFFERSLOT]    = m_constantsBuffer;
+    renderItem.ConstantBuffers[POSTPROCESS_CONSTANTSBUFFERSLOT]    = m_constantBuffer;
     renderItem.ShaderResourceViews[ 0 ]                             = srcTexture;
     renderItem.PixelShader              = m_downsample4x4to1x1;
     vaDrawResultFlags renderResults = renderContext.ExecuteSingleItem( renderItem, vaRenderOutputs::FromRTDepth(dstTexture), nullptr );
@@ -512,12 +514,12 @@ vaDrawResultFlags vaPostProcess::SmartOffscreenUpsampleComposite( vaRenderDevice
     //consts.Param2.x = (float)viewport.Width
     //consts.Param2 = dstRect;
 
-    m_constantsBuffer.Upload( renderContext, consts );
+    m_constantBuffer->Upload( renderContext, consts );
 
     vaGraphicsItem renderItem;
     m_renderDevice.FillFullscreenPassGraphicsItem( renderItem );
 
-    renderItem.ConstantBuffers[ POSTPROCESS_CONSTANTSBUFFERSLOT ]  = m_constantsBuffer;
+    renderItem.ConstantBuffers[ POSTPROCESS_CONSTANTSBUFFERSLOT ]  = m_constantBuffer;
     renderItem.ShaderResourceViews[ POSTPROCESS_TEXTURE_SLOT0 ]    = srcOffscreenColor;
     renderItem.ShaderResourceViews[ POSTPROCESS_TEXTURE_SLOT1 ]    = srcOffscreenLinearDepth;
     renderItem.ShaderResourceViews[ POSTPROCESS_TEXTURE_SLOT2 ]    = srcReferenceDepth;
@@ -547,7 +549,7 @@ vaDrawResultFlags vaPostProcess::FilterMIPLevel( vaRenderDeviceContext & renderC
     if( dstTexture->GetContentsType( ) == vaTextureContentsType::NormalsXY_UNORM )
     {
         if( m_pixelShaderMIPFilterNormalsXY_UNORM->IsEmpty( ) )
-            m_pixelShaderMIPFilterNormalsXY_UNORM->CreateShaderFromFile( "vaPostProcess.hlsl", "MIPFilterNormalsXY_UNORM", { ( pair< string, string >( "VA_POSTPROCESS_MIP_FILTERS", "" ) ) }, true );
+            m_pixelShaderMIPFilterNormalsXY_UNORM->CompileFromFile( "vaPostProcess.hlsl", "MIPFilterNormalsXY_UNORM", { ( pair< string, string >( "VA_POSTPROCESS_MIP_FILTERS", "" ) ) }, true );
         pixelShader = m_pixelShaderMIPFilterNormalsXY_UNORM;
     }
 
@@ -627,7 +629,7 @@ vaDrawResultFlags vaPostProcess::GenerateMIPs( vaRenderDeviceContext& renderCont
     return vaDrawResultFlags::None;
 }
 
-vaDrawResultFlags vaPostProcess::MergeTextures( vaRenderDeviceContext& renderContext, const shared_ptr<vaTexture>& dstTexture, const shared_ptr<vaTexture>& srcTextureA, const shared_ptr<vaTexture>& srcTextureB, const shared_ptr<vaTexture>& srcTextureC, const string& mergeCode )
+vaDrawResultFlags vaPostProcess::MergeTextures( vaRenderDeviceContext& renderContext, const shared_ptr<vaTexture>& dstTexture, const shared_ptr<vaTexture>& srcTextureA, const shared_ptr<vaTexture>& srcTextureB, const shared_ptr<vaTexture>& srcTextureC, const string& mergeCode, bool uintValues )
 {
     VA_TRACE_CPUGPU_SCOPE( MergeTextures, renderContext );
     if( mergeCode != m_pixelShaderMergeTexturesConversionCode || m_pixelShaderMergeTextures->IsEmpty() )
@@ -637,7 +639,7 @@ vaDrawResultFlags vaPostProcess::MergeTextures( vaRenderDeviceContext& renderCon
         assert( recompiles < 100 ); // recompiling frequently? you probably need an std::unordered_map< string, shader > to store these :)
        
         m_pixelShaderMergeTexturesConversionCode = mergeCode;
-        m_pixelShaderMergeTextures->CreateShaderFromFile( "vaPostProcess.hlsl", "PSMergeTextures", { { "VA_POSTPROCESS_MERGETEXTURES", "" }, { "VA_POSTPROCESS_MERGETEXTURES_CODE", mergeCode } }, true );
+        m_pixelShaderMergeTextures->CompileFromFile( "vaPostProcess.hlsl", "PSMergeTextures", { { "VA_POSTPROCESS_MERGETEXTURES", "" }, { "VA_POSTPROCESS_MERGETEXTURES_CODE", mergeCode }, { "VA_POSTPROCESS_MERGETEXTURES_UINT_VALUES", uintValues?"1":"0" } }, true );
     }
 
     if( srcTextureA == nullptr )
@@ -648,11 +650,11 @@ vaDrawResultFlags vaPostProcess::MergeTextures( vaRenderDeviceContext& renderCon
 
     //PostProcessConstants consts; memset( &consts, 0, sizeof( consts ) );
     //consts.Param1.x = vaMath::Clamp( hue, -1.0f, 1.0f );
-    //m_constantsBuffer.Update( renderContext, consts );
+    //m_constantBuffer.Update( renderContext, consts );
 
     vaGraphicsItem renderItem;
     m_renderDevice.FillFullscreenPassGraphicsItem( renderItem );
-    renderItem.ConstantBuffers[POSTPROCESS_CONSTANTSBUFFERSLOT] = m_constantsBuffer;
+    renderItem.ConstantBuffers[POSTPROCESS_CONSTANTSBUFFERSLOT] = m_constantBuffer;
     renderItem.ShaderResourceViews[0] = srcTextureA;
     renderItem.ShaderResourceViews[1] = (srcTextureB!=nullptr)?(srcTextureB):(srcTextureA);
     renderItem.ShaderResourceViews[2] = (srcTextureC!=nullptr)?(srcTextureC):(srcTextureA);
@@ -677,16 +679,16 @@ vaDrawResultFlags vaPostProcess::CopySliceToTexture3D( vaRenderDeviceContext & r
     }
 
     if( m_CSCopySliceTo3DTexture->IsEmpty() )
-        m_CSCopySliceTo3DTexture->CreateShaderFromFile( "vaPostProcess.hlsl", "CSCopySliceTo3DTexture", { { "VA_POSTPROCESS_3DTEXTURESTUFF", "" } }, true );
+        m_CSCopySliceTo3DTexture->CompileFromFile( "vaPostProcess.hlsl", "CSCopySliceTo3DTexture", { { "VA_POSTPROCESS_3DTEXTURESTUFF", "" } }, true );
 
     PostProcessConstants consts; memset( &consts, 0, sizeof( consts ) );
     consts.Param1.x = (float)dstTexture->GetSizeX();
     consts.Param1.y = (float)dstTexture->GetSizeZ();
     consts.Param1.z = (float)dstSlice;
-    m_constantsBuffer.Upload( renderContext, consts );
+    m_constantBuffer->Upload( renderContext, consts );
 
     vaComputeItem computeItem;
-    computeItem.ConstantBuffers[POSTPROCESS_CONSTANTSBUFFERSLOT] = m_constantsBuffer;
+    computeItem.ConstantBuffers[POSTPROCESS_CONSTANTSBUFFERSLOT] = m_constantBuffer;
     computeItem.ShaderResourceViews[0] = srcTexture;
     computeItem.ComputeShader = m_CSCopySliceTo3DTexture;
     computeItem.SetDispatch( (dstTexture->GetSizeX() + 7)/8, (dstTexture->GetSizeY() + 7)/8, 1 );

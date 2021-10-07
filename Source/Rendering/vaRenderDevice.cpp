@@ -40,6 +40,8 @@
 
 #include "Rendering/vaSceneRenderer.h"
 
+#include "Rendering/vaGPUSort.h"
+
 #include "Core/vaProfiler.h"
 
 #ifdef VA_TASKFLOW_INTEGRATION_ENABLED
@@ -156,6 +158,7 @@ thread_local vaRenderDeviceThreadLocal vaRenderDevice::s_threadLocal;
 
 void vaRenderDevice::RegisterModules( )
 {
+    // VA_RENDERING_MODULE_REGISTER_GENERIC( vaRenderCamera ); <- this is a special case for now
     VA_RENDERING_MODULE_REGISTER_GENERIC( vaSceneRenderer );
     VA_RENDERING_MODULE_REGISTER_GENERIC( vaRenderInstanceStorage );
     VA_RENDERING_MODULE_REGISTER_GENERIC( vaRenderGlobals );
@@ -171,6 +174,7 @@ void vaRenderDevice::RegisterModules( )
     // VA_RENDERING_MODULE_REGISTER_GENERIC( vaAssetPackManager );
     VA_RENDERING_MODULE_REGISTER_GENERIC( vaSkybox );
     VA_RENDERING_MODULE_REGISTER_GENERIC( vaPathTracer );
+    VA_RENDERING_MODULE_REGISTER_GENERIC( vaGPUSort );
 }
 
 vaRenderDevice::vaRenderDevice( )
@@ -214,13 +218,13 @@ void vaRenderDevice::InitializeBase( )
 
     m_assetPackManager  = std::make_shared<vaAssetPackManager>( *this );
 
-    m_renderMeshManager = CreateModule<vaRenderMeshManager>( );
+    m_renderMeshManager = CreateModule<vaRenderMeshManager>( );     m_renderMeshManager->PostCreateInitialize( );
     m_renderGlobals     = CreateModule<vaRenderGlobals>( );
 
     // fullscreen triangle stuff & related
     {
         m_PPConstants = CreateModule< vaConstantBuffer>( );
-        m_PPConstants->Create( sizeof( PostProcessConstants ), nullptr, true, 0 );
+        m_PPConstants->Create( sizeof( PostProcessConstants ), "PostProcessConstants", nullptr, true, 0 );
 
         m_fsVertexShader                = CreateModule< vaVertexShader> ( );
         m_copyResourcePS                = CreateModule< vaPixelShader > ( );
@@ -235,7 +239,7 @@ void vaRenderDevice::InitializeBase( )
         // full screen pass vertex shader
         {
             const char * pVSString = "void main( inout const float4 xPos : SV_Position, inout float2 UV : TEXCOORD0 ) { }";
-            m_fsVertexShader->CreateShaderAndILFromBuffer( pVSString, "main", inputElements, vaShaderMacroContaner(), false );
+            m_fsVertexShader->CompileVSAndILFromBuffer( pVSString, "main", inputElements, vaShaderMacroContaner(), false );
         }
 
         // copy resource shader
@@ -247,12 +251,12 @@ void vaRenderDevice::InitializeBase( )
                 "   return g_source.Load( int3( xPos.xy, 0 ) );                 \n"
                 "}                                                              \n";
 
-            m_copyResourcePS->CreateShaderFromBuffer( shaderCode, "main", vaShaderMacroContaner(), false );
+            m_copyResourcePS->CompileFromBuffer( shaderCode, "main", vaShaderMacroContaner(), false );
         }
 
-        m_vertexShaderStretchRect->CreateShaderAndILFromFile(   "vaPostProcess.hlsl", "VSStretchRect", inputElements, { }, false );
-        m_pixelShaderStretchRectLinear->CreateShaderFromFile(   "vaPostProcess.hlsl", "PSStretchRectLinear", { }, false );
-        m_pixelShaderStretchRectPoint->CreateShaderFromFile(    "vaPostProcess.hlsl", "PSStretchRectPoint", { }, false );
+        m_vertexShaderStretchRect->CompileVSAndILFromFile(   "vaPostProcess.hlsl", "VSStretchRect", inputElements, { }, false );
+        m_pixelShaderStretchRectLinear->CompileFromFile(   "vaPostProcess.hlsl", "PSStretchRectLinear", { }, false );
+        m_pixelShaderStretchRectPoint->CompileFromFile(    "vaPostProcess.hlsl", "PSStretchRectPoint", { }, false );
 
         {
             // using one big triangle
@@ -262,7 +266,7 @@ void vaRenderDevice::InitializeBase( )
             fsVertices[1] = SimpleVertex( 3.0f,   1.0f, z, 1.0f, 2.0f, 0.0f );
             fsVertices[2] = SimpleVertex( -1.0f, -3.0f, z, 1.0f, 0.0f, 2.0f );
 
-            m_fsVertexBufferZ0 = vaRenderBuffer::Create<SimpleVertex>( *this, countof( fsVertices ), vaRenderBufferFlags::VertexIndexBuffer, fsVertices, "FSVertexBufferZ0" );
+            m_fsVertexBufferZ0 = vaRenderBuffer::Create<SimpleVertex>( *this, countof( fsVertices ), vaRenderBufferFlags::VertexIndexBuffer, "FSVertexBufferZ0", fsVertices );
         }
 
         {
@@ -273,7 +277,7 @@ void vaRenderDevice::InitializeBase( )
             fsVertices[1] = SimpleVertex( 3.0f,   1.0f, z, 1.0f, 2.0f, 0.0f );
             fsVertices[2] = SimpleVertex( -1.0f, -3.0f, z, 1.0f, 0.0f, 2.0f );
 
-            m_fsVertexBufferZ1 = vaRenderBuffer::Create<SimpleVertex>( *this, countof( fsVertices ), vaRenderBufferFlags::VertexIndexBuffer, fsVertices, "FSVertexBufferZ1" );
+            m_fsVertexBufferZ1 = vaRenderBuffer::Create<SimpleVertex>( *this, countof( fsVertices ), vaRenderBufferFlags::VertexIndexBuffer, "FSVertexBufferZ1", fsVertices );
         }
 
         // this still lets all of them compile in parallel, just ensures they're done before leaving the function

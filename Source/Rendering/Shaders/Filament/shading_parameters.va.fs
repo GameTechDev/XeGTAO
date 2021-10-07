@@ -3,7 +3,7 @@
 // This provides functionality of Filament 'computeShadingParams' and 'prepareMaterial' in Vanilla; see shading_parameters.fs for 
 // original code & comments
 
-ShadingParams ComputeShadingParams( const SurfaceInteraction surface, const MaterialInputs material, float ssao )
+ShadingParams ComputeShadingParams( const SurfaceInteraction surface, const MaterialInputs material, const uint2 screenSamplingPos )
 {
     ShadingParams shading;
 
@@ -46,18 +46,20 @@ ShadingParams ComputeShadingParams( const SurfaceInteraction surface, const Mate
     
     // vanilla does it a bit simpler - also clamp values below 0 and don't do anything in case of VA_RM_SPECIAL_EMISSIVE_LIGHT
     // <removed pre-exposure multiplier from here so it doesn't apply itself twice for the special emissive lights where it gets multiplied by the light intensity that was premultiplied already>
-    float emissiveIntensity = max( 0, material.EmissiveIntensity ); // * g_globals.PreExposureMultiplier; // pow( 2.0, g_globals.EV100 + material.EmissiveIntensity - 3.0) * g_globals.PreExposureMultiplier;
-    shading.PrecomputedEmissive = material.EmissiveColor * material.EmissiveIntensity.xxx;
+    shading.PrecomputedEmissive = max( 0, material.EmissiveColorIntensity );
 #endif
 
-#if VA_RM_ACCEPTSHADOWS
+#if !defined(RAYTRACED_SHADOWS)
     shading.CubeShadows     = ComputeCubeShadowsParams( surface.ObjectspaceNoise, surface.WorldspacePos.xyz );
 #endif
 
-    shading.IBL             = ComputeIBLParams( surface.ObjectspaceNoise, surface.WorldspacePos.xyz, shading.GeometricNormal, material.VA_RM_LOCALIBL_NORMALBIAS, material.VA_RM_LOCALIBL_BIAS );
+    shading.IBL             = ComputeIBLParams( surface.WorldspacePos.xyz, shading.GeometricNormal, material.VA_RM_LOCALIBL_NORMALBIAS, material.VA_RM_LOCALIBL_BIAS );
+
+    float ssaoTerm; 
+    SampleSSAO( screenSamplingPos, shading.Normal, ssaoTerm, shading.BentNormal );
 
 #if !VA_RM_TRANSPARENT || VA_RM_DECAL   // only sample SSAO if we're not transparent, unless we're a decal (in which case we lay on opaque surface by definition, so SSAO is correct)
-    shading.DiffuseAmbientOcclusion = min( material.AmbientOcclusion, ssao );
+    shading.DiffuseAmbientOcclusion = min( material.AmbientOcclusion, ssaoTerm );
 #else
     shading.DiffuseAmbientOcclusion = material.AmbientOcclusion;
 #endif

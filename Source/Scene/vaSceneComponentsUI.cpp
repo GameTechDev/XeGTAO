@@ -467,8 +467,12 @@ void LightPoint::UITick( UIArgs & uiArgs )
     }
     if( spotLight )
     {
-        ImGui::InputFloat( "SpotInnerAngle", &SpotInnerAngle );
-        ImGui::InputFloat( "SpotOuterAngle", &SpotOuterAngle );
+        float spotInnerAngleDeg = vaMath::RadianToDegree( SpotInnerAngle );
+        float spotOuterAngleDeg = vaMath::RadianToDegree( SpotOuterAngle );
+        ImGui::InputFloat( "SpotInnerAngle", &spotInnerAngleDeg );
+        ImGui::InputFloat( "SpotOuterAngle", &spotOuterAngleDeg );
+        SpotInnerAngle = vaMath::DegreeToRadian( spotInnerAngleDeg );
+        SpotOuterAngle = vaMath::DegreeToRadian( spotOuterAngleDeg );
     }
 
     ImGui::Separator( );
@@ -486,20 +490,24 @@ void LightPoint::UIDraw( const entt::registry & registry, entt::entity entity, v
 
     vaVector3 position = transformWorld->GetTranslation( );
     vaVector3 direction = transformWorld->GetAxisX( ).Normalized( );
-    canvas3D.DrawLightViz( position, direction, this->Size, this->Range, this->SpotInnerAngle, this->SpotOuterAngle, this->Color );
+    canvas3D.DrawLightViz( position, direction, this->Size, this->Range, std::max( 0.0001f, this->SpotInnerAngle ), std::max( 0.0001f, this->SpotOuterAngle ), this->Color );
     //        canvas3D.DrawBox( *this, 0x80202020, 0x30A01010, transformWorld );
 }
 
-void MaterialPicksLightEmissive::UITick( UIArgs& )
+void EmissiveMaterialDriver::UITick( UIArgs & uiArgs )
 {
-    ImGui::InputFloat( "IntensityMultiplier",   &IntensityMultiplier );
-    ImGui::InputFloat( "OriginalMultiplier",    &OriginalMultiplier  );
+    ImGui::InputFloat3( "EmissiveMultiplier",       &EmissiveMultiplier.x );
+    
+    ReferenceLightEntity.DrawUI( uiArgs, "ReferenceLight" );
+
+    if( ReferenceLightEntity != entt::null )
+        ImGui::InputFloat( "ReferenceLightMultiplier",  &ReferenceLightMultiplier );
 }
 
-void MaterialPicksLightEmissive::Validate( entt::registry& , entt::entity )
+void EmissiveMaterialDriver::Validate( entt::registry& , entt::entity )
 {
-    IntensityMultiplier = vaMath::Clamp( IntensityMultiplier, 0.0f, 100000.0f );
-    OriginalMultiplier  = vaMath::Clamp( OriginalMultiplier,  0.0f, 1.0f );
+    vaVector3::Clamp( EmissiveMultiplier, {0,0,0}, {1e16f,1e16f,1e16f} );
+    ReferenceLightMultiplier = vaMath::Clamp( ReferenceLightMultiplier, 0.0f, 1e16f );
 }
 
 void FogSphere::UITick( UIArgs & uiArgs )
@@ -659,3 +667,48 @@ void IBLProbe::UITick( UIArgs& uiArgs )
 #endif
 }
 
+void EntityReference::DrawUI( UIArgs & uiArgs, const string & name )
+{
+    // what gets displayed on the button
+    string buttonName = vaStringTools::Format( "%s entity: %s", name.c_str(), Scene::GetName( uiArgs.Registry, entt::entity(*this) ).c_str() );
+    
+    // context menu
+    const char* popupName = "ClickEntityReference";
+    if( ImGui::Button( buttonName.c_str( ), { -1, 0 } ) )
+        ImGui::OpenPopup( popupName );
+
+    if( ImGui::BeginPopup( popupName ) )
+    {
+        if( m_entity == entt::null )
+        {
+            ImGui::Text( "No reference - drag and drop from Scene entity list" );
+        }
+        else
+        {
+            if( ImGui::MenuItem( "Disconnect" ) )
+            {
+                ImGui::CloseCurrentPopup( );
+                Set( uiArgs.Registry, entt::null );
+            }
+            if( ImGui::MenuItem( "Highlight in scene" ) )
+            {
+                ImGui::CloseCurrentPopup();
+                Scene::UIHighlight( uiArgs.Registry, m_entity );
+            }
+        }
+        ImGui::EndPopup( );
+    }
+
+    if( ImGui::BeginDragDropTarget( ) )
+    {
+        if( const ImGuiPayload* payload = ImGui::AcceptDragDropPayload( DragDropNodeData::PayloadTypeName( ) ) )
+        {
+            assert( payload->DataSize == sizeof( DragDropNodeData ) );
+            const DragDropNodeData & data = *reinterpret_cast<DragDropNodeData*>( payload->Data );
+            assert( data.SceneUID == uiArgs.Registry.ctx<Scene::UID>() );
+            Set( uiArgs.Registry, data.Entity );
+        }
+        ImGui::EndDragDropTarget( );
+    }
+
+}

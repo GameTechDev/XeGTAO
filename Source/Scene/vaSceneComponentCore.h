@@ -52,11 +52,92 @@ namespace Vanilla
             }
         };
 
+        // ImGui drag and drop data
+        struct DragDropNodeData
+        {
+            vaGUID                      SceneUID;
+            entt::entity                Entity;
+            static const char*          PayloadTypeName( ) { return "DND_SCENE_NODE"; };
+            bool operator == ( const DragDropNodeData & other ) { return this->SceneUID == other.SceneUID && this->Entity == other.Entity; }
+        };
+
+        // will trigger vaScene highlight event
+        struct UIHighlightRequest
+        {
+            entt::entity                Entity;
+        };
+
+        // UIDs are unique and don't have to be part of an entity; registry.ctx<Scene::UID> is always there and specifies scene UID
+        struct UID : public vaGUID           
+        { 
+            UID(){} 
+            UID( const vaGUID & copy ) { Data1 = copy.Data1; Data2 = copy.Data2; Data3 = copy.Data3; for( int i = 0; i < _countof( Data4 ); i++ ) Data4[i] = copy.Data4[i]; }
+            // bool                            Serialize( vaSerializer & serializer ); // UID handled manually for tracking reasons
+        };
+
+        // this makes it possible to assign UIDs that persist through serialization
+        class UIDRegistry
+        {
+            entt::registry &                m_registry;
+            std::unordered_map< Scene::UID, entt::entity, vaGUIDHasher >
+                                            m_UIDMap;
+
+        public:
+            UIDRegistry( entt::registry & registry );
+            ~UIDRegistry( );
+
+            UID                             GetOrCreate( entt::entity entity );
+            entt::entity                    Find( const Scene::UID & uid ) const;
+            const entt::registry &          Registry( ) const                           { return m_registry; }
+
+        protected:
+            void                            OnDisallowedOperation( entt::registry &, entt::entity );
+            void                            OnDestroy( entt::registry &, entt::entity );
+            void                            OnEmplace( entt::registry &, entt::entity );
+        };
+
+        bool LoadJSON( entt::registry & registry, const string & filePath );
+        struct SerializeArgs
+        {
+        private:
+            friend class EntityReference;
+            friend bool Scene::LoadJSON( entt::registry & registry, const string & filePath );
+            std::vector<std::pair<class EntityReference *, UID>>   
+                                            LoadedReferences;
+            const Scene::UIDRegistry &      UIDRegistry;
+        public:
+            SerializeArgs( const Scene::UIDRegistry & uidRegistry ) : UIDRegistry( uidRegistry ) { }
+        };
+
+        // Reference to another entity that persists through serialization (via the use of UID or another approach)
+        class EntityReference
+        {
+            entt::entity                    m_entity = entt::null;
+
+        public:
+            EntityReference( )                                                                  { }
+            EntityReference( entt::registry & registry, entt::entity entity )                   { m_entity = entity; if( entity != entt::null ) registry.ctx<Scene::UIDRegistry>().GetOrCreate(entity); }
+            EntityReference( UIDRegistry & uidRegistry, entt::entity entity )                   { m_entity = entity; if( entity != entt::null ) uidRegistry.GetOrCreate(entity); }
+            EntityReference( const UIDRegistry & uidRegistry, const Scene::UID & uid )          { if( uid != vaGUID::Null ) { m_entity = uidRegistry.Find( uid ); assert( m_entity != entt::null ); } }
+
+            // it is user's duty to check if the returned entity is still alive!
+                                            operator entt::entity ( ) const                     { return m_entity; }
+            bool                            operator == ( const entt::entity & other ) const    { return m_entity == other; };
+            bool                            operator != ( const entt::entity & other ) const    { return m_entity != other; };
+            bool                            operator == ( const entt::null_t other ) const      { return m_entity == other; };
+            bool                            operator != ( const entt::null_t other ) const      { return m_entity != other; };
+
+            bool                            Serialize( SerializeArgs & args, vaSerializer & serializer, const string & key );
+
+            void                            DrawUI( UIArgs & uiArgs, const string & name );
+
+            void                            Set( entt::registry & registry, entt::entity entity )   { *this = EntityReference( registry, entity ); }
+        };
+
         // Makes the component visible in Properties panel and elsewhere. This will allow creation/destruction through UI even without it implementing UITick.
         // When UITick function is implemented, it implies UIVisible flag.
         struct UIVisible { };
         struct UIAddRemoveResetDisabled { };
-
 
         // This is for enforcing custom access rights at runtime (such as that components can only be destroyed by setting a DestroyTag and not directly).
         // A lot of this is ignored in Release builds, but not all. It can have 3 global states (see AccessPermissions::State) and more fine grained 
@@ -156,7 +237,7 @@ namespace Vanilla
             static bool             UIAddRemoveResetDisabled( int typeIndex );
 
             static bool             HasSerialize( int typeIndex );
-            static bool             Serialize( int typeIndex, entt::registry & registry, entt::entity entity, class vaSerializer & serializer );
+            static bool             Serialize( int typeIndex, entt::registry & registry, entt::entity entity, SerializeArgs & args, class vaSerializer & serializer );
 
             static bool             HasValidate( int typeIndex );
             static void             Validate( int typeIndex, entt::registry & registry, entt::entity entity );
@@ -213,7 +294,7 @@ namespace Vanilla
                         TotalCountCallback          = {};
 
             // std::function<void*( )> constructor/destructor?
-            std::function<bool( entt::registry & registry, entt::entity entity, class vaSerializer & serializer )>
+            std::function<bool( entt::registry & registry, entt::entity entity, Scene::SerializeArgs & args, class vaSerializer & serializer )>
                         SerializerCallback          = {};
             std::function<void( entt::registry & registry, entt::entity entity, Scene::UIArgs & uiArgs )>
                         UITickCallback              = {};
@@ -260,8 +341,24 @@ namespace Vanilla
     private:
         template<typename T>
         static constexpr auto check( T* ) -> typename std::is_same<
-            decltype( std::declval<T>( ).Serialize( std::declval<vaSerializer&>( ) ) ), bool
-            //                           ^^name^^^               ^^^^arguments^^^^     ^retval^  
+            decltype( std::declval<T>( ).Serialize( std::declval< vaSerializer& >( ) ) ), bool
+            //                           ^^name^^^                ^^^arguments^^^       ^retval^
+        >::type;  // attempt to call it and see if the return type is correct
+
+        template<typename>  static constexpr std::false_type check( ... );
+        typedef decltype( check<C>( 0 ) ) type;
+    public:
+        static constexpr bool value = type::value;
+    };
+    //
+    template<typename C>
+    struct component_has_serialize_with_args
+    {
+    private:
+        template<typename T>
+        static constexpr auto check( T* ) -> typename std::is_same<
+            decltype( std::declval<T>( ).Serialize( std::declval< Scene::SerializeArgs & >( ), std::declval< vaSerializer& >( ) ) ), bool
+            //                           ^^name^^^                ^^^^^^^^^^^^^^^^^^^^^^^^^^arguments^^^^^^^^^^^^^^^^^^^^^^^^^^^        ^retval^  
         >::type;  // attempt to call it and see if the return type is correct
 
         template<typename>  static constexpr std::false_type check( ... );
@@ -397,24 +494,41 @@ namespace Vanilla
                                     = [ ] ( entt::registry & registry, entt::entity entity )    { registry.emplace_or_replace<ComponentType>( entity ); };
         typeInfo.RemoveCallback     = [ ] ( entt::registry & registry, entt::entity entity )    { registry.remove<ComponentType>( entity ); };
         typeInfo.TotalCountCallback = [ ] ( entt::registry & registry )                         { return (int)registry.size<ComponentType>( ); };
+        static_assert( ! (constexpr( component_has_serialize<ComponentType>::value ) && constexpr( component_has_serialize_with_args<ComponentType>::value ) ) ); //shouldn't have both versions of Serialize!
         if constexpr( component_has_serialize<ComponentType>::value )
         {
             if constexpr( std::is_empty_v<ComponentType> )
             {
-                // registry.get doesn't work on empty types so handle it manually; the call doesn't actually need to happen (because there's
-                // nothing to serialize) but it's used for asserting for components that shouldn't be present at serialization and etc. so
-                // leave it in.
-                typeInfo.SerializerCallback = [ ]( entt::registry &, entt::entity, vaSerializer & serializer ) -> bool
-                { ComponentType dummy; return dummy.Serialize( serializer ); };
+                // registry.get doesn't work on empty types so handle it manually; the call doesn't actually need to happen (because there's nothing 
+                // to serialize) but it's used for asserting for components that shouldn't be present at serialization and etc. so leave it in.
+                typeInfo.SerializerCallback = [ ]( entt::registry &, entt::entity, Scene::SerializeArgs & args, vaSerializer & serializer ) -> bool
+                { ComponentType dummy; return dummy.Serialize( serializer ); args; };
                 logInfo += "has empty type (tag) serializer; ";
             }
             else
             {
-                typeInfo.SerializerCallback = [ ] ( entt::registry& registry, entt::entity entity, vaSerializer & serializer ) -> bool
-                    { return registry.get<ComponentType>(entity).Serialize( serializer ); };
+                typeInfo.SerializerCallback = [ ] ( entt::registry& registry, entt::entity entity, Scene::SerializeArgs & args, vaSerializer & serializer ) -> bool
+                { return registry.get<ComponentType>(entity).Serialize( serializer ); args; };
                 logInfo += "has serializer; ";
             }
-        }
+        } 
+        if constexpr( component_has_serialize_with_args<ComponentType>::value )
+        {
+            if constexpr( std::is_empty_v<ComponentType> )
+            {
+                // registry.get doesn't work on empty types so handle it manually; the call doesn't actually need to happen (because there's nothing 
+                // to serialize) but it's used for asserting for components that shouldn't be present at serialization and etc. so leave it in.
+                typeInfo.SerializerCallback = [ ]( entt::registry &, entt::entity, Scene::SerializeArgs & args, vaSerializer & serializer ) -> bool
+                { ComponentType dummy; return dummy.Serialize( args, serializer ); };
+                logInfo += "has empty type (tag) serializer+; ";
+            }
+            else
+            {
+                typeInfo.SerializerCallback = [ ] ( entt::registry& registry, entt::entity entity, Scene::SerializeArgs & args, vaSerializer & serializer ) -> bool
+                { return registry.get<ComponentType>(entity).Serialize( args, serializer ); };
+                logInfo += "has serializer+; ";
+            }
+        } 
         if constexpr( component_has_uitick<ComponentType>::value )
         {
             typeInfo.UIVisible          = true;

@@ -148,9 +148,9 @@ vaSceneMainRenderView::vaSceneMainRenderView( const shared_ptr<vaSceneRenderer> 
     m_GTAO                  = parentRenderer->GetRenderDevice( ).CreateModule<vaGTAO>( );
 
 #if 0
-    m_CSSmartUpsampleFloat->CreateShaderFromFile( L"vaHelperTools.hlsl", "cs_5_0", "SmartUpscaleCS", { ( pair< string, string >( "VA_SMART_UPSCALE_SPECIFIC", "" ) ) }, false );
-    m_CSSmartUpsampleUnorm->CreateShaderFromFile( L"vaHelperTools.hlsl", "cs_5_0", "SmartUpscaleCS", { ( pair< string, string >( "VA_SMART_UPSCALE_SPECIFIC", "" ) ), pair< string, string >( "VA_SMART_UPSCALE_UNORM_FLOAT", "" ) }, false );
-    m_PSSmartUpsampleDepth->CreateShaderFromFile( L"vaHelperTools.hlsl", "ps_5_0", "SmartUpscaleDepthPS", { ( pair< string, string >( "VA_SMART_UPSCALE_SPECIFIC", "" ) ) }, false );
+    m_CSSmartUpsampleFloat->CompileFromFile( L"vaHelperTools.hlsl", "cs_5_0", "SmartUpscaleCS", { ( pair< string, string >( "VA_SMART_UPSCALE_SPECIFIC", "" ) ) }, false );
+    m_CSSmartUpsampleUnorm->CompileFromFile( L"vaHelperTools.hlsl", "cs_5_0", "SmartUpscaleCS", { ( pair< string, string >( "VA_SMART_UPSCALE_SPECIFIC", "" ) ), pair< string, string >( "VA_SMART_UPSCALE_UNORM_FLOAT", "" ) }, false );
+    m_PSSmartUpsampleDepth->CompileFromFile( L"vaHelperTools.hlsl", "ps_5_0", "SmartUpscaleDepthPS", { ( pair< string, string >( "VA_SMART_UPSCALE_SPECIFIC", "" ) ) }, false );
 #endif
 }
 
@@ -241,19 +241,19 @@ void vaSceneMainRenderView::UITick( vaApplicationBase & application )
 #endif    
     }
 
-    ImGuiEx_Combo( "AO", (int&)m_settings.AOOption, { string("Disabled"), string("ASSAOLite"), string("XeGTAO") } );
+    ImGuiEx_Combo( "AO", (int&)m_settings.AOOption, { string("Disabled"), string("ASSAOLite"), string("XeGTAO"), string("XeGTAO+BentNormals") } );
     
     if( m_settings.AOOption != 0 )
     {
 //        VA_GENERIC_RAII_SCOPE( ImGui::Indent();, ImGui::Unindent(); );
         ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.0f, 0.8f, 0.5f, 1.0f ) );
-        ImGui::Checkbox( "Display debug AO channel only", &m_settings.DebugShowAO );
+        ImGui::Checkbox( (m_settings.AOOption == 3)?("Display debug AO*BentNormal channel only"):("Display debug AO channel only"), &m_settings.DebugShowAO );
         ImGui::PopStyleColor( );
         //ImGui::Text( (m_settings.AOOption==1)?("ASSAO-specific settings:"):("XeGTAO-specific settings") );
 #ifdef VA_GTAO_SAMPLE
         if( m_settings.AOOption == 1 )
             m_ASSAO->UIPanelTickCollapsable( application, false, true, true );
-        else if( m_settings.AOOption == 2 )
+        else if( m_settings.AOOption == 2 || m_settings.AOOption == 3 )
             m_GTAO->UIPanelTickCollapsable( application, false, true, true );
 #endif
     }
@@ -346,7 +346,7 @@ void vaSceneMainRenderView::PreRenderTick( float deltaTime )
                 VA_LOG_WARNING( "TAA does not work with pure path tracer at the moment - disabling TAA." );
             suppressTAA = true;
         }
-        if( m_settings.AOOption == 2 && m_GTAO != nullptr && m_GTAO->RequiresRaytracing() && m_renderDevice.GetCapabilities().Raytracing.Supported )
+        if( (m_settings.AOOption == 2 || (m_settings.AOOption == 3)) && m_GTAO != nullptr && m_GTAO->RequiresRaytracing() && m_renderDevice.GetCapabilities().Raytracing.Supported )
         {
             if( !prevSuppressTAA )
                 VA_LOG_WARNING( "TAA does not work with GTAO reference ray tracer at the moment - disabling TAA." );
@@ -458,37 +458,38 @@ void vaSceneMainRenderView::RenderTickInternal( vaRenderDeviceContext & renderCo
     bool hasDepthPrepass = depthPrepass != DepthPrepassType::None;
 
     // SSAO!
-    shared_ptr<vaTexture> ssaoBuffer = nullptr;
-    if( /*m_settings.AOOption != 0 &&*/ hasDepthPrepass )
+    shared_ptr<vaTexture> ssaoData = nullptr;
+    if( hasDepthPrepass )
     {
-        if( m_SSAOScratchBuffer == nullptr || m_SSAOScratchBuffer->GetSize( ) != m_workingDepth->GetSize( ) )
+        // R32_FLOAT is for bent normals + AO, R8_UNORM is for just AO
+        vaResourceFormat requiredFormat = (m_settings.AOOption==3)?(vaResourceFormat::R32_UINT):(vaResourceFormat::R8_UINT);
+        if( m_SSAOData == nullptr || m_SSAOData->GetSize( ) != m_workingPreTonemapColor->GetSize( ) || m_SSAOData->GetResourceFormat( ) != requiredFormat )
         {
 #ifdef _DEBUG   // just an imperfect way of making sure SSAO scratch buffer isn't getting re-created continuously (will also get triggered if you change res 1024 times... so that's why it's imperfect)
             static int recreateCount = 0; recreateCount++;
             assert( recreateCount < 1024 );
 #endif
-            m_SSAOScratchBuffer = vaTexture::Create2D( GetRenderDevice( ), vaResourceFormat::R8_UNORM, m_workingDepth->GetWidth( ), m_workingDepth->GetHeight( ), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
-            m_SSAOScratchBuffer->SetName( "SSAOScratchBuffer" );
+            m_SSAOData = vaTexture::Create2D( GetRenderDevice( ), requiredFormat, m_workingDepth->GetWidth( ), m_workingDepth->GetHeight( ), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
+            m_SSAOData->SetName( "SSAOData" );
         }
-        ssaoBuffer = m_SSAOScratchBuffer;
     }
 
     if( m_settings.AOOption == 0 && hasDepthPrepass )
     {
         // no AA - clear with 'white' - used to set it to nullptr previously but that sped up the rest of the pipeline and made on/off performance comparison for
         // just AO techniques more difficult; so now "no AO" is literally AO with no O :)
-        ssaoBuffer->ClearUAV( renderContext, 1.0f );
+        m_SSAOData->ClearUAV( renderContext, 1.0f );
     } 
     else if( m_settings.AOOption == 1 && m_ASSAO != nullptr && hasDepthPrepass )
     {
-        drawResults |= m_ASSAO->Compute( renderContext, ssaoBuffer, m_camera->GetViewMatrix( ), m_camera->GetProjMatrix( ), m_workingDepth, m_workingNormals );
+        drawResults |= m_ASSAO->Compute( renderContext, m_SSAOData, m_camera->GetViewMatrix( ), m_camera->GetProjMatrix( ), m_workingDepth, m_workingNormals );
     }
-    else if( m_settings.AOOption == 2 && m_GTAO != nullptr && hasDepthPrepass )
+    else if( (m_settings.AOOption == 2 || m_settings.AOOption == 3) && m_GTAO != nullptr && hasDepthPrepass )
     {
         if( m_GTAO->RequiresRaytracing() && m_renderDevice.GetCapabilities().Raytracing.Supported )
             drawResults |= m_GTAO->ComputeReferenceRTAO( renderContext, *m_camera, raytracer.get(), m_workingDepth );
 
-        drawResults |= m_GTAO->Compute( renderContext, *m_camera, m_TAA != nullptr, ssaoBuffer, m_workingDepth, m_workingNormals );
+        drawResults |= m_GTAO->Compute( renderContext, *m_camera, m_TAA != nullptr, m_settings.AOOption == 3, m_SSAOData, m_workingDepth, m_workingNormals );
     }
 
     vaRenderOutputs preTonemapOutputs = vaRenderOutputs::FromRTDepth( m_workingPreTonemapColor, m_workingDepth );
@@ -497,7 +498,7 @@ void vaSceneMainRenderView::RenderTickInternal( vaRenderDeviceContext & renderCo
     if( !m_settings.PathTracer )
     {
         // Opaque stuff
-        drawResults |= sceneRenderer->DrawOpaque( renderContext, preTonemapOutputs, m_selectionOpaque, m_sortOpaque, *m_camera, globalSettings, (hasDepthPrepass)?(ssaoBuffer):(nullptr), true );
+        drawResults |= sceneRenderer->DrawOpaque( renderContext, preTonemapOutputs, m_selectionOpaque, m_sortOpaque, *m_camera, globalSettings, (m_settings.AOOption!=0)?(m_SSAOData):(nullptr), true );
         m_basicStats.ItemsDrawn += (int)m_selectionOpaque.Count( );
     }
     else 
@@ -522,12 +523,21 @@ void vaSceneMainRenderView::RenderTickInternal( vaRenderDeviceContext & renderCo
     // Debug stuff that goes before TAA/tonemapping
     bool debugViewActive = false;
     {
-        if( m_settings.DebugShowAO && ssaoBuffer != nullptr && m_settings.AOOption != 0 )
+        if( m_settings.DebugShowAO && m_settings.AOOption != 0 )
         {
-            if( m_settings.AOOption == 2 && (m_GTAO->DebugShowEdges() || m_GTAO->DebugShowNormals() || m_GTAO->ReferenceRTAOEnabled() ) )
-            { debugViewActive = true; drawResults |= pp.MergeTextures( renderContext, m_workingPreTonemapColor, m_GTAO->DebugImage(), nullptr, nullptr, "float4( srcA.xyz, 1.0 )" ); }
+            debugViewActive = true; 
+            if( (m_settings.AOOption == 2 || m_settings.AOOption == 3) && (m_GTAO->DebugShowImage() || m_GTAO->ReferenceRTAOEnabled() ) )
+            { 
+                drawResults |= pp.MergeTextures( renderContext, m_workingPreTonemapColor, m_GTAO->DebugImage(), nullptr, nullptr, "float4( srcA.xyz, 1.0 )" ); 
+            }
             else
-            { debugViewActive = true; drawResults |= pp.MergeTextures( renderContext, m_workingPreTonemapColor, ssaoBuffer, nullptr, nullptr, "float4( srcA.xxx, 1.0 )" ); }
+            { 
+                if( m_settings.AOOption == 3 )
+                    //drawResults |= pp.MergeTextures( renderContext, m_workingPreTonemapColor, m_SSAOData, nullptr, nullptr, "float4( DisplayNormalSRGB(R11G11B10_UNORM_to_FLOAT3(asuint(srcA.x)) * 2.0.xxx - 1.0.xxx), 1.0 )" ); 
+                    drawResults |= pp.MergeTextures( renderContext, m_workingPreTonemapColor, m_SSAOData, nullptr, nullptr, "float4( DecodeVisibilityBentNormal_VisibilityOnly(srcA.x).xxx, 1.0 )", true ); 
+                else
+                    drawResults |= pp.MergeTextures( renderContext, m_workingPreTonemapColor, m_SSAOData, nullptr, nullptr, "float4( srcA.xxx/255.0, 1.0 )", true ); 
+            }
         }
         if( m_settings.PathTracer && m_pathTracer != nullptr && m_pathTracer->DebugViz() != ShaderDebugViewType::None )
         { debugViewActive = true; } //drawResults |= pp.MergeTextures( renderContext, m_workingPreTonemapColor, m_workingPreTonemapColor, nullptr, nullptr, "float4( SRGB_to_LINEAR(srcA.rgb), 1.0 )" ); }
@@ -546,7 +556,7 @@ void vaSceneMainRenderView::RenderTickInternal( vaRenderDeviceContext & renderCo
         {
             currentSettingsHash = vaMath::Hash32Combine( currentSettingsHash, (m_GTAO->Use16bitMath())?(1):(0) );
             currentSettingsHash = vaMath::Hash32Combine( currentSettingsHash, m_GTAO->Settings().QualityLevel );
-            currentSettingsHash = vaMath::Hash32Combine( currentSettingsHash, m_GTAO->Settings().DenoiseLevel );
+            currentSettingsHash = vaMath::Hash32Combine( currentSettingsHash, m_GTAO->Settings().DenoisePasses );
         }
         // when the data becomes valid, reset TAA
         currentSettingsHash = vaMath::Hash32Combine( currentSettingsHash, ((currentDrawResults | drawResults) != vaDrawResultFlags::None )?(1):(0) );
@@ -696,7 +706,7 @@ void vaSceneMainRenderView::RenderTick( float deltaTime, vaRenderDeviceContext &
         if( m_SS->AccumulationColor == nullptr || m_SS->AccumulationColor->GetWidth() != outputViewport.Width || m_SS->AccumulationColor->GetHeight() != outputViewport.Height )
         {
             m_SS->AccumulationColor = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R16G16B16A16_FLOAT, outputViewport.Width, outputViewport.Height, 1, 1, 1, vaResourceBindSupportFlags::RenderTarget | vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
-            m_SSAOScratchBuffer->SetName( "SSAccumulation" );
+            m_SS->AccumulationColor->SetName( "SSAccumulation" );
         }
 
         workingViewport = vaViewport( outputViewport.Width * m_SS->GetSSResScale(), outputViewport.Height * m_SS->GetSSResScale() );
@@ -896,7 +906,7 @@ void vaSceneMainRenderView::RenderTick( float deltaTime, vaRenderDeviceContext &
             vaComputeItem computeItem;
             vaRenderOutputs outputs;
 
-            //computeItem.ConstantBuffers[ZOOMTOOL_CONSTANTSBUFFERSLOT] = m_constantsBuffer;
+            //computeItem.ConstantBuffers[ZOOMTOOL_CONSTANTSBUFFERSLOT] = m_constantBuffer;
             outputs.UnorderedAccessViews[0] = m_outputColor;
             computeItem.ShaderResourceViews[0] = m_workingPostTonemapColor;
             computeItem.ShaderResourceViews[1] = m_workingDepth;

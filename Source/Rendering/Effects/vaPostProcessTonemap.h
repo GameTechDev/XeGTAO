@@ -10,20 +10,8 @@
 
 #pragma once
 
-#include "Core/vaCoreIncludes.h"
 #include "Core/vaUI.h"
-
 #include "Rendering/vaRendering.h"
-#include "Rendering/vaShader.h"
-#include "Rendering/vaRenderCamera.h"
-
-#include "Rendering/vaTexture.h"
-
-#include "Rendering/Effects/vaPostProcessBlur.h"
-
-#include "Rendering/Shaders/vaSharedTypes.h"
-
-#include "Rendering/Shaders/vaPostProcessShared.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // at the moment, very simple Reinhard implementation 
@@ -64,7 +52,7 @@ namespace Vanilla
 
         //float                                       m_lastAverageLuminance;
 
-        shared_ptr<vaPostProcessBlur>               m_bloomBlur;
+        shared_ptr<class vaPostProcessBlur>         m_bloomBlur;
 
         vaAutoRMI<vaPixelShader>                    m_PSPassThrough;
         vaAutoRMI<vaPixelShader>                    m_PSTonemap;
@@ -80,8 +68,7 @@ namespace Vanilla
 
         PostProcessTonemapConstants                 m_lastShaderConsts;
 
-        vaTypedConstantBufferWrapper< PostProcessTonemapConstants, true >
-                                                    m_constantsBuffer;
+        shared_ptr<vaConstantBuffer>                m_constantBuffer;
 
         std::vector< pair< string, string > >       m_staticShaderMacros;
 
@@ -92,7 +79,7 @@ namespace Vanilla
         virtual ~vaPostProcessTonemap( );
 
     public:
-        virtual vaDrawResultFlags                   TickAndApplyCameraPostProcess( vaRenderDeviceContext & renderContext, vaRenderCamera & renderCamera, const std::shared_ptr<vaTexture> & dstColor, const std::shared_ptr<vaTexture> & srcRadiance, const AdditionalParams & additionalParams = AdditionalParams() );
+        virtual vaDrawResultFlags                   TickAndApplyCameraPostProcess( vaRenderDeviceContext & renderContext, class vaRenderCamera & renderCamera, const std::shared_ptr<vaTexture> & dstColor, const std::shared_ptr<vaTexture> & srcRadiance, const AdditionalParams & additionalParams = AdditionalParams() );
 
     public:
         //TMSettings &                                Settings( )                                 { return m_settings; }

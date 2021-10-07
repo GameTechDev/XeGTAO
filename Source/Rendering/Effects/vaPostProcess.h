@@ -10,16 +10,7 @@
 
 #pragma once
 
-#include "Core/vaCoreIncludes.h"
-
 #include "Rendering/vaRendering.h"
-
-#include "Rendering/vaTexture.h"
-
-#include "Rendering/Shaders/vaSharedTypes.h"
-#include "Rendering/vaShader.h"
-
-#include "Rendering/vaRenderBuffers.h"
 
 namespace Vanilla
 {
@@ -48,8 +39,7 @@ namespace Vanilla
         std::shared_ptr<vaTexture>                  m_comparisonResultsGPU;
         std::shared_ptr<vaTexture>                  m_comparisonResultsCPU;
 
-        vaTypedConstantBufferWrapper< PostProcessConstants, true >
-                                                    m_constantsBuffer;
+        shared_ptr<vaConstantBuffer>                m_constantBuffer;
 
         vaAutoRMI<vaPixelShader>                    m_pixelShaderSingleSampleMS[8];
 
@@ -131,7 +121,7 @@ namespace Vanilla
         // expects current render target to be the same size as the input reference depth; expects srcOffscreenColor and srcOffscreenLinearDepth to be of the same size and either same size, 1/2 x 1/2 or 1/4 x 1/4 of the render target
         virtual vaDrawResultFlags                   SmartOffscreenUpsampleComposite( vaRenderDeviceContext & renderContext, const vaRenderOutputs & renderOutputs, const vaDrawAttributes & drawAttributes, const shared_ptr<vaTexture> & srcOffscreenColor, const shared_ptr<vaTexture> & srcOffscreenLinearDepth, const shared_ptr<vaTexture> & srcReferenceDepth );
 
-        virtual vaDrawResultFlags                   MergeTextures( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & dstTexture, const shared_ptr<vaTexture> & srcTextureA, const shared_ptr<vaTexture> & srcTextureB, const shared_ptr<vaTexture> & srcTextureC, const string & mergeCode = "float4( srcA.rgb, srcB.r )" );
+        virtual vaDrawResultFlags                   MergeTextures( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & dstTexture, const shared_ptr<vaTexture> & srcTextureA, const shared_ptr<vaTexture> & srcTextureB, const shared_ptr<vaTexture> & srcTextureC, const string & mergeCode = "float4( srcA.rgb, srcB.r )", bool uintValues = false );
 
         // generate MIPs (currently only box filter supported)
         virtual vaDrawResultFlags                   FilterMIPLevel( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & dstTexture, const shared_ptr<vaTexture> & srcTexture );

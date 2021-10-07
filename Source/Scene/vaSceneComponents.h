@@ -32,9 +32,6 @@ namespace Vanilla
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // System components 
         //
-        // UIDs are unique and don't have to be part of an entity; registry.ctx<Scene::UID> is always there and specifies scene UID
-        struct UID: public vaGUID           { };
-        //
         // Names are not unique and don't have to be part of an entity; registry.ctx<Scene::Name> is always there and specifies scene name
         // Name is the only component (other than Relationship) that gets serialized outside of standard serialization path to enable easier debugging.
         struct Name : public std::string    { };
@@ -268,19 +265,27 @@ namespace Vanilla
         // ********************************************************************************************
 
         // This one indicates that 
-        struct MaterialPicksLightEmissive : public UIVisible
+        struct EmissiveMaterialDriver : public UIVisible
         {
             static const char* UITypeInfo( ) { return
-                "If this component is attached, and there are LightPoint and RenderMesh components attached, the rendered"
-                "material will emit light's color * intensity, scaled by the component's IntensityMultiplier parameter."; }
+                "If this component is attached, user can set a manual or automatic multiplier for any emissive material"
+                "of a RenderMesh component of this specific entity. "
+                "There are two modes - setting EmissiveMultiplier manually/programmatically or having it being "
+                "picked up by the light contained in ReferenceLightEntity, scaled by ReferenceLightScale. "
+                "Keep in mind that in the 'IsAttachedToLight' mode, it will prevent the instance from creating"
+                "diffuse emissive lights." ; }
 
-            float                           IntensityMultiplier     = 100.0f;
-            float                           OriginalMultiplier      = 0.0f;
+            vaVector3                       EmissiveMultiplier      = {1, 1, 1};
+
+            EntityReference                 ReferenceLightEntity;                   // null means this is manually controlled
+            float                           ReferenceLightMultiplier= 100.0f;       // if ReferenceLightEntity != null, it will take its light intensity*color
+
+            bool                            IsAttachedToLight( ) const      { return ReferenceLightEntity != entt::null; }
 
             void                            UITick( UIArgs& uiArgs );
             void                            Validate( entt::registry & registry, entt::entity entity );
 
-            bool                            Serialize( vaSerializer & serializer );
+            bool                            Serialize( SerializeArgs & args, vaSerializer & serializer );
         };
 
         // simple list of renderable mesh-es attached to this entity - there's no LODding or anything fancy-schmancy for now

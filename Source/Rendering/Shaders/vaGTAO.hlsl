@@ -40,14 +40,14 @@ RWTexture2D<lpfloat>        g_outWorkingDepthMIP4   : register( u4 );   // outpu
 Texture2D<lpfloat>          g_srcWorkingDepth       : register( t0 );   // viewspace depth with MIPs, output by XeGTAO_PrefilterDepths16x16 and consumed by XeGTAO_MainPass
 Texture2D<uint>             g_srcNormalmap          : register( t1 );   // source normal map (if used)
 Texture2D<uint>             g_srcHilbertLUT         : register( t5 );   // hilbert lookup table  (if any)
-RWTexture2D<lpfloat>        g_outWorkingVisibility  : register( u0 );   // output visibility (not denoised - warning, can be >1)
+RWTexture2D<uint>           g_outWorkingAOTerm      : register( u0 );   // output AO term (includes bent normals if enabled - packed as R11G11B10 scaled by AO)
 RWTexture2D<unorm float>    g_outWorkingEdges       : register( u1 );   // output depth-based edges used by the denoiser
 RWTexture2D<uint>           g_outNormalmap          : register( u0 );   // output viewspace normals if generating from depth
 
 // input output textures for the third pass (XeGTAO_Denoise)
-Texture2D<lpfloat>          g_srcWorkingVisibility  : register( t0 );   // coming from previous pass
+Texture2D<uint>             g_srcWorkingAOTerm      : register( t0 );   // coming from previous pass
 Texture2D<lpfloat>          g_srcWorkingEdges       : register( t1 );   // coming from previous pass
-RWTexture2D<lpfloat>        g_outFinalVisibility    : register( u0 );   // final AO term
+RWTexture2D<uint>           g_outFinalAOTerm        : register( u0 );   // final AO term - just 'visibility' or 'visibility + bent normals'
 
 // Engine-specific normal map loader
 lpfloat3 LoadNormal( int2 pos )
@@ -55,10 +55,7 @@ lpfloat3 LoadNormal( int2 pos )
 #if 1
     // special decoding for external normals stored in 11_11_10 unorm - modify appropriately to support your own encoding 
     uint packedInput = g_srcNormalmap.Load( int3(pos, 0) ).x;
-    float3 unpackedOutput; // float3 unpackedOutput; // unpack from R11G11B10_UNORM -> [0, 1] -> [-1, 1]
-    unpackedOutput.x = (float)((packedInput) & 0x000007ff) / 2047.0f;
-    unpackedOutput.y = (float)((packedInput >> 11) & 0x000007ff) / 2047.0f;
-    unpackedOutput.z = (float)((packedInput >> 22) & 0x000003ff) / 1023.0f;
+    float3 unpackedOutput = XeGTAO_R11G11B10_UNORM_to_FLOAT3( packedInput );
     float3 normal = normalize(unpackedOutput * 2.0.xxx - 1.0.xxx);
 #else 
     // example of a different encoding
@@ -105,9 +102,7 @@ void CSPrefilterDepths16x16( uint2 dispatchThreadID : SV_DispatchThreadID, uint2
 void CSGTAOLow( const uint2 pixCoord : SV_DispatchThreadID )
 {
     // g_samplerPointClamp is a sampler with D3D12_FILTER_MIN_MAG_MIP_POINT filter and D3D12_TEXTURE_ADDRESS_MODE_CLAMP addressing mode
-    GTAOResult res = XeGTAO_MainPass( pixCoord, 1, 2, SpatioTemporalNoise(pixCoord, g_GTAOConsts.NoiseIndex), LoadNormal(pixCoord), g_GTAOConsts, g_srcWorkingDepth, g_samplerPointClamp );
-    g_outWorkingVisibility[pixCoord]= res.Visibility; //SpatioTemporalNoise(pixCoord, g_GTAOConsts.NoiseIndex).x;
-    g_outWorkingEdges[pixCoord]     = res.PackedEdgesLRTB;
+    XeGTAO_MainPass( pixCoord, 1, 2, SpatioTemporalNoise(pixCoord, g_GTAOConsts.NoiseIndex), LoadNormal(pixCoord), g_GTAOConsts, g_srcWorkingDepth, g_samplerPointClamp, g_outWorkingAOTerm, g_outWorkingEdges );
 }
 
 // Engine-specific entry point for the second pass
@@ -115,9 +110,7 @@ void CSGTAOLow( const uint2 pixCoord : SV_DispatchThreadID )
 void CSGTAOMedium( const uint2 pixCoord : SV_DispatchThreadID )
 {
     // g_samplerPointClamp is a sampler with D3D12_FILTER_MIN_MAG_MIP_POINT filter and D3D12_TEXTURE_ADDRESS_MODE_CLAMP addressing mode
-    GTAOResult res = XeGTAO_MainPass( pixCoord, 2, 2, SpatioTemporalNoise(pixCoord, g_GTAOConsts.NoiseIndex), LoadNormal(pixCoord), g_GTAOConsts, g_srcWorkingDepth, g_samplerPointClamp );
-    g_outWorkingVisibility[pixCoord]= res.Visibility; //SpatioTemporalNoise(pixCoord, g_GTAOConsts.NoiseIndex).x;
-    g_outWorkingEdges[pixCoord]     = res.PackedEdgesLRTB;
+    XeGTAO_MainPass( pixCoord, 2, 2, SpatioTemporalNoise(pixCoord, g_GTAOConsts.NoiseIndex), LoadNormal(pixCoord), g_GTAOConsts, g_srcWorkingDepth, g_samplerPointClamp, g_outWorkingAOTerm, g_outWorkingEdges );
 }
 
 // Engine-specific entry point for the second pass
@@ -125,20 +118,7 @@ void CSGTAOMedium( const uint2 pixCoord : SV_DispatchThreadID )
 void CSGTAOHigh( const uint2 pixCoord : SV_DispatchThreadID )
 {
     // g_samplerPointClamp is a sampler with D3D12_FILTER_MIN_MAG_MIP_POINT filter and D3D12_TEXTURE_ADDRESS_MODE_CLAMP addressing mode
-    GTAOResult res = XeGTAO_MainPass( pixCoord, 3, 3, SpatioTemporalNoise(pixCoord, g_GTAOConsts.NoiseIndex), LoadNormal(pixCoord), g_GTAOConsts, g_srcWorkingDepth, g_samplerPointClamp );
-
-#if 0 // for noise reference testing without TAA
-    float k = 0; const int loopk = 64;
-    for( int i = 0; i < loopk; i++ )
-    {
-        res = XeGTAO_MainPass( pixCoord, 3, 3, SpatioTemporalNoise(pixCoord, g_GTAOConsts.NoiseIndex+i), LoadNormal(pixCoord), g_GTAOConsts, g_srcWorkingDepth, g_samplerPointClamp );
-        k += res.Visibility;
-    }
-    res.Visibility = lpfloat(k/float(loopk));
-#endif
-
-    g_outWorkingVisibility[pixCoord]= res.Visibility;
-    g_outWorkingEdges[pixCoord]     = res.PackedEdgesLRTB;
+    XeGTAO_MainPass( pixCoord, 3, 3, SpatioTemporalNoise(pixCoord, g_GTAOConsts.NoiseIndex), LoadNormal(pixCoord), g_GTAOConsts, g_srcWorkingDepth, g_samplerPointClamp, g_outWorkingAOTerm, g_outWorkingEdges );
 }
 
 // Engine-specific entry point for the second pass
@@ -146,25 +126,24 @@ void CSGTAOHigh( const uint2 pixCoord : SV_DispatchThreadID )
 void CSGTAOUltra( const uint2 pixCoord : SV_DispatchThreadID )
 {
     // g_samplerPointClamp is a sampler with D3D12_FILTER_MIN_MAG_MIP_POINT filter and D3D12_TEXTURE_ADDRESS_MODE_CLAMP addressing mode
-    GTAOResult res = XeGTAO_MainPass( pixCoord, 9, 3, SpatioTemporalNoise( pixCoord, g_GTAOConsts.NoiseIndex ), LoadNormal( pixCoord ), g_GTAOConsts, g_srcWorkingDepth, g_samplerPointClamp );
-    g_outWorkingVisibility[pixCoord]= res.Visibility;
-    g_outWorkingEdges[pixCoord]     = res.PackedEdgesLRTB;
+    XeGTAO_MainPass( pixCoord, 9, 3, SpatioTemporalNoise( pixCoord, g_GTAOConsts.NoiseIndex ), LoadNormal( pixCoord ), g_GTAOConsts, g_srcWorkingDepth, g_samplerPointClamp, g_outWorkingAOTerm, g_outWorkingEdges );
 }
 
 // Engine-specific entry point for the third pass
-[numthreads(XE_GTAO_DENOISE_EXTERIOR_THREADS_X, XE_GTAO_DENOISE_EXTERIOR_THREADS_Y, 1)]
-void CSPreDenoise( uint2 groupThreadID : SV_GroupThreadID, uint2 groupID : SV_GroupID )
+[numthreads(XE_GTAO_NUMTHREADS_X, XE_GTAO_NUMTHREADS_Y, 1)]
+void CSDenoisePass( const uint2 dispatchThreadID : SV_DispatchThreadID )
 {
+    const uint2 pixCoordBase = dispatchThreadID * uint2( 2, 1 );    // we're computing 2 horizontal pixels at a time (performance optimization)
     // g_samplerPointClamp is a sampler with D3D12_FILTER_MIN_MAG_MIP_POINT filter and D3D12_TEXTURE_ADDRESS_MODE_CLAMP addressing mode
-    XeGTAO_Denoise( groupThreadID, groupID, g_GTAOConsts, g_srcWorkingVisibility, g_srcWorkingEdges, g_samplerPointClamp, g_outFinalVisibility, false );
+    XeGTAO_Denoise( pixCoordBase, g_GTAOConsts, g_srcWorkingAOTerm, g_srcWorkingEdges, g_samplerPointClamp, g_outFinalAOTerm, false );
 }
 
-// Engine-specific entry point for the third pass
-[numthreads(XE_GTAO_DENOISE_EXTERIOR_THREADS_X, XE_GTAO_DENOISE_EXTERIOR_THREADS_Y, 1)]
-void CSDenoise( uint2 groupThreadID : SV_GroupThreadID, uint2 groupID : SV_GroupID )
+[numthreads(XE_GTAO_NUMTHREADS_X, XE_GTAO_NUMTHREADS_Y, 1)]
+void CSDenoiseLastPass( const uint2 dispatchThreadID : SV_DispatchThreadID )
 {
+    const uint2 pixCoordBase = dispatchThreadID * uint2( 2, 1 );    // we're computing 2 horizontal pixels at a time (performance optimization)
     // g_samplerPointClamp is a sampler with D3D12_FILTER_MIN_MAG_MIP_POINT filter and D3D12_TEXTURE_ADDRESS_MODE_CLAMP addressing mode
-    XeGTAO_Denoise( groupThreadID, groupID, g_GTAOConsts, g_srcWorkingVisibility, g_srcWorkingEdges, g_samplerPointClamp, g_outFinalVisibility, true );
+    XeGTAO_Denoise( pixCoordBase, g_GTAOConsts, g_srcWorkingAOTerm, g_srcWorkingEdges, g_samplerPointClamp, g_outFinalAOTerm, true );
 }
 
 // Optional screen space viewspace normals from depth generation
@@ -174,11 +153,7 @@ void CSGenerateNormals( const uint2 pixCoord : SV_DispatchThreadID )
     float3 viewspaceNormal = XeGTAO_ComputeViewspaceNormal( pixCoord, g_GTAOConsts, g_srcRawDepth, g_samplerPointClamp );
 
     // pack from [-1, 1] to [0, 1] and then to R11G11B10_UNORM
-    viewspaceNormal = saturate( viewspaceNormal * 0.5 + 0.5 );
-    uint packedOutput = ( uint( saturate( viewspaceNormal.x ) * 2047 + 0.5f ) )         |
-                        ( uint( saturate( viewspaceNormal.y ) * 2047 + 0.5f ) << 11 )   |
-                        ( uint( saturate( viewspaceNormal.z ) * 1023 + 0.5f ) << 22 );
-    g_outNormalmap[ pixCoord ] = packedOutput;
+    g_outNormalmap[ pixCoord ] = XeGTAO_FLOAT3_to_R11G11B10_UNORM( saturate( viewspaceNormal * 0.5 + 0.5 ) );
 }
 ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

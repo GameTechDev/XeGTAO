@@ -20,9 +20,6 @@ namespace Vanilla
 
 #define float3      vaVector3
 #define float4      vaVector4
-#define saturate    vaMath::Saturate
-#define min         vaComponentMin
-#define max         vaComponentMax
 
 struct _FIU32 { union{ int32_t _i; uint32_t _ui; float _f; };               _FIU32( const int32_t & i ) { _i = i; } _FIU32( const uint32_t & ui ) { _ui = ui; } _FIU32( const float & f ) { _f = f; }  };
 struct _FIU16 { union{ int16_t _i; uint16_t _ui; half_float::half _f; };    _FIU16( const int32_t & i ) { _i = (int16_t)i; } _FIU16( const uint32_t & ui ) { _ui = (uint16_t)ui; } _FIU16( const int16_t & i ) { _i = i; } _FIU16( const uint16_t & ui ) { _ui = ui; } _FIU16( const half_float::half & f ) { _f = f; }  };
@@ -32,12 +29,6 @@ struct _FIU16 { union{ int16_t _i; uint16_t _ui; half_float::half _f; };    _FIU
 
 #define f32tof16(x)     _FIU16(half_float::half(x))._ui
 #define f16tof32(x)     _FIU16(x)._f  
-
-#define VA_INLINE       inline
-
-#else
-
-#define VA_INLINE       
 
 #endif
 
@@ -97,17 +88,17 @@ VA_INLINE float4 R8G8B8A8_UNORM_to_FLOAT4( uint packedInput )
 }
 VA_INLINE uint FLOAT4_to_R8G8B8A8_UNORM( float4 unpackedInput )
 {
-    return ( ( uint( saturate( unpackedInput.x ) * 255 + 0.5 ) ) |
-             ( uint( saturate( unpackedInput.y ) * 255 + 0.5 ) << 8 ) |
-             ( uint( saturate( unpackedInput.z ) * 255 + 0.5 ) << 16 ) |
-             ( uint( saturate( unpackedInput.w ) * 255 + 0.5 ) << 24 ) );
+    return ( ( uint( VA_SATURATE( unpackedInput.x ) * 255 + 0.5 ) ) |
+             ( uint( VA_SATURATE( unpackedInput.y ) * 255 + 0.5 ) << 8 ) |
+             ( uint( VA_SATURATE( unpackedInput.z ) * 255 + 0.5 ) << 16 ) |
+             ( uint( VA_SATURATE( unpackedInput.w ) * 255 + 0.5 ) << 24 ) );
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // R11G11B10_UNORM <-> float3
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-VA_INLINE float3 Unpack_R11G11B10_UNORM( uint packedInput )
+VA_INLINE float3 R11G11B10_UNORM_to_FLOAT3( uint packedInput )
 {
     float3 unpackedOutput;
     unpackedOutput.x = (float)( ( packedInput       ) & 0x000007ff ) / 2047.0f;
@@ -116,12 +107,12 @@ VA_INLINE float3 Unpack_R11G11B10_UNORM( uint packedInput )
     return unpackedOutput;
 }
 // 'unpackedInput' is float3 and not float3 on purpose as half float lacks precision for below!
-VA_INLINE uint Pack_R11G11B10_UNORM( float3 unpackedInput )
+VA_INLINE uint FLOAT3_to_R11G11B10_UNORM( float3 unpackedInput )
 {
     uint packedOutput;
-    packedOutput =( ( uint( saturate( unpackedInput.x ) * 2047 + 0.5f ) ) |
-                    ( uint( saturate( unpackedInput.y ) * 2047 + 0.5f ) << 11 ) |
-                    ( uint( saturate( unpackedInput.z ) * 1023 + 0.5f ) << 22 ) );
+    packedOutput =( ( uint( VA_SATURATE( unpackedInput.x ) * 2047 + 0.5f ) ) |
+                    ( uint( VA_SATURATE( unpackedInput.y ) * 2047 + 0.5f ) << 11 ) |
+                    ( uint( VA_SATURATE( unpackedInput.z ) * 1023 + 0.5f ) << 22 ) );
     return packedOutput;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -137,10 +128,10 @@ VA_INLINE uint Pack_R10G10B10FLOAT_A2_UNORM( float4 rgba )
     // Clamp upper bound so that it doesn't accidentally round up to INF 
     // Exponent=15, Mantissa=1.11111
     float mf = asfloat(0x477C0000);
-    uint r = ((f32tof16(min(rgba.x, mf)) + 16) >> 5) & 0x000003FF;
-    uint g = ((f32tof16(min(rgba.y, mf)) + 16) << 5) & 0x000FFC00;
-    uint b = ((f32tof16(min(rgba.z, mf)) + 16) << 15) & 0x3FF00000;
-    uint a = uint(saturate( rgba.w ) * 3 + 0.5f) << 30;
+    uint r = ((f32tof16(VA_MIN(rgba.x, mf)) + 16) >> 5) & 0x000003FF;
+    uint g = ((f32tof16(VA_MIN(rgba.y, mf)) + 16) << 5) & 0x000FFC00;
+    uint b = ((f32tof16(VA_MIN(rgba.z, mf)) + 16) << 15) & 0x3FF00000;
+    uint a = uint(VA_SATURATE( rgba.w ) * 3 + 0.5f) << 30;
     return r | g | b | a;
 }
 
@@ -181,7 +172,7 @@ VA_INLINE uint Pack_R11G11B10_FLOAT( float3 rgb )
     // Clamp upper bound so that it doesn't accidentally round up to INF 
     // Exponent=15, Mantissa=1.11111
     float mf = asfloat(0x477C0000);
-    rgb = min(rgb, float3(mf, mf, mf));  
+    rgb = VA_MIN(rgb, float3(mf, mf, mf));  
     uint r = ((f32tof16(rgb.x) + 8) >> 4) & 0x000007FF;
     uint g = ((f32tof16(rgb.y) + 8) << 7) & 0x003FF800;
     uint b = ((f32tof16(rgb.z) + 16) << 17) & 0xFFC00000;
@@ -597,9 +588,6 @@ float3 NormalDecode_XY_LAEA( float2 normalIn )
 
 #undef float3     
 #undef float4     
-#undef saturate   
-#undef min        
-#undef max        
 #undef asfloat
 #undef asuint
 #undef f32tof16

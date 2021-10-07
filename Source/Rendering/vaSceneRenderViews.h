@@ -125,8 +125,9 @@ namespace Vanilla
 
         shared_ptr<vaASSAOLite>             m_ASSAO;
         shared_ptr<vaGTAO>                  m_GTAO;
-        shared_ptr<vaTexture>               m_SSAOScratchBuffer;            // gets written and read by 'DrawSceneOpaque' - not really meant for use beyond that
-//        shared_ptr<vaDepthOfField>          m_DepthOfField;
+        //
+        shared_ptr<vaTexture>               m_SSAOData;                     // output by various SSAO variants : either 1-channel AO or a R32 encoded bent normal + AO
+        //        shared_ptr<vaDepthOfField>          m_DepthOfField;
 
         shared_ptr<vaPathTracer>            m_pathTracer                    = nullptr;
 
@@ -187,7 +188,7 @@ namespace Vanilla
 #if 0
             bool                                HalfResUpscale              = false;
 #endif
-            int                                 AOOption                    = 2;        // 0 - disabled, 1 - ASSAO, 2 - GTAO
+            int                                 AOOption                    = 3;        // 0 - disabled, 1 - ASSAO, 2 - GTAO, 3 - GTAO with bent normals
 
 #if defined(VA_GTAO_SAMPLE) && !defined(VA_SAMPLE_BUILD_FOR_LAB)
             bool                                DebugShowAO                 = true;

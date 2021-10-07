@@ -37,17 +37,17 @@ namespace Vanilla
         // dependencies (meshes, materials) are processed. Used items get processed into a list of "RenderInstance"-s
         struct SceneItem
         {
-            entt::entity                  Entity;
-            vaFramePtr<vaRenderMesh>      Mesh;
-            vaFramePtr<vaRenderMaterial>  Material;           // while this is actually part of material, we resolve the reference during insertion, also allowing for it to be overridden
+            entt::entity                    Entity;
+            vaFramePtr<vaRenderMesh>        Mesh;
+            vaFramePtr<vaRenderMaterial>    Material;           // while this is actually part of material, we resolve the reference during insertion, also allowing for it to be overridden
 
-            float                         DistanceFromRef;    // world distance from LOD reference point (which is usually just main camera position)
-            float                         MeshLOD;
+            float                           DistanceFromRef;    // world distance from LOD reference point (which is usually just main camera position)
+            float                           MeshLOD;
                         
             // this could be a bit field; non-const are modifiable by selection
-            bool                          IsUsed;             // any selections that will use this instance need to mark it as 'Used'
-            bool                          IsDecal;            // 'renderMaterial->GetMaterialSettings( ).LayerMode == vaLayerMode::Decal'
-            bool                          ShowAsSelected;     // will highlight the instance (for selection/UI purposes)
+            bool                            IsUsed;             // any selections that will use this instance need to mark it as 'Used'
+            bool                            IsDecal;            // 'renderMaterial->GetMaterialSettings( ).LayerMode == vaLayerMode::Decal'
+            bool                            ShowAsSelected;     // will highlight the instance (for selection/UI purposes)
         };
 
     private:

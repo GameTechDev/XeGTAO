@@ -9,6 +9,15 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "vaSceneLighting.h"
+
+#include "Rendering/vaRenderingIncludes.h"
+
+#include "vaTexture.h"
+
+#include "Rendering/vaRenderBuffers.h"
+
+#include "Rendering/vaRenderGlobals.h"
+
 #include "Rendering/Shaders/vaSharedTypes.h"
 
 #include "Rendering/vaTextureHelpers.h"
@@ -23,13 +32,44 @@
 
 #include "Rendering/vaDebugCanvas.h"
 
+#include "Core/vaApplicationBase.h"
+#include "Core/vaInput.h"
+
 using namespace Vanilla;
 
+
+vaSceneLighting::MainWorkNode::MainWorkNode( vaSceneLighting & lighting, vaScene & scene ) 
+    : Lighting( lighting ), Scene( scene ), BoundsView( scene.Registry().view<const Scene::WorldBounds>( ) ),
+    vaSceneAsync::WorkNode( "UpdateSceneLighting", {"bounds_done_marker"}, {"renderlists_done_marker"},
+        Scene::AccessPermissions::ExportPairLists<
+        const Scene::WorldBounds, const Scene::TransformWorld, const Scene::RenderMesh, const Scene::EmissiveMaterialDriver, 
+        const Scene::LightPoint, const Scene::Name, const Scene::Relationship, const Scene::IgnoreByIBLTag> () )
+{ 
+}
+
+void vaSceneLighting::MainWorkNode::ExecutePrologue( float deltaTime, int64 applicationTickIndex )
+{ 
+    ApplicationTickIndex = applicationTickIndex; DeltaTime = deltaTime; 
+}
+
+std::pair<uint, uint> vaSceneLighting::MainWorkNode::ExecuteNarrow( const uint32 pass, vaSceneAsync::ConcurrencyContext & ) 
+{
+    assert( pass == 0 ); pass; 
+    // Lighting.UpdateFromScene( Scene, DeltaTime, ApplicationTickIndex );
+    return {0,0};
+}
+
+void vaSceneLighting::MainWorkNode::ExecuteWide( const uint32 pass, const uint32 itemBegin, const uint32 itemEnd, vaSceneAsync::ConcurrencyContext & )
+{
+    pass;itemBegin;itemEnd;
+}
+
+
 vaSceneLighting::vaSceneLighting( const vaRenderingModuleParams & params ) : vaRenderingModule( vaRenderingModuleParams(params) ), 
-    m_constantsBuffer( params ),
+    m_constantBuffer( vaConstantBuffer::Create<ShaderLightingConstants>( params.RenderDevice, "ShaderLightingConstants" ) ),
     // m_applyDirectionalAmbientPS( params ),
     // m_applyDirectionalAmbientShadowedPS( params ),
-    vaUIPanel( "Lighting", 0, false, vaUIPanel::DockLocation::DockedLeftBottom )
+    vaUIPanel( "Lighting", 0, !VA_MINIMAL_UI_BOOL, vaUIPanel::DockLocation::DockedLeftBottom )
 {
     m_debugInfo = "Lighting";
 
@@ -37,19 +77,35 @@ vaSceneLighting::vaSceneLighting( const vaRenderingModuleParams & params ) : vaR
 //    m_lights.push_back( std::make_shared<vaLight>( vaLight::MakeAmbient( "DefaultAmbient", vaVector3( 0.3f, 0.3f, 1.0f ), 0.1f ) ) );
 //    m_lights.push_back( std::make_shared<vaLight>( vaLight::MakeDirectional( "DefaultDirectional", vaVector3( 1.0f, 1.0f, 0.9f ), 1.0f, vaVector3( 0.0f, -1.0f, -1.0f ).Normalized() ) ) );
 
-    m_simplePointLightBuffer = vaRenderBuffer::Create<ShaderLightPoint>( GetRenderDevice( ), ShaderLightPoint::MaxPointLights, vaRenderBufferFlags::None, "SimplePointLightBuffer" );
+    m_pointLightBuffer  = vaRenderBuffer::Create<ShaderLightPoint>( GetRenderDevice( ), ShaderLightPoint::MaxPointLights, vaRenderBufferFlags::None, "PointLightBuffer" );
+    m_lightTreeBuffer   = vaRenderBuffer::Create<ShaderLightTreeNode>( GetRenderDevice( ), ShaderLightPoint::MaxPointLights, vaRenderBufferFlags::None, "LightTreeBuffer" );
 
-    m_localIBLProbe      = std::make_shared<vaIBLProbe>( GetRenderDevice( ) );
-    m_distantIBLProbe    = std::make_shared<vaIBLProbe>( GetRenderDevice( ) );
-
-#ifdef LIGHT_CUTS_EXPERIMENTATION
-    m_nodeRenderBuffer          = vaRenderBuffer::Create<Node>( GetRenderDevice( ), m_nodeMaxElementCount, vaRenderBufferFlags::None, "TEST_RENDERBUFFER" );
-    m_nodeBLASLevelRenderBuffer = vaRenderBuffer::Create<float>( GetRenderDevice( ), m_nodeMaxElementCount, vaRenderBufferFlags::None, "TEST_BLAS" );
-#endif
+    m_localIBLProbe     = std::make_shared<vaIBLProbe>( GetRenderDevice( ) );
+    m_distantIBLProbe   = std::make_shared<vaIBLProbe>( GetRenderDevice( ) );
 }
 
 vaSceneLighting::~vaSceneLighting( )
 {
+
+}
+
+void vaSceneLighting::SetScene( const shared_ptr<class vaScene> & scene )
+{
+    Reset( );
+
+    if( m_scene == scene )
+        return;
+
+    // this actually disconnects work nodes
+    m_asyncWorkNodes.clear();
+
+    if( scene == nullptr )
+        return;
+
+    m_asyncWorkNodes.push_back( std::make_shared<MainWorkNode>( *this, *scene ) );
+
+    for( auto & node : m_asyncWorkNodes )
+        scene->Async().AddWorkNode( node );
 
 }
 
@@ -148,7 +204,7 @@ void vaSceneLighting::UpdateShaderConstants( vaRenderDeviceContext & renderConte
 
     if( m_AOTexture != nullptr )
     {
-        consts.AOMapEnabled     = 1;
+        consts.AOMapEnabled     = (m_AOTexture->GetResourceFormat() == vaResourceFormat::R32_UINT)?(2):(1);
         consts.AOMapTexelSize   = vaVector2( 1.0f / m_AOTexture->GetWidth(), 1.0f / m_AOTexture->GetHeight() );
     }
     else
@@ -161,26 +217,20 @@ void vaSceneLighting::UpdateShaderConstants( vaRenderDeviceContext & renderConte
     consts.Dummy1                   = 0;
     consts.Dummy2                   = 0;
 
-    float preExposureMultiplier = drawAttributes.Camera.GetPreExposureMultiplier( true );
+    // float preExposureMultiplier = drawAttributes.Camera.GetPreExposureMultiplier( true );
 
-    consts.AmbientLightIntensity    = vaVector4( m_collectedAmbientLightIntensity * preExposureMultiplier, 0.0f );
+    // consts.AmbientLightIntensity    = vaVector4( m_collectedAmbientLightIntensity * preExposureMultiplier, 0.0f );
 
     consts.LightCountPoint    = (uint)m_sortedPointLights.size();
     assert( consts.LightCountPoint < ShaderLightPoint::MaxPointLights );
     consts.LightCountPoint    = std::min( consts.LightCountPoint,   ShaderLightPoint::MaxPointLights );
 
-#ifdef LIGHT_CUTS_EXPERIMENTATION        
-    consts.SLC_TLASLeafStartIndex   = m_SLC_TLASLeafStartIndex;
-#else
-    consts.SLC_TLASLeafStartIndex   = 0;
-#endif
-    consts.SLC_ErrorLimit           = 0.001f;
-    consts.SLC_SceneRadius          = 10000.0f;
-
     // since sin(x) is close to x for very small x values then this actually works good enough
     consts.ShadowCubeDepthBiasScale             = m_shadowCubeDepthBiasScale / (float)m_shadowCubeResolution;
     consts.ShadowCubeFilterKernelSize           = m_shadowCubeFilterKernelSize / (float)m_shadowCubeResolution * 2.0f; // is this correct? basically approx cube sampling direction in .xy (if face is z) that moves by 1 pixel, roughly?
     consts.ShadowCubeFilterKernelSizeUnscaled   = m_shadowCubeFilterKernelSize;
+
+    consts.AmbientLightFromDistantIBL   = {0,0,0,0};
 
     memset( &consts.LocalIBL, 0, sizeof( consts.LocalIBL ) );
     memset( &consts.DistantIBL, 0, sizeof( consts.DistantIBL ) );
@@ -189,10 +239,19 @@ void vaSceneLighting::UpdateShaderConstants( vaRenderDeviceContext & renderConte
         if( m_localIBLProbe != nullptr )
             m_localIBLProbe->UpdateShaderConstants( drawAttributes, consts.LocalIBL );
         if( m_distantIBLProbe != nullptr )
+        {
             m_distantIBLProbe->UpdateShaderConstants( drawAttributes, consts.DistantIBL );
+
+            consts.AmbientLightFromDistantIBL = vaVector4( m_distantIBLProbe->GetContentsData( ).AmbientColor * m_distantIBLProbe->GetContentsData( ).AmbientColorIntensity, 0.0f );
+        }
     }
 
-    m_constantsBuffer.Upload( renderContext, consts );
+    consts.LightTreeTotalElements       = (int)m_lightTree.size();
+    consts.LightTreeDepth               = m_lightTreeDepth;
+    consts.LightTreeBottomLevelSize     = m_lightTreeBottomLevelSize;
+    consts.LightTreeBottomLevelOffset   = m_lightTreeBottomLevelOffset;
+
+    m_constantBuffer->Upload( renderContext, consts );
 }
 
 void vaSceneLighting::UpdateAndSetToGlobals( vaRenderDeviceContext & renderContext, vaShaderItemGlobals & shaderItemGlobals, const vaDrawAttributes & drawAttributes )
@@ -205,7 +264,7 @@ void vaSceneLighting::UpdateAndSetToGlobals( vaRenderDeviceContext & renderConte
     UpdateShaderConstants( renderContext, drawAttributes );
 
     assert( shaderItemGlobals.ConstantBuffers[ LIGHTINGGLOBAL_CONSTANTSBUFFERSLOT ] == nullptr );
-    shaderItemGlobals.ConstantBuffers[ LIGHTINGGLOBAL_CONSTANTSBUFFERSLOT ] = m_constantsBuffer.GetBuffer();
+    shaderItemGlobals.ConstantBuffers[ LIGHTINGGLOBAL_CONSTANTSBUFFERSLOT ] = m_constantBuffer;
 
     // assert( shaderItemGlobals.ShaderResourceViews[ SHADERGLOBAL_LIGHTING_ENVMAP_TEXTURESLOT ] == nullptr );
     // shaderItemGlobals.ShaderResourceViews[ SHADERGLOBAL_LIGHTING_ENVMAP_TEXTURESLOT ] = m_envmapTexture;
@@ -224,7 +283,9 @@ void vaSceneLighting::UpdateAndSetToGlobals( vaRenderDeviceContext & renderConte
             m_distantIBLProbe->SetToGlobals( shaderItemGlobals, 1 );
     }
 
-    shaderItemGlobals.ShaderResourceViews[LIGHTINGGLOBAL_SIMPLELIGHTS_SLOT] = m_simplePointLightBuffer;
+    shaderItemGlobals.ShaderResourceViews[LIGHTINGGLOBAL_SIMPLELIGHTS_SLOT] = m_pointLightBuffer;
+
+    shaderItemGlobals.ShaderResourceViews[LIGHTINGGLOBAL_LIGHT_TREE_SLOT] = m_lightTreeBuffer;
 
     if( m_renderBuffersDirty )
     {
@@ -232,41 +293,11 @@ void vaSceneLighting::UpdateAndSetToGlobals( vaRenderDeviceContext & renderConte
 
         if( m_sortedPointLights.size() > 0 )
         {
-            /*
-            // copy and offset by WorldBase and premultiply - must copy because m_collectedPointLights can still used for shadowmaps and etc.
-            // in the future this can be avoided but there's no point for now
-            m_collectedPointLightsToUpload.resize( m_collectedPointLights.size() );
-            for( uint i = 0; i < (uint)m_collectedPointLights.size(); i++ )
-            {
-                auto & light = m_collectedPointLightsToUpload[i];
-                light = m_collectedPointLights[i];
-                light.Position  -= drawAttributes.Settings.WorldBase;
-                light.Intensity *= preExposureMultiplier;
-                assert( light.SpotInnerAngle != 0 && light.SpotOuterAngle != 0 );
-                //{
-                //    consts.LightsSpotAndPoint[i].SpotInnerAngle = VA_PIf;
-                //    consts.LightsSpotAndPoint[i].SpotOuterAngle = VA_PIf;
-                //}
-            }
-            m_simplePointLightBuffer->Upload( renderContext, m_collectedPointLightsToUpload );
-            m_collectedPointLightsToUpload.clear();
-            */
-            m_simplePointLightBuffer->Upload( renderContext, m_sortedPointLights );
+            m_lightTreeBuffer->Upload( renderContext, m_lightTree );
+            m_pointLightBuffer->Upload( renderContext, m_sortedPointLights );
         }
-
-#ifdef LIGHT_CUTS_EXPERIMENTATION
-//        if( m_nodesBLASLevel.size() > 0 )
-//            m_nodeBLASLevelRenderBuffer->Upload( renderContext, m_nodesBLASLevel );
-
-        if( m_nodes.size() > 0 ) 
-            m_nodeRenderBuffer->Upload( renderContext, m_nodes );
-#endif
-
         m_renderBuffersDirty = false;
     }
-#ifdef LIGHT_CUTS_EXPERIMENTATION
-    shaderItemGlobals.ShaderResourceViews[LIGHTINGGLOBAL_SLC_BLAS_SLOT] = m_nodeRenderBuffer;
-#endif
 }
 
 shared_ptr<vaShadowmap> vaSceneLighting::GetNextHighestPriorityShadowmapForRendering( )
@@ -335,7 +366,7 @@ void vaSceneLighting::Reset( )
     m_distantIBLProbePendingData    = {};
     m_AOTexture                     = nullptr;
     m_worldBase                     = { 0, 0, 0 };  
-    m_collectedAmbientLightIntensity= { 0, 0, 0 };
+    // m_collectedAmbientLightIntensity= { 0, 0, 0 };
     m_collectedPointLightEntities.clear();
     m_collectedPointLights.clear();
     m_collectedPointLightsMetadata.clear();
@@ -447,32 +478,55 @@ void vaSceneLighting::UIPanelTick( vaApplicationBase & application )
 {
     application;
 #ifdef VA_IMGUI_INTEGRATION_ENABLED
-    ImGui::Text( "Shadowmaps: %d", (int)m_shadowmaps.size() );
-    vaUIPropertiesItem * ptrsToDisplay[4096];
-    int countToShow = std::min( (int)m_shadowmaps.size( ), (int)_countof( ptrsToDisplay ) );
-    for( int i = 0; i < countToShow; i++ ) ptrsToDisplay[i] = m_shadowmaps[i].get( );
-
-    int currentShadowmap = -1;
-    for( int i = 0; i < countToShow; i++ )
+    if( ImGui::CollapsingHeader( "Light tree" ) )
     {
-        if( m_UI_SelectedShadow.lock( ) == m_shadowmaps[i] )
-            currentShadowmap = i;
-        ptrsToDisplay[i] = m_shadowmaps[i].get( );
+        ImGui::Text( "Total lights: %d", (int)m_sortedPointLights.size() );
+        ImGui::Text( "Light tree depth: %d", (int)m_lightTreeDepth );
+        ImGui::Checkbox( "Show debug visualization", &m_debugVizLTEnable );
+        ImGui::Checkbox( "Show debug visualization text", &m_debugVizLTTextEnable );
+        ImGui::InputInt( "Level highlight", &m_debugVizLTHighlightLevel );
+        ImGui::Checkbox( "Single traversal test", &m_debugVizLTTraversalTest );
+        if( m_debugVizLTTraversalTest )
+        {
+            const std::vector<CursorHoverInfo>& cursorHoverInfo = GetRenderDevice().GetRenderGlobals().GetCursorHoverInfo( );
+            if( application.GetInputMouse( ) != nullptr && application.GetInputMouse( )->IsKeyClicked(MK_Left) && cursorHoverInfo.size() > 0 )
+                m_debugVizLTTraversalRefPt = cursorHoverInfo.back().WorldspacePos;
+
+            VA_GENERIC_RAII_SCOPE( ImGui::Indent();, ImGui::Unindent(); );
+            ImGui::InputInt( "Test count", &m_debugVizLTTraversalCount ); m_debugVizLTTraversalCount = vaMath::Clamp( m_debugVizLTTraversalCount, 0, 65536 );
+            ImGui::InputInt( "Random Seed", (int*)&m_debugVizLTTraversalSeed );
+        }
     }
 
-    vaUIPropertiesItem::DrawList( application, "Shadowmaps", ptrsToDisplay, countToShow, currentShadowmap, 0.0f, 90, 140.0f + ImGui::GetContentRegionAvail( ).x );
-    if( currentShadowmap >= 0 && currentShadowmap < countToShow )
-        m_UI_SelectedShadow = m_shadowmaps[currentShadowmap];
-
-    ImGui::Text("Shadowmap offset settings");
-    bool changed = false;
-    /*changed |= */ImGui::InputFloat( "CubeDepthBiasScale" , &m_shadowCubeDepthBiasScale, 0.05f );
-    /*changed |= */ImGui::InputFloat( "CubeFilterKernelSize" , &m_shadowCubeFilterKernelSize, 0.1f );
-    if( changed )
+    if( ImGui::CollapsingHeader( "Shadowmaps" ) )
     {
-        for( const shared_ptr<vaShadowmap> & shadowmap : m_shadowmaps )
+        ImGui::Text( "Shadowmaps: %d", (int)m_shadowmaps.size() );
+        vaUIPropertiesItem * ptrsToDisplay[4096];
+        int countToShow = std::min( (int)m_shadowmaps.size( ), (int)_countof( ptrsToDisplay ) );
+        for( int i = 0; i < countToShow; i++ ) ptrsToDisplay[i] = m_shadowmaps[i].get( );
+
+        int currentShadowmap = -1;
+        for( int i = 0; i < countToShow; i++ )
         {
-            shadowmap->Invalidate();
+            if( m_UI_SelectedShadow.lock( ) == m_shadowmaps[i] )
+                currentShadowmap = i;
+            ptrsToDisplay[i] = m_shadowmaps[i].get( );
+        }
+
+        vaUIPropertiesItem::DrawList( application, "Shadowmaps", ptrsToDisplay, countToShow, currentShadowmap, 0.0f, 90, 140.0f + ImGui::GetContentRegionAvail( ).x );
+        if( currentShadowmap >= 0 && currentShadowmap < countToShow )
+            m_UI_SelectedShadow = m_shadowmaps[currentShadowmap];
+
+        ImGui::Text("Shadowmap offset settings");
+        bool changed = false;
+        /*changed |= */ImGui::InputFloat( "CubeDepthBiasScale" , &m_shadowCubeDepthBiasScale, 0.05f );
+        /*changed |= */ImGui::InputFloat( "CubeFilterKernelSize" , &m_shadowCubeFilterKernelSize, 0.1f );
+        if( changed )
+        {
+            for( const shared_ptr<vaShadowmap> & shadowmap : m_shadowmaps )
+            {
+                shadowmap->Invalidate();
+            }
         }
     }
 #endif
@@ -630,10 +684,9 @@ bool vaSceneLighting::HasPendingVisualDependencies( )
     return false;
 }
 
-void vaSceneLighting::UpdateFromScene( const vaVector3 & worldBase, vaScene & scene, float deltaTime, int64 tickCounter )
+void vaSceneLighting::UpdateFromScene( vaScene & scene, float deltaTime, int64 tickCounter )
 {
     tickCounter;
-    m_worldBase             = worldBase;
 
     // Handle distant IBL
     bool hadDistantIBL = false;
@@ -737,7 +790,7 @@ void vaSceneLighting::UpdateFromScene( const vaVector3 & worldBase, vaScene & sc
         light.Intensity             = point.Intensity * point.FadeFactor;
         light.Position              = world.GetTranslation( ) - m_worldBase;
         light.Direction             = world.GetAxisX().Normalized();
-        light.Size                  = point.Size;
+        light.Size                  = std::max( VA_EPSf, point.Size );
         light.RTSizeModifier        = point.RTSizeModifier;
         light.Range                 = point.Range;
         light.SpotInnerAngle        = point.SpotInnerAngle;
@@ -765,10 +818,30 @@ void vaSceneLighting::UpdateFromScene( const vaVector3 & worldBase, vaScene & sc
         {
             m_collectedPointLights.push_back( light );
             m_collectedPointLightEntities.push_back( point.CastShadows?(entity):(entt::null) );
-            m_collectedPointLightsMetadata.push_back( {} );
-            m_collectedPointLightsSortIndices.push_back( (uint32)m_collectedPointLightsSortIndices.size() );
         }
     } );
+
+    // if no lights in scene, create a dummy light to avoid having to handle this case in shaders
+    if( m_collectedPointLights.size() == 0 )
+    {
+        ShaderLightPoint light;
+        light.Color                 = vaVector3(1,1,1);
+        light.Intensity             = 0.0f;
+        light.Position              = vaVector3(0,0,0);
+        light.Direction             = vaVector3(0,0,1);
+        light.Size                  = 1.0f;
+        light.RTSizeModifier        = 0;
+        light.Range                 = 0;
+        light.SpotInnerAngle        = 0;
+        light.SpotOuterAngle        = 0;
+        m_collectedPointLights.push_back( light );
+        m_collectedPointLightEntities.push_back( entt::null );
+    }
+
+    // initialize meta-data
+    m_collectedPointLightsMetadata.resize( m_collectedPointLights.size() );
+    m_collectedPointLightsSortIndices.resize( m_collectedPointLights.size() );
+    for( int i = 0; i < (int)m_collectedPointLightsSortIndices.size(); i++ ) m_collectedPointLightsSortIndices[i] = i;
 
     // pre-process lights
     {
@@ -803,29 +876,307 @@ void vaSceneLighting::UpdateFromScene( const vaVector3 & worldBase, vaScene & sc
         std::sort( m_collectedPointLightsSortIndices.begin(), m_collectedPointLightsSortIndices.end(), 
             [&meta=m_collectedPointLightsMetadata] ( uint32 left, uint32 right ) { return meta[left].MortonCode < meta[right].MortonCode; } );
 
-        // this copy is probably redundant 
+        // this copy could be avoided if we just use indices but it's easier this way for now, and a GPU version will make this obsolete anyhow
         assert( m_sortedPointLights.size() == 0 );
         for( size_t i = 0; i < m_collectedPointLightsSortIndices.size(); i++ )
             m_sortedPointLights.push_back( m_collectedPointLights[m_collectedPointLightsSortIndices[i]] );
 
-#if 0 // nice debug viz!
-        auto & canvas3D = GetRenderDevice().GetCanvas3D( );
+        // tree build goes here
+        {
+            // perfect binary tree, starting with single top node
+            const int lightCount            = (int)m_sortedPointLights.size();
+            m_lightTreeDepth                = vaMath::Log2( std::max( 0, lightCount*2 - 1 ) ) + 1;
+            const int treeBottomLevelSize   = (1 << (m_lightTreeDepth-1));
+            const int treeBottomLevelOffset = treeBottomLevelSize;
+            m_lightTree.resize( treeBottomLevelSize + treeBottomLevelSize );
+
+            // fill in the whole of the bottom tree level and use dummmy (bogus) nodes to fill up to 2^n elements
+            for( int i = treeBottomLevelOffset; i < treeBottomLevelOffset+treeBottomLevelSize; i++ )
+            {
+                int lightIndex = i-treeBottomLevelOffset;
+                assert( lightIndex >= 0 && lightIndex < m_lightTree.size() );
+
+                ShaderLightTreeNode & node = m_lightTree[i];
+
+                // valid light, initialize
+                if( lightIndex < lightCount )
+                {
+                    ShaderLightPoint & light = m_sortedPointLights[lightIndex];
+                    node.Center             = light.Position;
+                    node.UncertaintyRadius  = 0.0f;
+                    node.IntensitySum       = light.Intensity * vaColor::LinearToLuminance( light.Color );
+                    node.RangeAvg           = std::max( VA_EPSf, light.Range );          // this is the range beyond which this attenuates to 0; clamp to VA_EPSf to avoid singularities
+                    node.SizeAvg            = light.Size;           // this is the light size which prevents singularities
+                }
+                else
+                    node.SetDummy( );
+            }
+
+            // compute remaining tree levels
+            for( int level = m_lightTreeDepth-2; level >= 0; level-- )
+            {
+                int levelCount  = 1 << level;
+                int levelOffset = levelCount;
+                for( int i = levelOffset; i < levelOffset + levelCount; i++ )
+                {
+                    ShaderLightTreeNode & node = m_lightTree[i];
+
+                    ShaderLightTreeNode & subNodeL = m_lightTree[i*2+0];
+                    ShaderLightTreeNode & subNodeR = m_lightTree[i*2+1];
+                    if( subNodeL.IsDummy() )
+                        node = subNodeR;
+                    else if( subNodeR.IsDummy() )
+                        node = subNodeL;
+                    else
+                    {   // merge
+                        node.IntensitySum   = subNodeL.IntensitySum + subNodeR.IntensitySum;
+#if 1   // true bounding sphere merge
+                        vaBoundingSphere sm = vaBoundingSphere::Merge( vaBoundingSphere( subNodeL.Center, subNodeL.UncertaintyRadius ), vaBoundingSphere( subNodeR.Center, subNodeR.UncertaintyRadius ) );
+                        node.Center             = sm.Center;
+                        node.UncertaintyRadius  = sm.Radius;
+#else   // a hack that doesn't really work well
+                        node.Center = (subNodeL.IntensitySum*subNodeL.Center +    subNodeR.IntensitySum*subNodeR.Center) / node.IntensitySum;
+                        node.UncertaintyRadius = std::max( (node.Center - subNodeL.Center).Length() + subNodeL.UncertaintyRadius, (node.Center - subNodeR.Center).Length() + subNodeR.UncertaintyRadius );
+#endif
+
+#if 0   // average
+                        node.RangeAvg       = (subNodeL.RangeAvg + subNodeR.RangeAvg) * 0.5f;
+                        node.SizeAvg        = (subNodeL.SizeAvg + subNodeR.SizeAvg) * 0.5f;
+#elif 1 // intensity-weighted average
+                        node.RangeAvg       = (subNodeL.IntensitySum*subNodeL.RangeAvg +    subNodeR.IntensitySum*subNodeR.RangeAvg) / node.IntensitySum;
+                        node.SizeAvg        = (subNodeL.IntensitySum*subNodeL.SizeAvg +     subNodeR.IntensitySum*subNodeR.SizeAvg)  / node.IntensitySum;
+                        //node.RangeAvg       = vaMath::Lerp( node.RangeAvg, std::max(subNodeL.RangeAvg,subNodeR.RangeAvg), 0.2f );
+                        //node.SizeAvg        = vaMath::Lerp( node.SizeAvg , std::max(subNodeL.SizeAvg,subNodeR.SizeAvg), 0.1f );
+
+#elif 0 // sqr_intensity-weighted average
+                        float wl = std::sqrt(subNodeL.IntensitySum);
+                        float wr = std::sqrt(subNodeR.IntensitySum); 
+                        float ws = wl+wr;
+                        node.RangeAvg       = (wl*subNodeL.RangeAvg +    wr*subNodeR.RangeAvg) / ws;
+                        node.SizeAvg        = (wl*subNodeL.SizeAvg +     wr*subNodeR.SizeAvg)  / ws;
+#endif
+                    }
+                }
+            }
+        }
+
+        if( m_debugVizLTEnable )
+        {
+            auto & canvas2D = GetRenderDevice().GetCanvas2D( ); canvas2D;
+            auto & canvas3D = GetRenderDevice().GetCanvas3D( );
+            m_debugVizLTHighlightLevel = vaMath::Clamp( m_debugVizLTHighlightLevel, -1, m_lightTreeDepth-1 );
+
+            for( int level = 0; level < m_lightTreeDepth; level++ )
+            {
+                float alpha = (m_debugVizLTHighlightLevel == level)?( 0.5f ):( 0.02f );
+                vaVector4 color = {0.2f, 0.2f, 1.0f, alpha};
+                if( level == m_lightTreeDepth-1 )
+                    color = {1.0f, 1.0f, 1.0f, alpha};
+
+                int levelCount  = 1 << level;
+                int levelOffset = levelCount;
+                for( int i = levelOffset; i < levelOffset + levelCount; i++ )
+                {
+                    ShaderLightTreeNode & node = m_lightTree[i];
+
+                    canvas3D.DrawSphere( vaBoundingSphere(node.Center, node.SizeAvg), 0, color.ToBGRA() );
+
+                    if( level == m_lightTreeDepth-1 )
+                        canvas3D.DrawAxis( node.Center, node.SizeAvg );
+
+                    if( m_debugVizLTHighlightLevel == level )
+                    {
+                        canvas3D.DrawSphere( vaBoundingSphere(node.Center, node.UncertaintyRadius+node.SizeAvg), 0, vaVector4(1,0,0,0.5f).ToBGRA() );
+
+                        if( m_debugVizLTTextEnable )
+                        {
+                            canvas2D.DrawText3D( canvas3D.GetLastCamera(), node.Center, {0,0}, 0xFFFFFFFF, 0x00000000, "Node %d, level %d", i, level );
+                            canvas2D.DrawText3D( canvas3D.GetLastCamera(), node.Center, {0,16}, 0xFFFFFFFF, 0x00000000, "UncertaintyRadius: %.2f, IntensitySum: %.2f, RangeMax: %.2f, SizeMin: %.2f", node.UncertaintyRadius, node.IntensitySum, node.RangeAvg, node.SizeAvg );
+                        }
+                    }
+
+                    if( 
+                        //( m_debugVizLTHighlightLevel == level || m_debugVizLTHighlightLevel == level + 1 ) && 
+                        ( level < ( m_lightTreeDepth - 1 ) ) )
+                    {
+                        vaVector4 colorArrow = {0.5f, 0.5f, 0.5f, 0.01f};
+                        if( level == m_debugVizLTHighlightLevel-1 )
+                            colorArrow = {1.0f, 1.0f, 0.3f, 0.5f};
+                        else if( level == m_debugVizLTHighlightLevel )
+                            colorArrow = {0.3f, 1.0f, 1.0f, 0.5f};
+                        ShaderLightTreeNode & subNodeL = m_lightTree[i*2+0];
+                        ShaderLightTreeNode & subNodeR = m_lightTree[i*2+1];
+                        if( subNodeL.IsDummy() )
+                            canvas3D.DrawArrow( node.Center, subNodeL.Center, 0.01f, colorArrow.ToBGRA(), colorArrow.ToBGRA(), colorArrow.ToBGRA() );
+                        if( subNodeR.IsDummy() )
+                            canvas3D.DrawArrow( node.Center, subNodeR.Center, 0.01f, colorArrow.ToBGRA(), colorArrow.ToBGRA(), colorArrow.ToBGRA() );
+                    }
+                }
+            }
+        }
+
+        m_lightTreeBottomLevelSize   = (1 << (m_lightTreeDepth-1));
+        m_lightTreeBottomLevelOffset = m_lightTreeBottomLevelSize;
+
+        if( m_debugVizLTTraversalTest && m_debugVizLTTraversalRefPt.x != FLT_MAX )
+        {
+            auto & canvas2D = GetRenderDevice().GetCanvas2D( ); canvas2D;
+            auto & canvas3D = GetRenderDevice().GetCanvas3D( );
+            canvas3D.DrawSphere( vaBoundingSphere( m_debugVizLTTraversalRefPt, 0.1f), 0, vaVector4(0,1,0,1).ToBGRA() );
+
+            // simple baseline importance sampling based on intensity only
+            auto traverseBaseline = []( int lightCount, const std::vector<ShaderLightTreeNode> & tree, int treeDepth, const vaVector3 & pos, vaRandom & rnd ) -> int
+            {
+                pos; // not used
+                const int treeBottomLevelSize   = (1 << (treeDepth-1));
+                const int treeBottomLevelOffset = treeBottomLevelSize;
+                const float intensitySumAll = tree[1].IntensitySum;
+
+                float nextRnd   = rnd.NextFloat() * intensitySumAll;
+                float sumSoFar  = 0.0f;
+                
+                for( int nodeIndex = treeBottomLevelOffset; nodeIndex < (treeBottomLevelOffset+treeBottomLevelSize); nodeIndex++ )
+                {
+                    sumSoFar += tree[nodeIndex].IntensitySum;
+                    if( sumSoFar >= nextRnd )
+                        return std::min( lightCount-1, nodeIndex - treeBottomLevelOffset );
+                }
+                return lightCount-1;
+            };
+
+            // most optimal reference (importance sampling based on actual weight)
+            auto traverseReference = []( int lightCount, const std::vector<ShaderLightTreeNode> & tree, int treeDepth, const vaVector3 & pos, vaRandom & rnd ) -> int
+            {
+                const int treeBottomLevelSize   = (1 << (treeDepth-1));
+                const int treeBottomLevelOffset = treeBottomLevelSize;
+                
+                float weightSum = 0.0f;
+                for( int nodeIndex = treeBottomLevelOffset; nodeIndex < (treeBottomLevelOffset+treeBottomLevelSize); nodeIndex++ )
+                    weightSum += tree[nodeIndex].Weight( pos );
+
+                float nextRnd   = rnd.NextFloat() * weightSum;
+                float sumSoFar  = 0.0f;
+                for( int nodeIndex = treeBottomLevelOffset; nodeIndex < (treeBottomLevelOffset+treeBottomLevelSize); nodeIndex++ )
+                {
+                    sumSoFar += tree[nodeIndex].Weight( pos );
+                    if( sumSoFar >= nextRnd )
+                        return std::min( lightCount-1, nodeIndex - treeBottomLevelOffset );
+                }
+                return lightCount-1;
+            };
+
+            auto traverseDevelopment = []( int lightCount, const std::vector<ShaderLightTreeNode> & tree, int treeDepth, const vaVector3 & pos, vaRandom & rnd ) -> int
+            {
+                const int treeBottomLevelSize   = (1 << (treeDepth-1));
+                const int treeBottomLevelOffset = treeBottomLevelSize;
+
+                int nodeIndex = 1;
+                for( int depth = 0; depth < treeDepth-1; depth++ )
+                {
+                    const ShaderLightTreeNode & subNodeL = tree[nodeIndex*2+0];
+                    const ShaderLightTreeNode & subNodeR = tree[nodeIndex*2+1];
+
+                    if( subNodeL.IsDummy() )
+                    {
+                        nodeIndex = nodeIndex*2+1;     // left is dummy, pick right
+                        assert( false ); // hey left should never be dummy
+                        continue;
+                    } 
+                    else if( subNodeR.IsDummy() )
+                    {
+                        nodeIndex = nodeIndex*2+0;     // right is dummy, pick left
+                        continue;
+                    }
+                    float weightL = subNodeL.Weight( pos );
+                    float weightR = subNodeR.Weight( pos );
+                    float weightSum = weightL+weightR;
+                    if( weightSum == 0 )
+                    {
+                        //assert( false );
+                        return -1;
+                    }
+                    float lr = weightL / (weightSum);
+                    float nextRnd = rnd.NextFloat();
+                    if( nextRnd <= lr )
+                        nodeIndex = nodeIndex*2+0;     // pick left
+                    else
+                        nodeIndex = nodeIndex*2+1;     // pick right
+                }
+                return std::min( lightCount-1, nodeIndex - treeBottomLevelOffset );
+            };
+
+            std::vector<int> hitCountsBaseline, hitCountsReference, hitCountsDevelopment;
+
+            int fails = 0;
+
+            auto traverseMany = [&]( std::vector<int> & output, int count, std::function<int(int lightCount, const std::vector<ShaderLightTreeNode> & tree, int treeDepth, const vaVector3 & pos, vaRandom & rnd)> traversalFunc )
+            {
+                vaRandom rnd( m_debugVizLTTraversalSeed );
+                output.resize( m_sortedPointLights.size(), 0 );
+
+                for( int i = 0; i < count; i++ )
+                {
+                    int index = traversalFunc( (int)m_sortedPointLights.size(), m_lightTree, m_lightTreeDepth, m_debugVizLTTraversalRefPt, rnd );
+                    if( index == -1 )
+                        fails++;
+                    else
+                        output[index]++;
+                }
+            };
+
+            traverseMany( hitCountsBaseline,        m_debugVizLTTraversalCount, traverseBaseline );
+            traverseMany( hitCountsReference,       m_debugVizLTTraversalCount, traverseReference );
+            traverseMany( hitCountsDevelopment,     m_debugVizLTTraversalCount, traverseDevelopment );
+
+            vaVector4 colorArrow = {1.0f, 0.0f, 1.0f, 0.01f};
+            //canvas3D.DrawArrow( m_debugVizLTTraversalRefPt, m_sortedPointLights[index].Position, 0.03f, 0, colorArrow.ToBGRA(), colorArrow.ToBGRA() );
+
+            if( fails > 0 )
+                canvas2D.DrawText3D( canvas3D.GetLastCamera( ), m_debugVizLTTraversalRefPt, {0,0}, 0xFFFFFFFF, 0xFF000000, "Failed searches: %d", fails );
+
+            float MSEBaseline       = 0;
+            float MSEDevelopment    = 0;
+            const float lightCount = (float)m_sortedPointLights.size();
+            for( int i = 0; i < m_sortedPointLights.size(); i++ )
+            {
+                float be = (float)hitCountsBaseline[i]     - (float)hitCountsReference[i];
+                float de = (float)hitCountsDevelopment[i]  - (float)hitCountsReference[i];
+                MSEBaseline     += vaMath::Sq(be / lightCount);
+                MSEDevelopment  += vaMath::Sq(de / lightCount);
+            }
+
+            canvas2D.DrawText3D( canvas3D.GetLastCamera( ), m_debugVizLTTraversalRefPt, {0, 16}, 0xFFFFFFFF, 0xFF000000, "MSEBaseline: %f", MSEBaseline );
+            canvas2D.DrawText3D( canvas3D.GetLastCamera( ), m_debugVizLTTraversalRefPt, {0, 32}, 0xFFFFFFFF, 0xFF000000, "MSEDevelopment: %f", MSEDevelopment );
+
+            for( int i = 0; i < m_sortedPointLights.size(); i++ )
+            {
+                canvas2D.DrawText3D( canvas3D.GetLastCamera( ), m_sortedPointLights[i].Position, {0, 0}, 0xFFFFFFFF, 0xFF000000, "b: %d", hitCountsBaseline[i] );
+                canvas2D.DrawText3D( canvas3D.GetLastCamera( ), m_sortedPointLights[i].Position, {0,16}, 0xFF00FF00, 0xFF000000, "r: %d", hitCountsReference[i] );
+                canvas2D.DrawText3D( canvas3D.GetLastCamera( ), m_sortedPointLights[i].Position, {0,32}, 0xFF0000FF, 0xFF000000, "d: %d", hitCountsDevelopment[i] );
+                canvas2D.DrawText3D( canvas3D.GetLastCamera( ), m_sortedPointLights[i].Position, {0,48}, 0xFFFF0000, 0xFF000000, "de: %d", hitCountsReference[i]-hitCountsDevelopment[i] );
+            }
+        }
+
+#if 0 // nicm_debugVizLTHighlightLevele debug viz!
         vaVector3 positionPrev = {0,0,0};
         for( size_t i = 0; i < m_collectedPointLightsSortIndices.size(); i++ )
         {
             vaVector3 position = m_collectedPointLights[m_collectedPointLightsSortIndices[i]].Position + m_worldBase;
 
-            canvas3D.DrawArrow( positionPrev, position, 0.1f, 0xFF000000, 0x80FFFFFF, 0x80FFFFFF );
+            vaVector4 color = {0.5f, 1.0f, 1.0f, 0.5f};
+            if( i > 0 )
+                canvas3D.DrawArrow( positionPrev, position, 0.02f, 0x80000000, color.ToBGRA(), color.ToBGRA() );
+            canvas2D.DrawText3D( canvas3D.GetLastCamera(), position, {0,0}, 0xFFFFFFFF, 0x00000000, "index: %d", i );
 
             positionPrev = position;
         }
 #endif
+
     }
 
     // update shadows
     {
         VA_TRACE_CPU_SCOPE( vaSceneLighting_Tick );
-
 
         if( !m_shadowmapTexturesCreated )
             CreateShadowmapTextures( );
@@ -866,78 +1217,6 @@ void vaSceneLighting::UpdateFromScene( const vaVector3 & worldBase, vaScene & sc
         }
     }
     // above should happen in pre_render_selections
-
-#ifdef LIGHT_CUTS_EXPERIMENTATION
-
-    m_cpuLightCuts.SetLightType( LightCuts::LightType::POINT );
-    
-    // TODO: play with this
-    m_randomState.seed( 0 ); //2 * (uint32)tickCounter ); 
-
-//    if( m_collectedSimplePointLights.size() > 100 )
-//        m_collectedSimplePointLights.resize(100);
-
-    if( m_collectedSimplePointLights.size() > 0 )
-    {
-        m_cpuLightCuts.Build( (int)m_collectedSimplePointLights.size(), 
-            [ & ]( int i ) { auto color = m_collectedSimplePointLights[i].Color * m_collectedSimplePointLights[i].Intensity; return CPUColor( color.x, color.y, color.z ); },
-            [ & ]( int i ) { auto pos = m_collectedSimplePointLights[i].Position; return glm::vec3( pos.x, pos.y, pos.z ); },
-    #ifdef LIGHT_CONE
-            [ & ]( int i ) { auto dir = m_collectedSimplePointLights[i].Direction; float coneAngle = m_collectedSimplePointLights[i].SpotOuterAngle;
-                                return glm::vec4( dir.x, dir.y, dir.z, coneAngle ); },
-    #else
-            [ & ]( int i ) { i; },
-    #endif
-            [ & ]( int i ) { auto pos = m_collectedSimplePointLights[i].Position; 
-                            return aabb( glm::vec3{pos.x,pos.y,pos.z} ); },
-            //[ & ]( ) {return getUniform1D( m_randomState ); } 
-            [ & ]( ) { return 0.5f; } 
-                            );
-
-        int numNodes = 2 * (int)m_collectedSimplePointLights.size();
-        numNodes;
-
-        m_nodes.resize( numNodes );
-        for( int i = 1; i < numNodes; i++ )
-        {
-            LightCuts::Node curnode = m_cpuLightCuts.GetNode( i - 1 );
-            m_nodes[i].boundMin = curnode.boundBox.pos;
-            m_nodes[i].boundMax = curnode.boundBox.end;
-            m_nodes[i].intensity = curnode.probTree;
-            m_nodes[i].ID = curnode.primaryChild;
-    #ifdef LIGHT_CONE
-            m_nodes[i].cone = curnode.boundingCone;
-    #endif
-        }
-
-        struct
-        {
-            void operator () ( const std::vector<Node>& nodes, std::vector<int>& levelIds, int curId, int offset, int leafStartIndex, int curLevel )
-            {
-                levelIds[offset + curId] = curLevel;
-                const Node& node = nodes[curId];
-                int leftChild = node.ID;
-                if( leftChild >= leafStartIndex ) return;
-                int rightChild = node.ID + 1;
-                (*this)( nodes, levelIds, leftChild, offset, leafStartIndex, curLevel + 1 );
-                (*this)( nodes, levelIds, rightChild, offset, leafStartIndex, curLevel + 1 );
-            }
-        } GenerateLevelIds;
-
-        m_nodesBLASLevel.resize( numNodes, -1 );
-        GenerateLevelIds( m_nodes, m_nodesBLASLevel, 1, 0, numNodes, 0 );
-
-        m_SLC_TLASLeafStartIndex = (int)m_collectedSimplePointLights.size() * 2;    // see: VPLLightTreeBuilder::GetTLASLeafStartIndex()
-
-    //    m_BLASNodeLevel.Upload( 0, numNodes, CPUNodeBLASLevelBuffer.data( ) );
-    }
-    else
-    {
-        m_nodes.clear();
-        m_nodesBLASLevel.clear();
-        m_SLC_TLASLeafStartIndex = -1;
-    }
-#endif
 
     m_renderBuffersDirty = true;
 }

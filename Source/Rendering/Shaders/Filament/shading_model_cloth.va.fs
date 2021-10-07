@@ -41,10 +41,10 @@ void surfaceShading( const ShadingParams shading, const PixelParams pixel, const
     // We need to apply NoL separately to the specular lobe since we already took
     // it into account in the diffuse lobe
     vec3 color = Fd + Fr * NoL;
-    color *= light.ColorIntensity.rgb * (light.ColorIntensity.w * light.Attenuation * occlusion);
+    color *= light.ColorIntensity.rgb * (light.Attenuation * occlusion);
 #else
     vec3 color = Fd + Fr;
-    color *= light.ColorIntensity.rgb * (light.ColorIntensity.w * light.Attenuation * NoL * occlusion);
+    color *= light.ColorIntensity.rgb * (light.Attenuation * NoL * occlusion);
 #endif
     inoutColor += color;
 }

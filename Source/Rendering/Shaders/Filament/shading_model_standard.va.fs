@@ -74,6 +74,20 @@ vec3 diffuseLobe(const PixelParams pixel, float NoV, float NoL, float LoH) {
     return pixel.DiffuseColor * diffuse(pixel.Roughness, NoV, NoL, LoH);
 }
 
+float approxSpecularLobeLum(const PixelParams pixel, const float3 lightDir, const vec3 h, float NoV, float NoL, float NoH, float LoH) 
+{
+    // TODO: CalcLuminance - could be precomputed for pixel.F0
+    float D = D_GGX(pixel.Roughness, NoH, h);
+    float V = V_SmithGGXCorrelated_Fast(pixel.Roughness, NoV, NoL);
+    float F = F_Schlick(CalcLuminance(pixel.F0), LoH);
+    return (D * V) * F;
+}
+float approxDiffuseLobeLum(const PixelParams pixel, float NoV, float NoL, float LoH) 
+{
+    // TODO: CalcLuminance - could be precomputed for pixel.DiffuseColor
+    return CalcLuminance(pixel.DiffuseColor) * Fd_Lambert();
+}
+
 /**
  * Evaluates lit materials with the standard shading model. This model comprises
  * of 2 BRDFs: an optional clear coat BRDF, and a regular surface BRDF.
@@ -159,11 +173,56 @@ void surfaceShading( const ShadingParams shading, const PixelParams pixel, const
 {
     float3 color = 0;
     surfaceShading( shading, pixel, light.L, color );
-    inoutColor += color * light.ColorIntensity.rgb * (light.ColorIntensity.w * light.Attenuation * occlusion);
+    inoutColor += color * light.ColorIntensity.rgb * (light.Attenuation * occlusion);
 }
 
 #if defined(VA_RAYTRACING) 
 
+float Material_EstimateLightWeight( const ShaderLightTreeNode lightNode, const SurfaceInteraction surface, const ShadingParams shading, const PixelParams pixel )
+{
+    vaVector3 delta = lightNode.Center - surface.WorldspacePos;
+    float deltaLength = length(delta);
+
+    const float uncertaintyDistanceHeuristic = 0.28;
+    float distance = VA_MAX( lightNode.UncertaintyRadius*uncertaintyDistanceHeuristic, deltaLength-lightNode.UncertaintyRadius*uncertaintyDistanceHeuristic );    // this is distance to somewhere inside node sphere - this is our best guess
+    float lightAttenuation = ShaderLightAttenuation( distance, lightNode.RangeAvg, lightNode.SizeAvg );
+
+#if 0   // incident light comes from center
+    vaVector3 Wi = delta / deltaLength;
+#else   // incident light comes from center offsetted by radius in the direction of the shading normal (point on uncertainty sphere)
+    vaVector3 Wi = normalize(delta + shading.Normal * lightNode.UncertaintyRadius);
+#endif
+
+#if 0   // simplest distance-only based weight
+
+    float retVal = lightNode.IntensitySum * lightAttenuation;
+
+#elif 1 // approx material response based weight
+
+    const float NoLFudgeHeuristic = 0.003;   // this allows for some very limited positive weights for lighting coming under the surface and accounts for other approximations
+
+    float3 h = normalize( shading.View + Wi );    // shading.View a.k.a. Wo
+    float NoV = shading.NoV;
+    float NoL = saturate( saturate( dot( shading.Normal, Wi ) ) + NoLFudgeHeuristic );
+    float NoH = saturate( dot( shading.Normal, h ) );
+    float LoH = saturate( dot( Wi, h) );
+
+    float Fr = approxSpecularLobeLum( pixel, Wi, h, NoV, NoL, NoH, LoH );
+    float Fd = approxDiffuseLobeLum( pixel, NoV, NoL, LoH );
+
+    float brdfLuminance = CalcLuminance(Fr+Fd);
+    const float brdfBiasHeuristic = 0.66;   // I honestly have no idea why this helps but it does
+    float retVal = pow( brdfLuminance, brdfBiasHeuristic ) * lightNode.IntensitySum * lightAttenuation * NoL;
+
+#else   // use full-fat material surface response to get the weight - actually works worse than the above due to lack of fudges :)
+
+    float3 color = 0;
+    surfaceShading( shading, pixel, Wi, color );
+    float retVal = CalcLuminance( color ) * lightNode.IntensitySum * lightAttenuation;
+
+#endif
+    return max( 0, retVal );
+}
 //#define BSDFSAMPLE_F_VIZ_DEBUG
 
 // This is a mix of pbrt's BSDFSample_f and 'surfaceShading' (above); unlike pbrt, coordinate system used here is 'world'
@@ -203,7 +262,7 @@ BSDFSample BSDFSample_f( const SurfaceInteraction surface, const ShadingParams s
     // mixed 50%-50% cosine weighted and VNDF 
     // const float pc = 0.5;
 
-    // much more powerful adaptive approach; TODO: read up on http://www.pbr-book.org/3ed-2018/Light_Transport_I_Surface_Reflection/Sampling_Reflection_Functions.html#FresnelBlend
+    // much more powerful adaptive approach; TODO: read up on http://www.pbr-book.org/3ed-2018/Light_Transport_I_Surface_Reflection/Sampling_Reflection_Functions.html#FresnelBlend and chapter excercises
     const float pc = saturate(sqrt(1.0-pixel.ReflectivityEstimate)); // this is adaptive to material and much more powerful
 
     float dummy;
@@ -276,17 +335,6 @@ BSDFSample BSDFSample_f( const SurfaceInteraction surface, const ShadingParams s
     ret.PDF = pdf;
     surfaceShading( shading, pixel, Wi, ret.F );
     
-// //#if (VA_RM_SPECIAL_EMISSIVE_LIGHT != 0)
-// //    ret.Specularness = 0.0;
-// //#else
-//     //float diffPart      = (Fd.r+Fd.g+Fd.b);
-//     //float reflPart      = (Fr.r+Fr.g+Fr.b);
-//     //ret.Specularness    = sq(saturate( reflPart / (diffPart+reflPart) ));
-//     ret.Specularness    = pixel.ReflectivityEstimate;
-//     ret.Specularness    *= saturate( pow(1-sqrt(pixel.Roughness-MIN_ROUGHNESS), 8) );
-//     ret.Specularness    = saturate( ret.Specularness * 1.5 - 0.1 );
-// //#endif
-
     //[branch] if( IsUnderCursorRange( (int2)surface.Position.xy, int2(1,1) ) )
     //{
     //    //DebugDraw3DText( surface.WorldspacePos.xyz, float2( -10, -74 ), float4( 1, 0.5, 0, 1 ), float4( diffPart, reflPart, ret.Specularness, 0 ) );

@@ -162,9 +162,11 @@ namespace Vanilla
             static const int            RaytracingStructDirectSRV   = PerDrawSRVBase + PerDrawSRVCount;
             // Instance index (used only during rasterization)
             static const int            InstanceIndexDirectUINT32   = RaytracingStructDirectSRV + 1;
+            // Generic uint 'root constant' - useful when only 1 uint parameter needed for pixel/compute/raytracing shader (and also allows for constant folding - good for perf.)
+            static const int            GenericRootConstDirectUINT32= InstanceIndexDirectUINT32 + 1;
 
             // Bindless descriptors (need 2 until SM6.6 comes along)
-            static const int            Bindless1SRVBase            = InstanceIndexDirectUINT32 + 1;
+            static const int            Bindless1SRVBase            = GenericRootConstDirectUINT32 + 1;
             static const int            Bindless1SRVSlotBase        = 0;
             static const int            Bindless1SRVRegSpace        = 1;
             static const int            Bindless2SRVBase            = Bindless1SRVBase + 1;

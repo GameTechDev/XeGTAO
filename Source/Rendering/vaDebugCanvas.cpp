@@ -29,10 +29,10 @@ vaDebugCanvas2D::vaDebugCanvas2D( const vaRenderingModuleParams & params )
     inputElements.push_back( { "TEXCOORD",      0,  vaResourceFormat::R32G32B32A32_FLOAT,    0, vaVertexInputElementDesc::AppendAlignedElement, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } );
     inputElements.push_back( { "TEXCOORD",      1,  vaResourceFormat::R32G32_FLOAT,          0, vaVertexInputElementDesc::AppendAlignedElement, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } );
 
-    m_vertexShader->CreateShaderAndILFromFile( "vaCanvas.hlsl", "VS_Canvas2D", inputElements, vaShaderMacroContaner(), false );
-    m_pixelShader->CreateShaderFromFile( "vaCanvas.hlsl", "PS_Canvas2D", vaShaderMacroContaner(), false );
+    m_vertexShader->CompileVSAndILFromFile( "vaCanvas.hlsl", "VS_Canvas2D", inputElements, vaShaderMacroContaner(), false );
+    m_pixelShader->CompileFromFile( "vaCanvas.hlsl", "PS_Canvas2D", vaShaderMacroContaner(), false );
 
-    m_vertexBuffer = vaDynamicVertexBuffer::Create<CanvasVertex2D>( params.RenderDevice, m_vertexBufferSize, nullptr, "Canvas2DBuffer" ),
+    m_vertexBuffer = vaDynamicVertexBuffer::Create<CanvasVertex2D>( params.RenderDevice, m_vertexBufferSize, "Canvas2DBuffer", nullptr ),
 
     m_vertexBufferCurrentlyUsed = 0;
     //m_vertexBufferSize = 0;
@@ -49,27 +49,29 @@ vaDebugCanvas2D::~vaDebugCanvas2D( )
    va_list args; \
    va_start(args, text); \
    int nBuf; \
-   char szBuffer[2048]; \
+   char szBuffer[16768]; \
    nBuf = _vsnprintf_s(szBuffer, _countof(szBuffer), _countof(szBuffer)-1, text, args); \
    assert(nBuf < sizeof(szBuffer)); \
    va_end(args); \
-//
-void vaDebugCanvas2D::DrawText( float x, float y, const char * text, ... )
-{
-    vaDirectXCanvas2D_FORMAT_STR( );
-    m_drawTextLines.push_back( DrawTextItem( x, y, 0xFF000000, 0x00000000, szBuffer ) );
-}
-//
-void vaDebugCanvas2D::DrawText( float x, float y, unsigned int penColor, const char * text, ... )
-{
-    vaDirectXCanvas2D_FORMAT_STR( );
-    m_drawTextLines.push_back( DrawTextItem( x, y, penColor, 0x00000000, szBuffer ) );
-}
 //
 void vaDebugCanvas2D::DrawText( float x, float y, unsigned int penColor, unsigned int shadowColor, const char * text, ... )
 {
     vaDirectXCanvas2D_FORMAT_STR( );
     m_drawTextLines.push_back( DrawTextItem( x, y, penColor, shadowColor, szBuffer ) );
+}
+//
+void vaDebugCanvas2D::DrawText3D( const vaCameraBase & camera, const vaVector3 & position3D, const vaVector2 & screenOffset, unsigned int penColor, unsigned int shadowColor, const char * text, ... )
+{
+    vaDirectXCanvas2D_FORMAT_STR( );
+    const vaVector4 worldPos = vaVector4(position3D,1);
+
+    vaMatrix4x4 viewProj = camera.GetViewMatrix( ) * camera.GetProjMatrix( );
+    vaVector4 pos = vaVector4::Transform(worldPos, viewProj); pos /= pos.w; pos.x = pos.x * 0.5f + 0.5f; pos.y = -pos.y * 0.5f + 0.5f;
+    if( pos.z > 0 ) // don't draw if behind near clipping plane
+    {
+        pos.x *= camera.GetViewportWidth( ); pos.y *= camera.GetViewportHeight( );
+        DrawText( pos.x + screenOffset.x, pos.y + screenOffset.y, penColor, shadowColor, szBuffer );
+    }
 }
 //
 void vaDebugCanvas2D::DrawLine( float x0, float y0, float x1, float y1, unsigned int penColor )
@@ -599,11 +601,11 @@ vaDebugCanvas3D::vaDebugCanvas3D( const vaRenderingModuleParams & params ) :
     inputElements.push_back( { "NORMAL",        0, vaResourceFormat::R32G32B32_FLOAT,       0, vaVertexInputElementDesc::AppendAlignedElement, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } );
     inputElements.push_back( { "COLOR",         0, vaResourceFormat::B8G8R8A8_UNORM,        0, vaVertexInputElementDesc::AppendAlignedElement, vaVertexInputElementDesc::InputClassification::PerVertexData, 0 } );
 
-    m_vertexShader->CreateShaderAndILFromFile( "vaCanvas.hlsl", "VS_Canvas3D", inputElements, vaShaderMacroContaner{}, false );
-    m_pixelShader->CreateShaderFromFile( "vaCanvas.hlsl", "PS_Canvas3D", vaShaderMacroContaner{}, false );
+    m_vertexShader->CompileVSAndILFromFile( "vaCanvas.hlsl", "VS_Canvas3D", inputElements, vaShaderMacroContaner{}, false );
+    m_pixelShader->CompileFromFile( "vaCanvas.hlsl", "PS_Canvas3D", vaShaderMacroContaner{}, false );
 
-    m_triVertexBuffer   = vaDynamicVertexBuffer::Create<CanvasVertex3D>( params.RenderDevice, m_triVertexBufferSizeInVerts, nullptr, "Canvas3DTriangleBuffer" ),
-    m_lineVertexBuffer  = vaDynamicVertexBuffer::Create<CanvasVertex3D>( params.RenderDevice, m_lineVertexBufferSizeInVerts, nullptr, "Canvas3DLineBuffer" ),
+    m_triVertexBuffer   = vaDynamicVertexBuffer::Create<CanvasVertex3D>( params.RenderDevice, m_triVertexBufferSizeInVerts, "Canvas3DTriangleBuffer", nullptr ),
+    m_lineVertexBuffer  = vaDynamicVertexBuffer::Create<CanvasVertex3D>( params.RenderDevice, m_lineVertexBufferSizeInVerts, "Canvas3DLineBuffer", nullptr ),
 
     m_triVertexBufferCurrentlyUsed = 0;
     m_triVertexBufferStart = 0;
@@ -611,7 +613,7 @@ vaDebugCanvas3D::vaDebugCanvas3D( const vaRenderingModuleParams & params ) :
     m_lineVertexBufferCurrentlyUsed = 0;
     m_lineVertexBufferStart = 0;
 
-    vaStandardShapes::CreateSphere( m_sphereVertices, m_sphereIndices, 1, true );
+    vaStandardShapes::CreateSphere( m_sphereVertices, m_sphereIndices, 2, true );
 
     m_triVertexBufferCurrentlyUsed = 0;
     m_triVertexBufferStart = 0;
@@ -707,7 +709,7 @@ void vaDebugCanvas3D::DrawSphereCone( const vaVector3 & center, const vaVector3 
     const float angleStepAzimuth    = VA_PIf * 2.0f / tessellation;
 
     // direction not unit length?
-    assert( direction.IsUnit() );
+    // assert( direction.IsUnit() );
 
     vaVector3 _prevRow[tessellation + 1];
     vaVector3 _currRow[tessellation + 1];

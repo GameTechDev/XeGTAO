@@ -104,7 +104,7 @@ RWTexture2DArray<float>         g_outputDepthArrayMIP3      : register( U_CONCAT
 RWTexture2D<unorm float3>       g_outputNormalmap           : register( U_CONCATENATER( ASSAO_UAV_NORMALMAP_SLOT                 ) ); 
 
 RWTexture2DArray<unorm float2>  g_outputOcclusionEdge       : register( U_CONCATENATER( ASSAO_UAV_OCCLUSION_EDGE_SLOT            ) );
-RWTexture2D<unorm float>        g_outputFinal           : register( U_CONCATENATER( ASSAO_UAV_FINAL_OCCLUSION_SLOT   ) );
+RWTexture2D<uint>               g_outputFinal           : register( U_CONCATENATER( ASSAO_UAV_FINAL_OCCLUSION_SLOT   ) );
 
 #if defined( ASSAO_DEBUG_SHOWNORMALS ) || defined( ASSAO_DEBUG_SHOWEDGES )
 RWTexture2D<unorm float4>       g_outputDebugImage      : register( U_CONCATENATER( ASSAO_UAV_DEBUG_IMAGE_SLOT                   ) );
@@ -247,7 +247,8 @@ float3 LoadNormal( int2 pos, int2 offset )
     unpackedOutput.z = (float)( ( packedInput >> 22 ) & 0x000003ff ) / 1023.0f;
     float3 normal = normalize(unpackedOutput * 2.0.xxx - 1.0.xxx);
     // worldspace to viewspace
-    return mul( (float3x3)g_ASSAOConsts.ViewMatrix, normal );
+    // return mul( (float3x3)g_ASSAOConsts.ViewMatrix, normal );
+    return normal;
 #else    
     float3 encodedNormal = g_sourceNormalmap.Load( int3( pos, 0 ), offset ).xyz;
     return DecodeNormal( encodedNormal );
@@ -823,5 +824,5 @@ void CSApply( uint2 dispatchThreadID : SV_DispatchThreadID )
     ao = dot( float4( ao, aoH, aoV, aoD ), blendWeights ) / blendWeightsSum;
 #endif
 
-    g_outputFinal[pixPos] = ao;
+    g_outputFinal[pixPos] = (uint)(ao * 255.0 + 0.5);
 }

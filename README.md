@@ -5,18 +5,18 @@
 
 XeGTAO is an open source, MIT licensed, DirectX/HLSL implementation of the  _Practical Realtime Strategies for Accurate Indirect Occlusion, GTAO_ [\[Jimenez et al., 2016\]](https://www.activision.com/cdn/research/Practical_Real_Time_Strategies_for_Accurate_Indirect_Occlusion_NEW%20VERSION_COLOR.pdf), a screen space effect suitable for use on a wide range of modern PC integrated and discrete GPUs. The main benefit of GTAO over other screen space algorithms is that it uses a radiometrically-correct ambient occlusion equation, providing more physically correct AO term.
 
-We have implemented and tested the core algorithm that computes and spatially filters the ambient occlusion integral. Implementing the Directional GTAO component (bent normals) is the next planned step.
+We have implemented and tested the core algorithm that computes and spatially filters the ambient occlusion integral and, optionally, directional GTAO component (bent normals / cones).
 
-Our implementation relies on an integrated spatial denoising filter and will leverage TAA for temporal accumulation when available. When used in conjunction with TAA it is both faster, provides higher detail effect on fine geometry features and is more radiometrically correct than other common public SSAO implementations such as closed the source [\[HBAO+\]](https://www.nvidia.com/en-gb/geforce/technologies/hbao-plus/technology/), and open source [\[ASSAO\]](https://software.intel.com/content/www/us/en/develop/articles/adaptive-screen-space-ambient-occlusion.html).
+Our implementation relies on an integrated spatial denoising filter and will leverage TAA for temporal accumulation when available. When used in conjunction with TAA it is both faster, provides higher detail effect on fine geometry features and is more radiometrically correct than other common public SSAO implementations such as closed source [\[HBAO+\]](https://www.nvidia.com/en-gb/geforce/technologies/hbao-plus/technology/), and open source [\[ASSAO\]](https://software.intel.com/content/www/us/en/develop/articles/adaptive-screen-space-ambient-occlusion.html).
 
-High quality preset, computed at full resolution, costs roughly 1.4ms at 3840x2160 on RTX 3070, 0.56ms at 1920x1080 on RTX 2060 and 2.39ms at 1920x1080 on 11th Gen Intel(R) Core(TM) i7-1195G7 integrated graphics. Faster but lower quality preset is also available.
+High quality preset, computed at full resolution, costs roughly 1.4ms at 3840x2160 on RTX 3070, 0.56ms at 1920x1080 on RTX 2060 and 2.39ms at 1920x1080 on 11th Gen Intel(R) Core(TM) i7-1195G7 integrated graphics. Faster but lower quality preset is also available. Computing and filtering the directional component (bent normals) adds roughly 25% to the cost.
 
 This sample project ([Vanilla.sln](VisualStudio/Vanilla.sln)) was tested with Visual Studio 2019 16.10.3, DirectX 12 GPU (Shader Model 6_3), Windows version 10.0.19041. 
 
 
-XeGTAO OFF/ON comparison in Amazon Lumberyard Bistro; click on image to embiggen:  
-[![thumb1](Images/thumb-exterior-off.png)](Images/big-exterior-off.png) [![thumb2](Images/thumb-exterior-GTAO.png)](Images/big-exterior-GTAO.png) 
-[![thumb3](Images/thumb-interior-off.png)](Images/big-interior-off.png) [![thumb4](Images/thumb-interior-GTAO.png)](Images/big-interior-GTAO.png)  
+XeGTAO OFF/ON/ON+BentNormals comparison in Amazon Lumberyard Bistro; click on image to embiggen:  
+[![thumb1](Images/thumb-new-exterior-0-off.png)](Images/new-exterior-0-off.png) [![thumb2](Images/thumb-new-exterior-1-GTAO.png)](Images/new-exterior-1-GTAO.png) 
+[![thumb3](Images/thumb-new-exterior-2-GTAO+BentNormals.png)](Images/new-exterior-2-GTAO+BentNormals.png)
 
 AO term only, left: ASSAO Medium (~0.72ms), right: XeGTAO High (~0.56ms), as measured on RTX 2060 at 1920x1080:
 ![ASSAO vs GTAO](Images/exterior-assao-medium-vs-gtao-high.png)  
@@ -112,13 +112,25 @@ _left: color-coded sample MIP levels; middle: example of detail loss with a too 
 
 Another popular solution to this problem is presented in *Deinterleaved Texturing for Cache-Efficient Interleaved Sampling* [\[Bavoil, 2014\]](https://developer.nvidia.com/sites/default/files/akamai/gameworks/samples/DeinterleavedTexturing.pdf) and involves a divide and conquer technique where the working dataset is subdivided into smaller parts that are processed in sequence, ensuring a much better utilization of memory cache structures. The downside is that by the definition, the processing of one dataset part can only rely on sampling data from that part, which constrains the sampling pattern. This was a significant issue for GTAO with its specific sampling pattern (samples lie on a straight line, etc.) where constraining them to a subset of data significantly limited flexibility, consistency and amplified precision issues.
 
+### Bent normals
+
+Support for directional component (bent normals) was added in XeGTAO version 1.30, and is directly based on the formulation from the original [\[Jimenez et al., 2016\]](https://www.activision.com/cdn/research/Practical_Real_Time_Strategies_for_Accurate_Indirect_Occlusion_NEW%20VERSION_COLOR.pdf), page 15, 'Algorithm 2'. Since this feature increases overal effect computation time by roughly 25%, it is an optional feature. When enabled, bent normal vector is computed in the MainPass and denoised together with the occlusion term. The output is packed into first 3 channels of a R8G8B8A8 texture, with the occlusion term stored in the alpha channel.
+
+[![Watch the video](Images/thumb-bent-cone.png)](https://www.youtube.com/watch?v=JHK2RMS6hhc)
+_debug visualization of bent cone (green) and the shading normal (red); click for the video_
+
+In the Bistro scene lighting we use the AO term to attenuate diffuse and specular irradiance from light probes using the multi-bounce diffuse and GTSO approaches detailed in the original GTAO work. We also attenuate unshadowed direct lighting using the micro-shadowing approximation from _Material Advances in Call of Duty: WWII_ [\[Chan 2018\]](http://advances.realtimerendering.com/other/2016/naughty_dog/NaughtyDog_TechArt_Final.pdf) and [SIGGRAPH 2016: Technical Art of Uncharted](http://advances.realtimerendering.com/other/2016/naughty_dog/index.html). It should be noted that the sample's current AO term usage is somewhat ad-hoc and has itself not been matched to ground truth, and is not meant as a reference.
+
+[![thumb1](Images/thumb-simplelights-0-off.png)](Images/simplelights-0-off.png) [![thumb2](Images/thumb-simplelights-1-GTAO.png)](Images/simplelights-1-GTAO.png) 
+[![thumb3](Images/thumb-simplelights-2-GTAO+BentNormals.png)](Images/simplelights-2-GTAO+BentNormals.png)
+_XeGTAO OFF/ON/ON+BentNormals: directional component significantly improves contact shadow correctness for lights that lack explicit shadowing; click to enlarge_
 
 ### Misc
  * We added a global 'Final power' heuristic that modifies the visibility with a power function. While this has no basis in physical light transfer, we found that auto-tune can use it to achieve better ground truth match in combination with all other settings.
  * In order to minimize bandwidth use we rely on 16-bit floating point buffer to store viewspace depth. This does cause some minor precision quality issues but yields better performance on most hardware. It is however not compatible with built-in screen space normal map generator.
  * It is always advisable to provide screen space normals to the effect, but in case that is not possible we provide a built-in depth to normal map generator.
  * We have enabled fp16 (half float) precision shader math on most places where the loss in precision was acceptable; this provides 5-20% performance boost on various hardware that we have tested on but is entirely optional.
- * In the Bistro scene lighting we use the AO term to attenuate diffuse and specular irradiance from light probes using the multi-bounce diffuse and GTSO approaches detailed in the original GTAO work. We also slightly attenuate direct lighting using the micro-shadowing approximation from _Material Advances in Call of Duty: WWII_ [\[Chan 2018\]](http://advances.realtimerendering.com/other/2016/naughty_dog/NaughtyDog_TechArt_Final.pdf) / [SIGGRAPH 2016: Technical Art of Uncharted](http://advances.realtimerendering.com/other/2016/naughty_dog/index.html). Our current renderer's AO term usage is ad-hoc and has not been matched to ground truth, and is not meant as a reference. 
+
 
 ![ASSAO vs GTAO](Images/interior-assao-medium-vs-gtao-high.png)  
 _left: ASSAO Medium (~0.72ms*), right: XeGTAO High (~0.56ms*) (*as measured on RTX 2060 at 1920x1080)_  
@@ -167,6 +179,8 @@ Many thanks to the developers of the following open-source libraries or projects
  * nlohmann/json (https://github.com/nlohmann/json)
  * Christoph Peters' blue noise (http://momentsingraphics.de/BlueNoise.html)
  * Lukasz Migas's TAA (https://github.com/GameTechDev/TAA)
+ * cgltf, Single-file glTF 2.0 loader (https://github.com/jkuhlmann/cgltf)
+ * AMD's FidelityFX Parallel Sort (https://gpuopen.com/fidelityfx-parallel-sort/)
  * ...and any I might have forgotten (please let me know) :)
 
 ## References

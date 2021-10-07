@@ -18,39 +18,19 @@
 
 #include "PoissonDisks\vaPoissonDisk8.h"
 
-//TextureCube         g_EnvironmentMap            : register( T_CONCATENATER( SHADERGLOBAL_LIGHTING_ENVMAP_TEXTURESLOT_V ) );
-TextureCubeArray    g_CubeShadowmapArray                : register( T_CONCATENATER( SHADERGLOBAL_LIGHTING_CUBE_SHADOW_TEXTURESLOT_V ) );
+// global settings
+//#define VA_SKIP_LIGHTING_WITH_ZERO_N_DOT_L <- not implemented, enable and errors will pop where implementation needed
 
-TextureCube         g_LocalIBLReflectionsMap            : register( T_CONCATENATER( LIGHTINGGLOBAL_LOCALIBL_REFROUGHMAP_TEXTURESLOT_V ) );
-TextureCube         g_LocalIBLIrradianceMap             : register( T_CONCATENATER( LIGHTINGGLOBAL_LOCALIBL_IRRADIANCEMAP_TEXTURESLOT_V ) );
 
-TextureCube         g_DistantIBLReflectionsMap          : register( T_CONCATENATER( LIGHTINGGLOBAL_DISTANTIBL_REFROUGHMAP_TEXTURESLOT_V ) );
-TextureCube         g_DistantIBLIrradianceMap           : register( T_CONCATENATER( LIGHTINGGLOBAL_DISTANTIBL_IRRADIANCEMAP_TEXTURESLOT_V ) );
-
-Texture2D           g_AOMap                             : register( T_CONCATENATER( SHADERGLOBAL_AOMAP_TEXTURESLOT_V ) );
-
-StructuredBuffer<ShaderLightPoint> g_lightsPoint        : register( T_CONCATENATER( LIGHTINGGLOBAL_SIMPLELIGHTS_SLOT_V ) );
-
-cbuffer LightingConstantsBuffer                         : register( B_CONCATENATER( LIGHTINGGLOBAL_CONSTANTSBUFFERSLOT_V ) )
-{
-    ShaderLightingConstants     g_lighting;
-}
-
-// cbuffer DistantIBLConstantsBuffer               : register( B_CONCATENATER( LIGHTINGGLOBAL_DISTANTIBL_CONSTANTSBUFFERSLOT_V ) )
-// {
-//     IBLProbeConstants         g_distantIBL;
-// }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Per-shaded-pixel intermediate data structures
-//
 
-// Used to transfer any type of light (directional, point, spot, etc.) information to actual material lighting code.
+// Used to transfer simple type of light (directional, point, spot, etc.) information to actual material surface
+// lighting code. Originally from https://github.com/google/filament but modified.
 struct LightParams
 {
-    float4  ColorIntensity;     // rgb, pre-exposed intensity
-    float3  L;                  // light direction (worldspace)
+    float3  ColorIntensity;     // rgb, pre-exposed color.rgb * intensity.xxx
+    float3  L;                  // light direction (worldspace) - perhaps should rename to 'Wi'
     float   Dist;               // length of L vector before it was normalized
     float   Attenuation;
     float   NoL;
@@ -62,62 +42,79 @@ struct LightParams
 struct CubeShadowsParams
 {
     float3      TapOffsets[VA_CUBE_SHADOW_TAP_COUNT];
-//    float       ViewDepth;
-//    float       Something;
+    //    float       ViewDepth;
+    //    float       Something;
 };
 
 struct IBLParams
 {
     bool        UseLocal;               // local enabled
     bool        UseDistant;             // distant enabled
-    
+
     float       LocalToDistantK;        // interpolation factor
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Stuff
-//
+//TextureCube         g_EnvironmentMap            : register( T_CONCATENATER( SHADERGLOBAL_LIGHTING_ENVMAP_TEXTURESLOT_V ) );
+TextureCubeArray    g_CubeShadowmapArray                : register( T_CONCATENATER( SHADERGLOBAL_LIGHTING_CUBE_SHADOW_TEXTURESLOT_V ) );
 
-float SampleAO( float2 svpos )
+TextureCube         g_LocalIBLReflectionsMap            : register( T_CONCATENATER( LIGHTINGGLOBAL_LOCALIBL_REFROUGHMAP_TEXTURESLOT_V ) );
+TextureCube         g_LocalIBLIrradianceMap             : register( T_CONCATENATER( LIGHTINGGLOBAL_LOCALIBL_IRRADIANCEMAP_TEXTURESLOT_V ) );
+
+TextureCube         g_DistantIBLReflectionsMap          : register( T_CONCATENATER( LIGHTINGGLOBAL_DISTANTIBL_REFROUGHMAP_TEXTURESLOT_V ) );
+TextureCube         g_DistantIBLIrradianceMap           : register( T_CONCATENATER( LIGHTINGGLOBAL_DISTANTIBL_IRRADIANCEMAP_TEXTURESLOT_V ) );
+
+Texture2D<uint>     g_AOMap                             : register( T_CONCATENATER( SHADERGLOBAL_AOMAP_TEXTURESLOT_V ) );
+
+StructuredBuffer<ShaderLightPoint> g_lightsPoint        : register( T_CONCATENATER( LIGHTINGGLOBAL_SIMPLELIGHTS_SLOT_V ) );
+StructuredBuffer<ShaderLightTreeNode> g_lightTree       : register( T_CONCATENATER( LIGHTINGGLOBAL_LIGHT_TREE_SLOT_V ) );
+
+cbuffer LightingConstantsBuffer                         : register( B_CONCATENATER( LIGHTINGGLOBAL_CONSTANTSBUFFERSLOT_V ) )
 {
+    ShaderLightingConstants     g_lighting;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Shared lighting
+
+void SampleSSAO( const uint2 svpos, const float3 shadingNormal, out float aoVisibility, out float3 bentNormal )
+{
+    // start with default (unused) AO
+    aoVisibility    = 1.0; 
+    bentNormal      = shadingNormal;
+
 #ifndef VA_RAYTRACING   // not currently connected in raytracing case although it will work for primary non-rays hitting opaque surface!
-    if( g_lighting.AOMapEnabled )
-#if 1 //def VA_RAYTRACING
-        return g_AOMap.SampleLevel( g_samplerLinearClamp, svpos * g_lighting.AOMapTexelSize, 0 ).x;  // MIP bias is only relevant when using VRS above 2x2 rate and g_AOMap having precomputed MIP
-#else
-        return g_AOMap.SampleBias( g_samplerLinearClamp, svpos * g_lighting.AOMapTexelSize, -0.75 ).x;  // MIP bias is only relevant when using VRS above 2x2 rate and g_AOMap having precomputed MIP
+    
+    if( g_lighting.AOMapEnabled == 1 )
+    {
+        // no filtering allowed as it could be packed bent normal
+        uint value = g_AOMap[(uint2)svpos].x;
+        aoVisibility = value / 255.0;
+    } 
+    else if( g_lighting.AOMapEnabled == 2 )
+    {
+        // no filtering allowed as it could be packed bent normal
+        uint value = g_AOMap[(uint2)svpos].x;
+
+        DecodeVisibilityBentNormal( value, aoVisibility, bentNormal );
+
+        // viewspace to worldspace - makes sense to precalculate
+        bentNormal = mul( (float3x3)g_globals.ViewInv, bentNormal );
+    }
+
 #endif
-    else
-#endif
-return 1.0;
+
+
 }
 
-// Yeah this should go elsewhere, but let it be here for now
-void SpecialEmissiveLight( const SurfaceInteraction surface, const float3 shadingPrecomputedEmissive, const ShaderLightPoint light, inout float3 diffuseColor ) 
-{
-#if VA_RM_SPECIAL_EMISSIVE_LIGHT
-    float distance = length(light.Position - surface.WorldspacePos.xyz);
-
-    // Only add emissive within light sphere, and then scale with light itself; this is to allow emissive materials to be 'controlled' by
-    // the light - useful for models that represent light emitters (lamps, etc.)
-    if( distance < light.Size )
-        diffuseColor    += (g_globals.GlobalSpecialEmissiveScale * light.Intensity) * light.Color.rgb * shadingPrecomputedEmissive;
-#endif
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // IBL
 //
 
-IBLParams ComputeIBLParams( const float noise, const float3 worldspacePos, const float3 geometricNormal, float VA_RM_LOCALIBL_NORMALBIAS, float VA_RM_LOCALIBL_BIAS )
+IBLParams ComputeIBLParams( const float3 worldspacePos, const float3 geometricNormal, float VA_RM_LOCALIBL_NORMALBIAS, float VA_RM_LOCALIBL_BIAS )
 {
     // some global settings
     const float transitionArea              = 0.25;
@@ -187,9 +184,7 @@ float3 ComputeIBLDirection( const float3 worldspacePos, const IBLProbeConstants 
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Shadows
 //
@@ -323,11 +318,7 @@ float ComputeCubeShadow( CubeShadowsParams cubeShadowParams, float3 worldGeometr
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Fog/atmospherics
 //
@@ -358,6 +349,56 @@ float3 LightingApplyFog( float3 surfaceWorldspacePos, float3 inColor )
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Shared lighting
+
+// Compute light params at surface location and normal that are required for further light processing; will not 
+// compute visibility, AO or material response, just the "L(p, Wi)"
+LightParams EvaluateLightAtSurface( const ShaderLightPoint lightIn, const float3 worldPos, const float3 surfaceNormal ) //  worldPos == surface.WorldspacePos; surfaceNormal == shading.Normal
+{
+    LightParams light;
+
+    float3 posToLight       = lightIn.Position - worldPos;
+    float distanceSquare    = dot( posToLight, posToLight );
+    light.Dist              = sqrt( distanceSquare );
+    light.L                 = posToLight / light.Dist;
+    light.NoL               = saturate( dot( surfaceNormal, light.L ) );
+
+#ifdef VA_SKIP_LIGHTING_WITH_ZERO_N_DOT_L
+#error Set all to 0 and leave early if NoL is <=0
+#endif 
+
+    light.Attenuation       = ShaderLightRangeAttenuation( distanceSquare, lightIn.Range ) * ShaderLightDistanceAttenuation( light.Dist, distanceSquare, lightIn.Size );
+
+    float intensityIn       = lightIn.Intensity  * g_globals.PreExposureMultiplier;
+    light.ColorIntensity    = lightIn.Color * intensityIn;
+
+    // spot attenuation is designed so that if InnerAngle is 0deg and OuterAngle is 90deg then it's a Lambertian emitter - "saturate( dot( lightIn.Direction, -light.L ) )"
+    // all the math below is only there to 
+    {
+        float exitNoL = dot( lightIn.Direction, -light.L );
+#if 1
+        float angle = acos(exitNoL); //FastAcos( exitNoL ); // <- FastAcos speeds things up SIGNIFICANTLY - consider using in a fast path
+        float spotAttenuation = saturate( (lightIn.SpotOuterAngle - angle) / (lightIn.SpotOuterAngle - lightIn.SpotInnerAngle) );
+        light.Attenuation *= sin( spotAttenuation * (VA_PI * 0.5) );
+#else   // this should also give same results with 0-90deg as Lambertian emitter but be potentially cheaper and allow for pre-compile; let's first think about it a bit
+        float cosInner = 1-cos(lightIn.SpotInnerAngle);
+        float cosOuter = 1-cos(lightIn.SpotOuterAngle);
+        light.Attenuation *= 1-saturate( (1-exitNoL-cosInner) / (cosOuter-cosInner) );
+#endif
+
+        //light.Attenuation *= saturate( dot( lightIn.Direction, -light.L ) );
+
+        // old
+        // // squaring of spot attenuation is just for a softer outer->inner curve that I like more visually
+        // light.Attenuation = spotAttenuation*spotAttenuation;
+    }
+
+    return light;
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #endif // #ifndef VA_LIGHTING_HLSL

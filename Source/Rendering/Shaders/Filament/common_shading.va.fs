@@ -11,10 +11,6 @@ struct ShadingParams
     float3      Reflected;          // reflection of view about normal
     float       NoV;                // dot(normal, view), always strictly >= MIN_N_DOT_V
 
-#if defined(MATERIAL_HAS_BENT_NORMAL)
-    float3  	BentNormal;       	// normalized transformed normal, in world space
-#endif
-
 #if defined(MATERIAL_HAS_CLEAR_COAT)
     float3      ClearCoatNormal;    // normalized clear coat layer normal, in world space
 #endif
@@ -25,14 +21,15 @@ struct ShadingParams
     float3      PrecomputedEmissive;
 #endif
 
-#if VA_RM_ACCEPTSHADOWS
+#if !defined(RAYTRACED_SHADOWS)
     CubeShadowsParams
                 CubeShadows;
 #endif
 
     IBLParams   IBL;
 
-    float       DiffuseAmbientOcclusion;        // min( ssao and material.AmbientOcclusion)
+    float3  	BentNormal;       	        // normalized transformed normal, in world space
+    float       DiffuseAmbientOcclusion;    // min( ssao and material.AmbientOcclusion)
 
     float3      GetWorldGeometricNormalVector( ) { return GeometricNormal; }
 };

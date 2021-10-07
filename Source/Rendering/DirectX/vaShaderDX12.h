@@ -161,8 +161,8 @@ namespace Vanilla
         virtual ~vaVertexShaderDX12( );
 
     public:
-        virtual void                CreateShaderAndILFromFile( const string & filePath, const string & entryPoint, const std::vector<vaVertexInputElementDesc> & inputLayoutElements, const vaShaderMacroContaner & macros, bool forceImmediateCompile ) override;
-        virtual void                CreateShaderAndILFromBuffer( const string & shaderCode, const string & entryPoint, const std::vector<vaVertexInputElementDesc> & inputLayoutElements, const vaShaderMacroContaner & macros, bool forceImmediateCompile ) override;
+        virtual void                CompileVSAndILFromFile( const string & filePath, const string & entryPoint, const std::vector<vaVertexInputElementDesc> & inputLayoutElements, const vaShaderMacroContaner & macros, bool forceImmediateCompile ) override;
+        virtual void                CompileVSAndILFromBuffer( const string & shaderCode, const string & entryPoint, const std::vector<vaVertexInputElementDesc> & inputLayoutElements, const vaShaderMacroContaner & macros, bool forceImmediateCompile ) override;
 
         vaShader::State             GetShader( vaFramePtr<vaShaderDataDX12> & outData, vaFramePtr<vaInputLayoutDataDX12> & outInputLayout, int64 & outUniqueContentsID );
 

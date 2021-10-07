@@ -105,7 +105,7 @@ static void UpdateRenderItemGlobals( vaRenderDeviceContext & renderContext, vaSh
         if( drawAttributes->Lighting != nullptr )
             drawAttributes->Lighting->UpdateAndSetToGlobals( renderContext, shaderGlobals, *drawAttributes );
 
-        assert( (drawAttributes->Raytracing != nullptr) == (( renderTypeFlags & vaRenderTypeFlags::Raytrace ) != 0) );  // setting up raytracing globals during Graphics calls is not tested and might not work! first test and then remove this assert
+        //assert( (drawAttributes->Raytracing != nullptr) == (( renderTypeFlags & vaRenderTypeFlags::Raytrace ) != 0) );  // setting up raytracing globals during Graphics calls is not tested and might not work! first test and then remove this assert
         if( ( renderTypeFlags & vaRenderTypeFlags::Raytrace ) != 0 )
             drawAttributes->Raytracing->UpdateAndSetToGlobals( renderContext, shaderGlobals, *drawAttributes );
     }

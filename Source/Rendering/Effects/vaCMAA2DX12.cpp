@@ -878,11 +878,11 @@ bool vaCMAA2DX12::UpdateResources( ID3D12Device * deviceDX12, const InputResourc
             shaderMacros.push_back( std::pair<std::string, std::string>( "CMAA2_USE_HALF_FLOAT_PRECISION", "0" ) );
 #endif
 
-        m_CSEdgesColor2x2->CreateShaderFromFile(            "vaCMAA2.hlsl", "EdgesColor2x2CS", shaderMacros, false );
-        m_CSProcessCandidates->CreateShaderFromFile(        "vaCMAA2.hlsl", "ProcessCandidatesCS", shaderMacros, false );
-        m_CSDeferredColorApply2x2->CreateShaderFromFile(    "vaCMAA2.hlsl", "DeferredColorApply2x2CS", shaderMacros, false );
-        m_CSComputeDispatchArgs->CreateShaderFromFile(      "vaCMAA2.hlsl", "ComputeDispatchArgsCS", shaderMacros, false );
-        m_CSDebugDrawEdges->CreateShaderFromFile(           "vaCMAA2.hlsl", "DebugDrawEdgesCS", shaderMacros, false );
+        m_CSEdgesColor2x2->CompileFromFile(            "vaCMAA2.hlsl", "EdgesColor2x2CS", shaderMacros, false );
+        m_CSProcessCandidates->CompileFromFile(        "vaCMAA2.hlsl", "ProcessCandidatesCS", shaderMacros, false );
+        m_CSDeferredColorApply2x2->CompileFromFile(    "vaCMAA2.hlsl", "DeferredColorApply2x2CS", shaderMacros, false );
+        m_CSComputeDispatchArgs->CompileFromFile(      "vaCMAA2.hlsl", "ComputeDispatchArgsCS", shaderMacros, false );
+        m_CSDebugDrawEdges->CompileFromFile(           "vaCMAA2.hlsl", "DebugDrawEdgesCS", shaderMacros, false );
 
         m_CSEdgesColor2x2ShaderContentsID         = -1;
         m_CSProcessCandidatesShaderContentsID     = -1;

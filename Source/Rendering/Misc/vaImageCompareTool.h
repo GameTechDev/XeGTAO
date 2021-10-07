@@ -15,8 +15,6 @@
 #include "Rendering/vaRenderingIncludes.h"
 #include "Rendering/Effects/vaPostProcess.h"
 
-#include "Rendering/Shaders/vaHelperToolsShared.h"
-
 #include "Core/vaUI.h"
 
 namespace Vanilla
@@ -35,24 +33,23 @@ namespace Vanilla
         };
 
     protected:
-        shared_ptr<vaTexture>       m_referenceTexture;
-        shared_ptr<vaTexture>       m_helperTexture;
+        shared_ptr<vaTexture>           m_referenceTexture;
+        shared_ptr<vaTexture>           m_helperTexture;
 
-        bool                        m_saveReferenceScheduled            = false;
-        bool                        m_compareReferenceScheduled         = false;
+        bool                            m_saveReferenceScheduled            = false;
+        bool                            m_compareReferenceScheduled         = false;
 
-        wstring                     m_referenceDDSTextureStoragePath;   // first save to raw .dds - this guarantees image is identical when loaded as a reference, but since it's not good for reading with other image tools, also save as .png
-        wstring                     m_referencePNGTextureStoragePath;   // using PNG is not good as a reference due to potential conversion but it's easy to read from any other tool, so save as it like that also 
-        wstring                     m_screenshotCapturePath;
-        int                         m_screenshotCaptureCounter          = 0;
+        wstring                         m_referenceDDSTextureStoragePath;   // first save to raw .dds - this guarantees image is identical when loaded as a reference, but since it's not good for reading with other image tools, also save as .png
+        wstring                         m_referencePNGTextureStoragePath;   // using PNG is not good as a reference due to potential conversion but it's easy to read from any other tool, so save as it like that also 
+        wstring                         m_screenshotCapturePath;
+        int                             m_screenshotCaptureCounter          = 0;
 
-        VisType                     m_visualizationType                 = VisType::None;
+        VisType                         m_visualizationType                 = VisType::None;
 
-        vaAutoRMI<vaPixelShader>    m_visualizationPS;
-        vaTypedConstantBufferWrapper< ImageCompareToolShaderConstants >
-                                    m_constants;
+        vaAutoRMI<vaPixelShader>        m_visualizationPS;
+        shared_ptr<vaConstantBuffer>    m_constants;
 
-        bool                        m_initialized;
+        bool                            m_initialized;
 
     public: //protected:
         vaImageCompareTool( const vaRenderingModuleParams & params );
@@ -60,19 +57,19 @@ namespace Vanilla
         ~vaImageCompareTool( );
 
     public:
-        virtual void                RenderTick( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & colorInOut );
+        virtual void                    RenderTick( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & colorInOut );
 
     public:
-        virtual void                SaveAsReference( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & colorInOut );
+        virtual void                    SaveAsReference( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & colorInOut );
 
         // See vaPostProcess::CompareImages for description of the results
-        virtual vaVector4           CompareWithReference( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & colorInOut );
+        virtual vaVector4               CompareWithReference( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & colorInOut );
 
     protected:
 
     private:
-        virtual void                UIPanelTickAlways( vaApplicationBase & application ) override;
-        virtual void                UIPanelTick( vaApplicationBase & application ) override;
+        virtual void                    UIPanelTickAlways( vaApplicationBase & application ) override;
+        virtual void                    UIPanelTick( vaApplicationBase & application ) override;
     };
 
 

@@ -14,19 +14,22 @@
 
 #include "IntegratedExternals/vaImguiIntegration.h"
 
+#include "Rendering/vaRenderingIncludes.h"
+
+
 using namespace Vanilla;
 
 vaZoomTool::vaZoomTool( const vaRenderingModuleParams & params ) : 
     vaRenderingModule( params ), 
-    m_constantsBuffer( params ),
+    m_constantBuffer( vaConstantBuffer::Create<ZoomToolShaderConstants>( params.RenderDevice, "ZoomToolShaderConstants" ) ),
     m_CSZoomToolFloat( params ),
     m_CSZoomToolUnorm( params ),
     vaUIPanel( "ZoomTool", -1, true, vaUIPanel::DockLocation::DockedLeftBottom )
 { 
 //    assert( vaRenderingCore::IsInitialized() );
 
-    m_CSZoomToolFloat->CreateShaderFromFile( "vaHelperTools.hlsl", "ZoomToolCS", { ( pair< string, string >( "VA_ZOOM_TOOL_SPECIFIC", "" ) ) }, false );
-    m_CSZoomToolUnorm->CreateShaderFromFile( "vaHelperTools.hlsl", "ZoomToolCS", { ( pair< string, string >( "VA_ZOOM_TOOL_SPECIFIC", "" ) ), pair< string, string >( "VA_ZOOM_TOOL_USE_UNORM_FLOAT", "" ) }, false );
+    m_CSZoomToolFloat->CompileFromFile( "vaHelperTools.hlsl", "ZoomToolCS", { ( pair< string, string >( "VA_ZOOM_TOOL_SPECIFIC", "" ) ) }, false );
+    m_CSZoomToolUnorm->CompileFromFile( "vaHelperTools.hlsl", "ZoomToolCS", { ( pair< string, string >( "VA_ZOOM_TOOL_SPECIFIC", "" ) ), pair< string, string >( "VA_ZOOM_TOOL_USE_UNORM_FLOAT", "" ) }, false );
 }
 
 vaZoomTool::~vaZoomTool( )
@@ -54,7 +57,7 @@ void vaZoomTool::Draw( vaRenderDeviceContext & renderContext, shared_ptr<vaTextu
     vaComputeItem computeItem;
     vaRenderOutputs outputs;
 
-    computeItem.ConstantBuffers[ ZOOMTOOL_CONSTANTSBUFFERSLOT ] = m_constantsBuffer;
+    computeItem.ConstantBuffers[ ZOOMTOOL_CONSTANTSBUFFERSLOT ] = m_constantBuffer;
     outputs.UnorderedAccessViews[ 0 ] = colorInOut;
     
     int threadGroupCountX = ( colorInOut->GetSizeX( ) + 16 - 1 ) / 16;
@@ -112,7 +115,7 @@ void vaZoomTool::UpdateConstants( vaRenderDeviceContext & renderContext )
     consts.SourceRectangle  = vaVector4( (float)m_settings.BoxPos.x, (float)m_settings.BoxPos.y, (float)m_settings.BoxPos.x+m_settings.BoxSize.x, (float)m_settings.BoxPos.y+m_settings.BoxSize.y );
     consts.ZoomFactor       = m_settings.ZoomFactor;
 
-    m_constantsBuffer.Upload( renderContext, consts );
+    m_constantBuffer->Upload( renderContext, consts );
 }
 
 

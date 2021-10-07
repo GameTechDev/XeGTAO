@@ -543,6 +543,10 @@ vaDrawResultFlags vaRenderDeviceContextBaseDX12::ExecuteItem( const vaGraphicsIt
 
     // this is an unique index of the instance ('scene object' or etc.) which can be used to figure out anything about it (mesh, material, etc.)
     m_commandList->SetGraphicsRoot32BitConstant( vaRenderDeviceDX12::DefaultRootSignatureParams::InstanceIndexDirectUINT32, renderItem.InstanceIndex, 0 );
+
+    // a single uint root const useful for any purpose
+    m_commandList->SetGraphicsRoot32BitConstant( vaRenderDeviceDX12::DefaultRootSignatureParams::GenericRootConstDirectUINT32, renderItem.GenericRootConst, 0 );
+    
    
 #ifdef VA_SET_UNUSED_DESC_TO_NULL
     const vaConstantBufferViewDX12 & nullCBV        = m_deviceDX12.GetNullCBV        (); nullCBV;
@@ -812,6 +816,9 @@ vaDrawResultFlags vaRenderDeviceContextBaseDX12::ExecuteItem( const vaComputeIte
     // there is no instance index during compute shading!
     m_commandList->SetComputeRoot32BitConstant( vaRenderDeviceDX12::DefaultRootSignatureParams::InstanceIndexDirectUINT32, 0xFFFFFFFF, 0 );
 
+    // a single uint root const useful for any purpose
+    m_commandList->SetComputeRoot32BitConstant( vaRenderDeviceDX12::DefaultRootSignatureParams::GenericRootConstDirectUINT32, computeItem.GenericRootConst, 0 );
+
     vaComputePSODescDX12 psoDesc;
 
     vaShader::State shState;
@@ -936,26 +943,34 @@ vaDrawResultFlags vaRenderDeviceContextBaseDX12::ExecuteItem( const vaRaytraceIt
     // there is no instance index during raytracing!
     m_commandList->SetComputeRoot32BitConstant( vaRenderDeviceDX12::DefaultRootSignatureParams::InstanceIndexDirectUINT32, 0xFFFFFFFF, 0 );
 
+    // a single uint root const useful for any purpose
+    m_commandList->SetComputeRoot32BitConstant( vaRenderDeviceDX12::DefaultRootSignatureParams::GenericRootConstDirectUINT32, raytraceItem.GenericRootConst, 0 );
+
     vaRaytracePSODescDX12 psoDesc;
 
-    psoDesc.ItemSLEntryRayGen       = vaStringTools::SimpleWiden(raytraceItem.ShaderEntryRayGen         );   assert( raytraceItem.ShaderEntryRayGen         .size() < vaRaytracePSODescDX12::c_maxNameBufferSize );    assert( raytraceItem.ShaderEntryRayGen != "" );
-    psoDesc.ItemSLEntryMiss         = vaStringTools::SimpleWiden(raytraceItem.ShaderEntryMiss           );   assert( raytraceItem.ShaderEntryMiss           .size() < vaRaytracePSODescDX12::c_maxNameBufferSize );
-    psoDesc.ItemSLEntryMissSecondary= vaStringTools::SimpleWiden(raytraceItem.ShaderEntryMissSecondary  );   assert( raytraceItem.ShaderEntryMissSecondary  .size() < vaRaytracePSODescDX12::c_maxNameBufferSize );
-    psoDesc.ItemSLEntryAnyHit       = vaStringTools::SimpleWiden(raytraceItem.ShaderEntryAnyHit    );   assert( raytraceItem.ShaderEntryAnyHit      .size() < vaRaytracePSODescDX12::c_maxNameBufferSize );
-    psoDesc.ItemSLEntryClosestHit   = vaStringTools::SimpleWiden(raytraceItem.ShaderEntryClosestHit);   assert( raytraceItem.ShaderEntryClosestHit  .size() < vaRaytracePSODescDX12::c_maxNameBufferSize );
+    psoDesc.ItemSLEntryRayGen       = vaStringTools::SimpleWiden(raytraceItem.RayGen         );              assert( raytraceItem.RayGen          .size() < vaRaytracePSODescDX12::c_maxNameBufferSize );    assert( raytraceItem.RayGen != "" );
+    psoDesc.ItemSLEntryMiss         = vaStringTools::SimpleWiden(raytraceItem.Miss           );              assert( raytraceItem.Miss            .size() < vaRaytracePSODescDX12::c_maxNameBufferSize );
+    psoDesc.ItemSLEntryMissSecondary= vaStringTools::SimpleWiden(raytraceItem.MissSecondary  );              assert( raytraceItem.MissSecondary   .size() < vaRaytracePSODescDX12::c_maxNameBufferSize );
+    psoDesc.ItemSLEntryAnyHit       = vaStringTools::SimpleWiden(raytraceItem.AnyHit    );                   assert( raytraceItem.AnyHit          .size() < vaRaytracePSODescDX12::c_maxNameBufferSize );
+    psoDesc.ItemSLEntryClosestHit   = vaStringTools::SimpleWiden(raytraceItem.ClosestHit);                   assert( raytraceItem.ClosestHit      .size() < vaRaytracePSODescDX12::c_maxNameBufferSize );
 
     // can have either shader item librasry entry or shader material library entry for these
-    if( raytraceItem.ShaderEntryAnyHit == "" )
-        psoDesc.ItemMaterialAnyHit = vaStringTools::SimpleWiden(raytraceItem.ShaderEntryMaterialAnyHit  );   assert( psoDesc.ItemMaterialAnyHit          .size() < vaRaytracePSODescDX12::c_maxNameBufferSize );
-    if( raytraceItem.ShaderEntryClosestHit == "" )
-        psoDesc.ItemMaterialClosestHit = vaStringTools::SimpleWiden(raytraceItem.ShaderEntryMaterialClosestHit ); assert( psoDesc.ItemMaterialClosestHit  .size() < vaRaytracePSODescDX12::c_maxNameBufferSize );
-    
-    psoDesc.ItemMaterialCallable    = vaStringTools::SimpleWiden(raytraceItem.ShaderEntryMaterialCallable ); assert( psoDesc.ItemMaterialCallable  .size() < vaRaytracePSODescDX12::c_maxNameBufferSize );
+    if( raytraceItem.AnyHit == "" )
+        { psoDesc.ItemMaterialAnyHit = vaStringTools::SimpleWiden(raytraceItem.MaterialAnyHit  );              assert( psoDesc.ItemMaterialAnyHit              .size() < vaRaytracePSODescDX12::c_maxNameBufferSize ); }
+    else
+        { assert( raytraceItem.MaterialAnyHit == "" ); } // most likely a bug in user code - you can either have a singular AnyHit or per-material ItemMaterialAnyHit but not both
+    if( raytraceItem.ClosestHit == "" )
+        { psoDesc.ItemMaterialClosestHit = vaStringTools::SimpleWiden(raytraceItem.MaterialClosestHit );       assert( psoDesc.ItemMaterialClosestHit          .size() < vaRaytracePSODescDX12::c_maxNameBufferSize ); }
+    else
+        { assert( raytraceItem.MaterialClosestHit == "" ); } // most likely a bug in user code - you can either have a singular ClosestHit or per-material ItemMaterialClosestHit but not both
 
-    assert( psoDesc.ItemSLEntryRayGen != L"" );     // need raygen shader!
-    assert( psoDesc.ItemSLEntryMiss != L"" );       // need miss shader!
-    assert( psoDesc.ItemSLEntryAnyHit != L"" || psoDesc.ItemMaterialAnyHit != L"" );       // need anyhit shader!
-    assert( psoDesc.ItemSLEntryClosestHit != L"" || psoDesc.ItemMaterialClosestHit != L"" );       // need anyhit shader!
+    psoDesc.ItemMaterialCallable     = vaStringTools::SimpleWiden(raytraceItem.ShaderEntryMaterialCallable );           assert( psoDesc.ItemMaterialCallable            .size() < vaRaytracePSODescDX12::c_maxNameBufferSize );
+    psoDesc.ItemMaterialMissCallable = vaStringTools::SimpleWiden(raytraceItem.MaterialMissCallable );       assert( psoDesc.ItemMaterialMissCallable        .size() < vaRaytracePSODescDX12::c_maxNameBufferSize );
+
+    assert( psoDesc.ItemSLEntryRayGen != L"" );                                                 // we always need a raygen shader!
+    assert( psoDesc.ItemSLEntryMiss != L"" );                                                   // we always need a miss shader!
+    assert( psoDesc.ItemSLEntryAnyHit != L"" || psoDesc.ItemMaterialAnyHit != L"" );            // we always need a anyhit shader!
+    assert( psoDesc.ItemSLEntryClosestHit != L"" || psoDesc.ItemMaterialClosestHit != L"" );    // we always need a closesthit shader!
 
     vaShader::State shState;
     if( ( shState = AsDX12( *raytraceItem.ShaderLibrary ).GetShader( psoDesc.ItemSLBlob, psoDesc.ItemSLUniqueContentsID ) ) != vaShader::State::Cooked )
@@ -965,7 +980,8 @@ vaDrawResultFlags vaRenderDeviceContextBaseDX12::ExecuteItem( const vaRaytraceIt
     }
 
     psoDesc.MaterialsSLUniqueContentsID = AsDX12(m_deviceDX12.GetMaterialManager()).GetCallablesTableID();
-    psoDesc.MaxRecursionDepth = raytraceItem.MaxRecursionDepth;
+    psoDesc.MaxRecursionDepth = raytraceItem.MaxRecursionDepth;     assert( psoDesc.MaxRecursionDepth > 0 );
+    psoDesc.MaxPayloadSize = raytraceItem.MaxPayloadSize;           assert( raytraceItem.MaxPayloadSize > 0 );
 
 #ifdef VA_SET_UNUSED_DESC_TO_NULL
     const vaShaderResourceViewDX12 & nullSRV = m_deviceDX12.GetNullSRV( );
