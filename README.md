@@ -122,7 +122,7 @@ _debug visualization of bent cone (green) and the shading normal (red); click fo
 In the Bistro scene lighting we use the AO term to attenuate diffuse and specular irradiance from light probes using the multi-bounce diffuse and GTSO approaches detailed in the original GTAO work. We also attenuate unshadowed direct lighting using the micro-shadowing approximation from _Material Advances in Call of Duty: WWII_ [\[Chan 2018\]](http://advances.realtimerendering.com/other/2016/naughty_dog/NaughtyDog_TechArt_Final.pdf) and [SIGGRAPH 2016: Technical Art of Uncharted](http://advances.realtimerendering.com/other/2016/naughty_dog/index.html). It should be noted that the sample's current AO term usage is somewhat ad-hoc and has itself not been matched to ground truth, and is not meant as a reference.
 
 [![thumb1](Images/thumb-simplelights-0-off.png)](Images/simplelights-0-off.png) [![thumb2](Images/thumb-simplelights-1-GTAO.png)](Images/simplelights-1-GTAO.png) 
-[![thumb3](Images/thumb-simplelights-2-GTAO+BentNormals.png)](Images/simplelights-2-GTAO+BentNormals.png)
+[![thumb3](Images/thumb-simplelights-2-GTAO+BentNormals.png)](Images/simplelights-2-GTAO+BentNormals.png)  
 _XeGTAO OFF/ON/ON+BentNormals: directional component significantly improves contact shadow correctness for lights that lack explicit shadowing; click to enlarge_
 
 ### Misc
