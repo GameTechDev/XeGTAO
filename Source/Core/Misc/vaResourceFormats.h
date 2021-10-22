@@ -160,8 +160,8 @@ namespace Vanilla
         Read                        = 1,    // see D3D11_MAP_READ
         Write	                    = 2,    // see D3D11_MAP_WRITE
         ReadWrite                   = 3,    // this is not actually supported and will probably be removed
-        WriteDiscard                = 4,    // see D3D11_MAP_WRITE_DISCARD
-        WriteNoOverwrite            = 5     // see D3D11_MAP_WRITE_NO_OVERWRITE
+        WriteDiscard                = 4,    // (not supported for textures) see D3D11_MAP_WRITE_DISCARD
+        WriteNoOverwrite            = 5     // (not supported for textures) see D3D11_MAP_WRITE_NO_OVERWRITE
     };
 
 

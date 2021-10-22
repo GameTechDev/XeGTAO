@@ -267,11 +267,9 @@ namespace Vanilla
             float                       AlphaTestThreshold      = 0.5f;             // to be moved to Inputs if needed
             bool                        CastShadows             = true;
             bool                        Wireframe               = false;
-            bool                        AdvancedSpecularShader  = true;
             float                       LocalIBLNormalBasedBias = 0;                // see vaSceneLighting.hlsl transitionNormalBias - it's super-hacky and temporary
             float                       LocalIBLBasedBias       = 0;
-            bool                        VRSPreferHorizontal     = true;             // whether to prefer 2x1/4x2 over 1x2/2x4 rates
-            int                         VRSRateOffset           = 0;                // from -4 (no VRS, ever) to 4 (4x4 VRS)
+            float                       IndexOfRefraction       = 1.00029f;         // air at sea level - see https://www.pbr-book.org/3ed-2018/Reflection_Models/Specular_Reflection_and_Transmission#FresnelReflectance
 
             MaterialSettings( ) { }
 
@@ -326,7 +324,9 @@ namespace Vanilla
 
         // Primary material data
         MaterialSettings                                m_materialSettings;
-        ShaderSettings                                  m_shaderSettings;
+        ShaderSettings                                  m_shaderSettings;               // this will get removed
+
+        string                                          m_class;                        // corresponds to vaRenderMaterialManager::MaterialClasses
 
         std::vector<shared_ptr<Node>>                   m_nodes;
         std::vector<InputSlot>                          m_inputSlots;
@@ -472,6 +472,9 @@ namespace Vanilla
         // called after m_inputs are loaded
         void                                            UpdateInputsDependencies( );
 
+        // Upgrade to new material system- TODO: remove once refactoring complete
+        void                                            UpgradeToNewMaterial( );
+
     private:
         const std::vector<InputSlot> &                  GetInputSlots( ) const                                      { return m_inputSlots; }
         int                                             FindInputSlotIndex( const string & name ) const             { for( int i = 0; i < m_inputSlots.size(); i++ ) if( vaStringTools::ToLower( m_inputSlots[i].Name ) == vaStringTools::ToLower( name ) ) return i; return -1; }
@@ -559,7 +562,11 @@ namespace Vanilla
 
     class vaRenderMaterialManager : public vaRenderingModule, public vaUIPanel
     {
-        //VA_RENDERING_MODULE_MAKE_FRIENDS( );
+    public:
+        // see vaRenderMaterial.hlsl - these refer to material names in "..\Source\Rendering\Shaders\Materials\" folder.
+        const std::vector< string >                     MaterialClasses =
+        { "StandardPBR", "SpecGlossPBR" };                 // todo: Cloth, Subsurface, etc.
+
     protected:
 
         //vaTT_Tracker< vaRenderMaterial * >              m_renderMaterials;
@@ -642,7 +649,7 @@ namespace Vanilla
 
     public:
         // alphaTest is part of the key because it determines whether PS_DepthOnly is needed at all; all other shader parameters are contained in shaderMacros
-        shared_ptr<vaRenderMaterialCachedShaders>       FindOrCreateShaders( bool alphaTest, const vaRenderMaterial::ShaderSettings & shaderSettings, const std::vector< pair< string, string > > & shaderMacros );
+        shared_ptr<vaRenderMaterialCachedShaders>       FindOrCreateShaders( bool alphaTest, string materialClass, const vaRenderMaterial::ShaderSettings & shaderSettings, const std::vector< pair< string, string > > & shaderMacros );
 
     protected:
         virtual string                                  UIPanelGetDisplayName( ) const override { return "Materials"; } //vaStringTools::Format( "vaRenderMaterialManager (%d meshes)", m_renderMaterials.size( ) ); }

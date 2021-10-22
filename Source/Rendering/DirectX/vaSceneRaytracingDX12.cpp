@@ -136,10 +136,10 @@ void vaSceneRaytracingDX12::PreRenderUpdateInternal( vaRenderDeviceContext & ren
         assert( instanceLocal.InstanceIndex == i );
         instanceDesc.InstanceMask               = 1;
 
-        // TEMP TEMP TEMP - DISABLE TRANSPARENCIES FOR NOW
-        if( instanceGlobal.Material->IsTransparent() )
-            instanceDesc.InstanceMask = 0;
-        // TEMP TEMP TEMP - DISABLE TRANSPARENCIES FOR NOW
+        // // TEMP TEMP TEMP - DISABLE TRANSPARENCIES FOR NOW
+        // if( instanceGlobal.Material->IsTransparent() )
+        //     instanceDesc.InstanceMask = 0;
+        // // TEMP TEMP TEMP - DISABLE TRANSPARENCIES FOR NOW
 
         for( int r = 0; r < 3; r++ )
             for( int c = 0; c < 4; c++ )

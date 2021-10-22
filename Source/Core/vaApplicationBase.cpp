@@ -30,6 +30,8 @@
 
 using namespace Vanilla;
 
+bool IsRemoteSession( void );
+
 vaApplicationBase::vaApplicationBase( const Settings & settings, const std::shared_ptr<vaRenderDevice> & renderDevice, const vaApplicationLoopFunction & callback )
     : m_settings( settings ), m_renderDevice( renderDevice ), m_tickExCallback( callback ), vaUIPanel( "System & Performance", -10, true, vaUIPanel::DockLocation::DockedRight, "", vaVector2( 500, 550 ) )
 {
@@ -210,6 +212,9 @@ void vaApplicationBase::Tick( float deltaTime )
                 this->CaptureMouse( );
         }
     }
+
+    if( IsRemoteSession() && IsMouseCaptured() && vaInputMouse::GetInstance( ).IsKeyReleased( MK_Middle ) )
+        this->ReleaseMouse( );
     
     // use Esc to leave 'game' mode (not sure what we'll do in the future)
     if( !m_blockInput && HasFocus() && IsMouseCaptured() && vaInputKeyboard::GetInstance( ).IsKeyClicked( KK_ESCAPE ) )

@@ -18,6 +18,8 @@ using namespace Vanilla;
 
 #define ENABLE_SET_CURSOR_TO_CENTRE_WHEN_CAPTURED
 
+bool IsRemoteSession( void );
+
 vaInputMouse::vaInputMouse( )
 {
     m_captured = false;
@@ -67,7 +69,7 @@ void vaInputMouse::Tick( float deltaTime )
     if( m_prevPos != m_currPos )
         m_timeFromLastMove = 0.0f;
 
-    if( m_captured )
+    if( m_captured && !IsRemoteSession() )
     {
         // return to centre
 #ifdef ENABLE_SET_CURSOR_TO_CENTRE_WHEN_CAPTURED
@@ -76,11 +78,11 @@ void vaInputMouse::Tick( float deltaTime )
 #endif
     }
 
-    if( m_firstPass )
-    {
-        m_firstPass = false;
-        Tick( deltaTime );
-    }
+    // if( m_firstPass )
+    // {
+    //     m_firstPass = false;
+    //     Tick( deltaTime );
+    // }
 }
 
 void vaInputMouse::ResetAll( )
@@ -132,10 +134,13 @@ void vaInputMouse::SetCapture( )
     m_capturedWinCenterPos.y = ( dwr.top + dwr.bottom ) / 2;
 
     ::SetCapture( dynamic_cast<vaApplicationWin&>(vaApplicationBase::GetInstance( )).GetMainHWND( ) );
+    if( !IsRemoteSession() )
+    {
 #ifdef ENABLE_SET_CURSOR_TO_CENTRE_WHEN_CAPTURED
-    if( ::SetCursorPos( m_capturedWinCenterPos.x, m_capturedWinCenterPos.y ) )
-        m_prevPos = m_currPos = m_capturedWinCenterPos;
+        if( ::SetCursorPos( m_capturedWinCenterPos.x, m_capturedWinCenterPos.y ) )
+            m_prevPos = m_currPos = m_capturedWinCenterPos;
 #endif
+    }
 }
 
 void vaInputMouse::ReleaseCapture( )
@@ -145,10 +150,13 @@ void vaInputMouse::ReleaseCapture( )
 
     m_captured = false;
 
+    if( !IsRemoteSession() )
+    {
 #ifdef ENABLE_SET_CURSOR_TO_CENTRE_WHEN_CAPTURED
-    if( ::SetCursorPos( m_capturedPos.x, m_capturedPos.y ) )
-        m_prevPos = m_currPos = m_capturedPos;
+        if( ::SetCursorPos( m_capturedPos.x, m_capturedPos.y ) )
+            m_prevPos = m_currPos = m_capturedPos;
 #endif
+    }
     ::ReleaseCapture( );
 }
 

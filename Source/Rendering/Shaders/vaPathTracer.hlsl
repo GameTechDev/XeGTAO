@@ -8,17 +8,17 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#define VA_RAYTRACING
+
 #ifndef __INTELLISENSE__
 #include "vaPathTracerShared.h"
 #endif
-
-#define VA_RAYTRACING
 
 #include "vaShared.hlsl"
 
 #include "vaRenderMesh.hlsl"
 
-#include "vaLighting.hlsl"
+#include "Lighting/vaLighting.hlsl"
 
 #if VA_USE_RAY_SORTING
 [numthreads(32, 1, 1)] void CSKickoff( const uint pathIndex : SV_DispatchThreadID )  {} // dummy
@@ -38,7 +38,7 @@ void CSKickoff( const uint pathIndex : SV_DispatchThreadID )
     //if( IsUnderCursorRange( pixelPos, int2(1,1) ) )
     //    DebugDraw2DText( pixelPos + float2( 10, 75 ), float4( 1, 0, 1, 1 ), 42 );
 
-    if( pathIndex >= g_pathTracerConsts.StartPathCount )
+    if( pathIndex >= g_pathTracerConsts.MaxPathCount )
         return;
 
 #if 0   // naive 
@@ -114,6 +114,10 @@ void CSKickoff( const uint pathIndex : SV_DispatchThreadID )
 
     g_pathPayloads[ pathIndex ] = pathPayload;
 
+    // in case sorting disabled, we must initialize indices to [0, 1, ..., maxPathCount-1]
+    if( !g_pathTracerConsts.PerBounceSortEnabled )
+        g_pathListSorted[ pathIndex ] = pathIndex;
+
 #if VA_USE_RAY_SORTING
     // this gets sent through the path tracing API
     ShaderMultiPassRayPayload rayPayloadLocal;
@@ -146,7 +150,7 @@ void CSTickCounters( )
 void Raygen()
 {
     uint pathListIndex = DispatchRaysIndex().x;
-    if( pathListIndex >= g_pathTracerControl[0].CurrentRayCount )
+    if( pathListIndex >= g_pathTracerConsts.MaxPathCount ) // g_pathTracerControl[0].CurrentRayCount )
         return;
 
     uint pathIndex = g_pathListSorted[pathListIndex];
@@ -208,7 +212,7 @@ void Miss( inout ShaderMultiPassRayPayload rayPayloadLocal )
     pathPayload.NextRayOrigin = nextRayOrigin;
 #endif
 
-    PathTracerOutputDepth( pathPayload.PixelPos, pathPayload.BounceIndex, nextRayOrigin );
+    PathTracerOutputAUX( pathPayload.PixelPos, pathPayload, nextRayOrigin, float3(1,1,1), float3(0,0,1) );
 
     // // stop any further bounces
     // not needed anymore - this is the default
@@ -350,7 +354,21 @@ void PSWriteToOutput( const in float4 position : SV_Position, out float4 outColo
             if( underMouseCursor )
                 DebugDraw2DText( pixCoord + float2( 10, -16 ), float4( 1, 0, 1, 1 ), outColor );
         }
-
+        else if( (uint)g_pathTracerConsts.DebugViewType == (uint)ShaderDebugViewType::DenoiserAuxAlbedo )
+        {
+            outColor.rgb = g_denoiserAuxAlbedoSRV[ pixCoord ].rgb;
+            outColor.a = 0;
+            if( underMouseCursor )
+                DebugDraw2DText( pixCoord + float2( 10, -16 ), float4( 1, 0, 1, 1 ), outColor );
+        }
+        else if( (uint)g_pathTracerConsts.DebugViewType >= (uint)ShaderDebugViewType::DenoiserAuxNormals )
+        {
+            outColor.rgb = g_denoiserAuxNormalsSRV[ pixCoord ].rgb;
+            outColor.a = 0;
+            if( underMouseCursor )
+                DebugDraw2DText( pixCoord + float2( 10, -16 ), float4( 1, 0, 1, 1 ), outColor );
+            outColor.rgb = DisplayNormalSRGB( outColor.rgb );
+        }
     }
 
     //if( g_pathTracerConsts.EnableCrosshairDebugViz )
@@ -370,3 +388,16 @@ void PSWriteToOutput( const in float4 position : SV_Position, out float4 outColo
 
     outDepth = ViewToNDCDepth( viewspaceDepth );
 }
+
+[numthreads(8, 8, 1)]
+void CSPrepareDenoiserInputs( const uint2 pixelPos : SV_DispatchThreadID )
+{
+    g_denoiserAuxAlbedo [pixelPos].xyz /= (float)g_genericRootConst;
+    g_denoiserAuxNormals[pixelPos].xyz = normalize( g_denoiserAuxNormals[pixelPos].xyz );
+}
+
+//[numthreads(8, 8, 1)]
+//void CSDebugDisplayDenoiser( const uint2 pixCoord : SV_DispatchThreadID )
+//{
+//}
+

@@ -102,144 +102,14 @@ static inline vaVector3     Vec3AsVA( const cgltf_float* val )          { return
 ////static inline vaMatrix4x4   VAFromAI( const aiMatrix4x4 & val )    { return vaMatrix4x4( val.a1, val.a2, val.a3, val.a4, val.b1, val.b2, val.b3, val.b4, val.c1, val.c2, val.c3, val.c4, val.d1, val.d2, val.d3, val.d4 ); }
 //static inline vaMatrix4x4   AsVA(const cgltf_float* val) { return vaMatrix4x4(val.a1, val.b1, val.c1, val.d1, val.a2, val.b2, val.c2, val.d2, val.a3, val.b3, val.c3, val.d3, val.a4, val.b4, val.c4, val.d4); }
 
-// TODO: check this with Filip, pretty sure we're row major by default..
+// TODO: pretty sure we're row major by default..
 static inline vaMatrix4x4   Mat4x4AsVA(const cgltf_float* val) { return vaMatrix4x4(val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7], val[8], val[9], val[10], val[11], val[12], val[13], val[14], val[15]); }
-
-
-//#pragma warning ( suppress: 4505 ) // unreferenced local function has been removed
-//static shared_ptr<vaAssetTexture> FindOrLoadTexture( aiTexture * assimpTexture, const string & _path, LoadingTempStorage & tempStorage, vaAssetImporter::ImporterContext & importerContext, 
-//                                                    vaTextureLoadFlags textureLoadFlags, vaTextureContentsType textureContentsType, bool & createdNew )
-//{
-//    createdNew = false;
-//
-//    string originalPath = vaStringTools::ToLower(_path);
-//
-//    string filePath = originalPath;
-//
-//    //for( int i = 0; i < tempStorage.LoadedTextures.size(); i++ )
-//    //{
-//    //    if( (originalPath == tempStorage.LoadedTextures[i].OriginalPath) && (textureLoadFlags == tempStorage.LoadedTextures[i].TextureLoadFlags) && (textureContentsType == tempStorage.LoadedTextures[i].TextureContentsType) )
-//    //    {
-//    //        assert( assimpTexture == tempStorage.LoadedTextures[i].AssimpTexture );
-//    //        return tempStorage.LoadedTextures[i].Texture;
-//    //    }
-//    //}
-//
-//    //string outDir, outName, outExt;
-//    //vaFileTools::SplitPath( filePath, &outDir, &outName, &outExt );
-//
-//    //bool foundDDS = outExt == ".dds";
-//    //if( !foundDDS && (importerContext.Settings.TextureOnlyLoadDDS || importerContext.Settings.TextureTryLoadDDS) )
-//    //{
-//    //    string filePathDDS = outDir + outName + ".dds";
-//    //    if( vaFileTools::FileExists( filePathDDS ) )
-//    //    {
-//    //        filePath = filePathDDS;
-//    //        foundDDS = true;
-//    //    }
-//    //    else
-//    //    {
-//    //        filePathDDS = tempStorage.ImportDirectory + outDir + outName + ".dds";
-//    //        if( vaFileTools::FileExists( filePathDDS ) )
-//    //        {
-//    //            filePath = filePathDDS;
-//    //            foundDDS = true;
-//    //        }
-//    //    }
-//    //}
-//
-//    //if( !foundDDS && importerContext.Settings.TextureOnlyLoadDDS )
-//    //{
-//    //    VA_LOG( "VaAssetImporter_CGLTF : TextureOnlyLoadDDS true but no .dds texture found when looking for '%s'", filePath.c_str() );
-//    //    return nullptr;
-//    //}
-//
-//    if( !vaFileTools::FileExists( filePath ) )
-//    {
-//        filePath = tempStorage.ImportDirectory + outDir + outName + "." + outExt;
-//        if( !vaFileTools::FileExists( filePath ) )
-//        {
-//            VA_LOG( "VaAssetImporter_CGLTF - Unable to find texture '%s'", filePath.c_str() );
-//            return nullptr;
-//        }
-//    }
-//
-//    shared_ptr<vaAssetTexture> textureAssetOut;
-//    if( !importerContext.AsyncInvokeAtBeginFrame( [ & ]( vaRenderDevice & renderDevice, vaAssetImporter::ImporterContext & importerContext )
-//    {
-//        shared_ptr<vaTexture> textureOut = vaTexture::CreateFromImageFile( renderDevice, filePath, textureLoadFlags, vaResourceBindSupportFlags::ShaderResource, textureContentsType );
-//#if 0
-//        // this is valid because all of this happens after BeginFrame was called on the device but before main application/sample starts rendering anything
-//        vaRenderDeviceContext& renderContext = *renderDevice.GetMainContext( );
-//
-//        if( textureContentsType == vaTextureContentsType::SingleChannelLinearMask && vaResourceFormatHelpers::GetChannelCount( textureOut->GetResourceFormat() ) > 1 )
-//        {
-//            vaResourceFormat outFormat = vaResourceFormat::Unknown;
-//            switch( textureOut->GetResourceFormat( ) )
-//            {
-//            case( vaResourceFormat::R8G8B8A8_UNORM ):
-//            case( vaResourceFormat::B8G8R8A8_UNORM ):
-//                outFormat = vaResourceFormat::R8_UNORM; break;
-//            }
-//
-//            shared_ptr<vaTexture> singleChannelTextureOut = (outFormat==vaResourceFormat::Unknown)?(nullptr):(vaTexture::Create2D( renderDevice, outFormat, textureOut->GetWidth( ), textureOut->GetHeight( ), 1, 1, 1, 
-//                vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::RenderTarget, vaResourceAccessFlags::Default, outFormat, vaResourceFormat::Automatic, vaResourceFormat::Automatic, vaResourceFormat::Automatic,
-//                textureOut->GetFlags(), textureOut->GetContentsType() ) );
-//
-//            if( singleChannelTextureOut != nullptr && renderDevice.GetPostProcess( ).MergeTextures( renderContext, singleChannelTextureOut, textureOut, nullptr, nullptr, "float4( srcA.x, 0, 0, 0 )" ) == vaDrawResultFlags::None )
-//            {
-//                VA_LOG( "VaAssetImporter_Assimp - Successfully removed unnecessary color channels for '%s' texture", filePath.c_str( ) );
-//                textureOut = singleChannelTextureOut;
-//            }
-//        }
-//
-//        //if( textureOut != nullptr && importerContext.Settings.TextureGenerateMIPs )
-//        //{
-//        //    if( textureOut->GetMipLevels() == 1 )
-//        //    {
-//        //        auto mipmappedTexture = vaTexture::TryCreateMIPs( renderContext, textureOut );
-//        //        if( mipmappedTexture != nullptr )
-//        //        {
-//        //            VA_LOG( "VaAssetImporter_Assimp - Successfully created MIPs for '%s' texture", filePath.c_str( ) );
-//        //            textureOut = mipmappedTexture;
-//        //        }
-//        //        else
-//        //            VA_LOG( "VaAssetImporter_Assimp - Error while creating MIPs for '%s'", filePath.c_str( ) );
-//        //    }
-//        //    else
-//        //    {
-//        //        VA_LOG( "VaAssetImporter_Assimp - Texture '%s' already has %d mip levels!", filePath.c_str( ), textureOut->GetMipLevels() );
-//        //    }
-//        //}
-//
-//        if( textureOut == nullptr )
-//        {
-//            VA_LOG( "VaAssetImporter_GLTF - Error while loading '%s'", filePath.c_str( ) );
-//            return false;
-//        }
-//
-//        assert( vaThreading::IsMainThread( ) ); // remember to lock asset global mutex and switch these to 'false'
-//        textureAssetOut = importerContext.AssetPack->Add( textureOut, importerContext.AssetPack->FindSuitableAssetName( importerContext.Settings.AssetNamePrefix + outName, true ), true );
-//
-//        tempStorage.LoadedTextures.push_back( LoadingTempStorage::LoadedTexture( assimpTexture, textureAssetOut, originalPath, textureLoadFlags, textureContentsType ) );
-//#endif
-//        return true;
-//    } ) )
-//        return nullptr;
-//
-//    createdNew = true;
-//
-//    // if( outContent != nullptr )
-//    //     outContent->LoadedAssets.push_back( textureAssetOut );
-//
-//    VA_LOG_SUCCESS( "GLtf texture '%s' loaded ok.", filePath.c_str() );
-//
-//    //return textureAssetOut;
-//}
 
 void 
 RemoveChannels()
 {
+    // TODO: need some assets to test this 
+    VA_LOG("VaAssetImporter_GLTF - RemoveChannels called");
     assert(false);
     //vaResourceFormat outFormat = vaResourceFormat::Unknown;
     //switch (textureOut->GetResourceFormat())
@@ -394,6 +264,27 @@ static shared_ptr<vaAssetTexture> FindOrLoadTexture(const string& _path, Loading
 #define GL_MIRRORED_REPEAT                0x8370
 #define GL_CLAMP_TO_EDGE                  0x812F
 
+vaLayerMode GLTFAlphaModeToVanilla(cgltf_alpha_mode alpha_mode)
+{
+    if (alpha_mode == cgltf_alpha_mode_opaque)
+    {
+        return vaLayerMode::Opaque;
+    }
+    else if (alpha_mode == cgltf_alpha_mode_mask)
+    {
+        return vaLayerMode::AlphaTest;
+    }
+    else if (alpha_mode == cgltf_alpha_mode_blend)
+    {
+        return vaLayerMode::Transparent;
+    }
+    else
+    {
+        VA_LOG_ERROR("GLTF warning: unknown/invalid alpha mode");
+        assert(false); // unknown /invalid alpha mode!
+    }
+    return vaLayerMode::Opaque;
+}
 
 
 static string ImportTextureNode( vaRenderMaterial & vanillaMaterial, const string & inputTextureNodeName, vaTextureContentsType contentsType, LoadingTempStorage & tempStorage, 
@@ -513,41 +404,83 @@ static bool ProcessPBRMetallicRoughnessMaterial(const cgltf_material* gltfMateri
 
     float metallic = gltfMaterial->pbr_metallic_roughness.metallic_factor;
     float roughness = gltfMaterial->pbr_metallic_roughness.roughness_factor;
-    //float occlusion = 1.0;
+    float occlusion = 1.0;
     auto baseColor = gltfMaterial->pbr_metallic_roughness.base_color_factor;
 
-    newMaterial->SetInputSlotDefaultValue("BaseColor", vaVector4::SRGBToLinear(vaVector4(baseColor))); // TODO: AsVA?
+    newMaterial->SetInputSlotDefaultValue("BaseColor", vaVector4::SRGBToLinear(vaVector4(baseColor)));
 
     //cgltf_texture_view base_color_texture;
     string baseColorTextureName = ImportTextureNode(*newMaterial, "BaseColorTex", vaTextureContentsType::GenericColor, tempStorage, importerContext, &gltfMaterial->pbr_metallic_roughness.base_color_texture);
     if (baseColorTextureName != "")
         newMaterial->ConnectInputSlotWithNode("BaseColor", baseColorTextureName);
 
+    // see https://github.com/KhronosGroup/glTF/tree/master/specification/2.0 for the specs
+
     newMaterial->SetInputSlotDefaultValue("Roughness", roughness);
     newMaterial->SetInputSlotDefaultValue("Metallic", metallic);
+    newMaterial->SetInputSlotDefaultValue("AmbientOcclusion", occlusion);
 
-    //cgltf_texture_view metallic_roughness_texture; can be occlusion metallic roughness    
-    //string omrTextureName = ImportTextureNode(*newMaterial, "OcclMetalRoughTex", vaTextureContentsType::GenericLinear, tempStorage, importerContext, &gltfMaterial->pbr_metallic_roughness.metallic_roughness_texture);
-    //if (omrTextureName != "")
-    //{
-    //    assert(roughness == 1.0f);
-    //    assert(metallic == 1.0f);
-    //    assert(occlusion == 1.0f);
+    // From the specs:
+    // "The metallic-roughness texture. The metalness values are sampled from the B channel. The roughness values are sampled from the G channel. 
+    // These values are linear. If other channels are present (R or A), they are ignored for metallic-roughness calculations."
 
-    //    //float occlusionTextureStrength = 1.0f;
-    //    //if (!assimpMaterial->Get(AI_MATKEY_GLTF_TEXTURE_STRENGTH(aiTextureType_LIGHTMAP, 0), occlusionTextureStrength) == aiReturn_SUCCESS) { assert(false); }
-    //    //assert(occlusionTextureStrength == 1.0f); // different from 1.0f not implemented yet !!! if changing make sure to change the alone one below !!!
+    // Additionally, (ambient) occlusion could be the same in which case let's just load it as one
+    // (there's more info at https://github.com/KhronosGroup/glTF/issues/857 and related threads)
 
-    //    newMaterial->ConnectInputSlotWithNode("Roughness", omrTextureName, "y");
-    //    newMaterial->ConnectInputSlotWithNode("Metallic", omrTextureName, "z");
-    //    newMaterial->ConnectInputSlotWithNode("AmbientOcclusion", omrTextureName, "x");   // not 100% sure how to know whether to use this or not
-    //    
-    //    //else
-    //    //{
-    //    //    assert(false);
-    //    //}
-    //}
-    //newMaterial->SetInputSlotDefaultValue( "AmbientOcclusion", occlusion );
+    // if occlusion texture is part of same metallic roughness texture
+    cgltf_texture* gltfOccTex = gltfMaterial->occlusion_texture.texture;
+    if (gltfOccTex != nullptr)
+    {
+        cgltf_texture_view metallic_roughness_texture = gltfMaterial->pbr_metallic_roughness.metallic_roughness_texture;
+
+        string omrTextureName = ImportTextureNode(*newMaterial, "OcclMetalRoughTex", vaTextureContentsType::GenericLinear, tempStorage, importerContext, &gltfMaterial->pbr_metallic_roughness.metallic_roughness_texture);
+        if (omrTextureName != "")
+        {
+            assert(roughness == 1.0f);
+            assert(metallic == 1.0f);
+            assert(occlusion == 1.0f);
+
+            //float occlusionTextureStrength = 1.0f;
+            //assert(occlusionTextureStrength == 1.0f); // different from 1.0f not implemented yet !!! if changing make sure to change the alone one below !!!
+
+            newMaterial->ConnectInputSlotWithNode("Roughness", omrTextureName, "y");
+            newMaterial->ConnectInputSlotWithNode("Metallic", omrTextureName, "z");
+            newMaterial->ConnectInputSlotWithNode("AmbientOcclusion", omrTextureName, "x");   // not 100% sure how to know whether to use this or not
+        }
+        newMaterial->SetInputSlotDefaultValue("AmbientOcclusion", occlusion);
+    }
+    else // occlusion texture is separate so we have to read two separate textures
+    {
+        string mrTextureName = ImportTextureNode(*newMaterial, "MetallicRoughnessTex", vaTextureContentsType::GenericLinear, tempStorage, importerContext, &gltfMaterial->pbr_metallic_roughness.metallic_roughness_texture);
+
+        if (mrTextureName != "")
+        {
+            newMaterial->ConnectInputSlotWithNode("Roughness", mrTextureName, "y");
+            newMaterial->ConnectInputSlotWithNode("Metallic", mrTextureName, "z");
+        }
+        string occlusionTextureName = ImportTextureNode(*newMaterial, "OcclusionTex", vaTextureContentsType::GenericLinear, tempStorage, importerContext, &gltfMaterial->occlusion_texture);
+
+        if (occlusionTextureName != "")
+        {
+            float occlusionTextureStrength = gltfMaterial->occlusion_texture.scale; occlusionTextureStrength;
+            assert(occlusionTextureStrength == 1.0f); // different from 1.0f not implemented yet !!! if changing make sure to change the combined one above!!!
+
+            newMaterial->ConnectInputSlotWithNode("AmbientOcclusion", occlusionTextureName, "x");
+        }
+    }
+    ProcessNormalTexture(gltfMaterial, newMaterial, tempStorage, importerContext);
+
+    {
+        // The RGB components of the emissive color of the material. These values are linear. If an emissiveTexture is specified, this value is multiplied with the texel values.        
+        newMaterial->SetInputSlotDefaultValue("emissiveColor", vaVector3::SRGBToLinear(Vec3AsVA(gltfMaterial->emissive_factor)));
+        string emissiveTex = ImportTextureNode(*newMaterial, "EmissiveTex", vaTextureContentsType::GenericColor, tempStorage, importerContext, &gltfMaterial->emissive_texture);
+
+        if (emissiveTex != "")
+        {
+            newMaterial->ConnectInputSlotWithNode("EmissiveColor", emissiveTex);
+            assert(gltfMaterial->emissive_factor[0] == 1.0f && gltfMaterial->emissive_factor[1] == 1.0f && gltfMaterial->emissive_factor[2] == 1.0f);  // different from 1.0f not implemented yet !!!
+        }
+    }
 
     // TODO: add metallic texture
     return true;
@@ -568,52 +501,35 @@ static bool ProcessMaterials(const cgltf_data* loadedScene, LoadingTempStorage& 
         {            
             newMaterial = renderDevice.GetMaterialManager().CreateRenderMaterial();        
 
-            if (gltfMaterial->has_pbr_specular_glossiness)
-            {
-                VA_WARN("gltf2 specular glossiness model not supported yet");
-            }
             vaRenderMaterial::MaterialSettings matSettings = newMaterial->GetMaterialSettings();
 
             //// some defaults
             //matSettings.ReceiveShadows = true;
             matSettings.CastShadows = true;
-            matSettings.AlphaTestThreshold = 0.3f; // use 0.3 instead of 0.5; 0.5 can sometimes make things almost invisible if alpha was stored in .rgb (instead of .a) and there was a linear<->sRGB mixup; can always be tweaked later
-
+            //matSettings.AlphaTestThreshold = 0.3f; // use 0.3 instead of 0.5; 0.5 can sometimes make things almost invisible if alpha was stored in .rgb (instead of .a) and there was a linear<->sRGB mixup; can always be tweaked later
+            matSettings.AlphaTestThreshold = gltfMaterial->alpha_cutoff;
             // Specifies whether meshes using this material must be rendered without backface culling. 0 for false, !0 for true.
             matSettings.FaceCull = (gltfMaterial->double_sided) ? (vaFaceCull::None) : (vaFaceCull::Back);
-
-            //{
-            //    aiString _alphaMode;
-            //    assimpMaterial->Get(AI_MATKEY_GLTF_ALPHAMODE, _alphaMode);
-            //    string alphaMode = _alphaMode.C_Str();
-            //    assimpMaterial->Get(AI_MATKEY_GLTF_ALPHACUTOFF, matSettings.AlphaTestThreshold);
-            //    if (alphaMode == "OPAQUE")
-            //    {
-            //        matSettings.LayerMode = vaLayerMode::Opaque;
-            //    }
-            //    else if (alphaMode == "MASK")
-            //    {
-            //        matSettings.LayerMode = vaLayerMode::AlphaTest;
-            //    }
-            //    else if (alphaMode == "BLEND")
-            //    {
-            //        matSettings.LayerMode = vaLayerMode::Transparent;
-            //    }
-            //    else { assert(false); }
-            //}
-
-        //    bool mergeOpacityMaskToColor = false;
+            // TODO: doesn't appear to be a wireframe material setting in gltf ?
 
             if (gltfMaterial->has_pbr_metallic_roughness)
             {
                 ProcessPBRMetallicRoughnessMaterial(gltfMaterial, newMaterial, tempStorage, importerContext);
+                matSettings.LayerMode = GLTFAlphaModeToVanilla(gltfMaterial->alpha_mode);
             }          
-            
-            if (gltfMaterial->normal_texture.texture != nullptr)
+            else if (gltfMaterial->has_pbr_specular_glossiness)
             {
-                ProcessNormalTexture(gltfMaterial, newMaterial, tempStorage, importerContext);
+                VA_WARN("gltf2 specular glossiness model not supported yet");
+                //ProcessPBRSpecularGlossinessMaterial()
+                newMaterial->SetupFromPreset("FilamentSpecGloss");
+            }
+            else
+            {
+                // there's no such thing as default material in gltf, or is there?
+                assert(false);
             }
 
+                       
             newMaterial->SetMaterialSettings(matSettings);
 
             assert(vaThreading::IsMainThread()); // remember to lock asset global mutex and switch these to 'false'
@@ -649,45 +565,80 @@ T* GetBufferPtrAs(const cgltf_accessor* accessor)
     return (T*)bufferData;
 }
 
+
+// here we don't have an index buffer, so we create one and index the vertices three at a time
+static void CreateIndexBuffer(std::vector<uint32>& indices, cgltf_primitive* prim)
+{
+    // THIS CODE IS UNTESTED, so just assert for now and find a good test case to test code with later
+    assert(false); 
+    // we don't know at this point how many indices we need, so we need to find out the number of vertices
+    // some of this is redundant
+    for (cgltf_size aindex = 0; aindex < prim->attributes_count; aindex++)
+    {
+        const cgltf_attribute& attribute = prim->attributes[aindex];
+        const cgltf_attribute_type atype = attribute.type;
+        const cgltf_accessor* accessor = attribute.data;
+
+        // resize the index buffer to be the same as the number of vertices
+        if (atype == cgltf_attribute_type_position)
+        {
+            indices.resize(accessor->count);
+            break;
+        }
+    }
+    // then fill in the index buffer
+    int i = 0;
+    for (auto index : indices)
+    {
+        index = i++;
+    }
+}
+
 static void GetIndexBuffer(std::vector<uint32>& indices, cgltf_primitive* prim)
 {
     const cgltf_accessor* accessor = prim->indices;
 
     // In glTF, index buffers are optional per primitive. 
     // Let's force primitives to have index buffers for the time being..This will currently crash on primitives with no indices, e.g. fox.        
-    assert(accessor != nullptr);
-
-    // indices can be u32, u16, or u8
-    assert(accessor->component_type == cgltf_component_type_r_32u || accessor->component_type == cgltf_component_type_r_16u || accessor->component_type == cgltf_component_type_r_8u);
-    indices.resize(accessor->count);
-
-    // convert cgltf index buffer to vector<uint32>
-    if (accessor->component_type == cgltf_component_type_r_16u)
+    if (accessor == nullptr)
     {
-        auto pData = GetBufferPtrAs<uint16>(accessor);
-        for (unsigned int i = 0; i < accessor->count; i++)
+        CreateIndexBuffer(indices, prim);
+    }
+    else
+    {
+        // indices can be u32, u16, or u8
+        assert(accessor->component_type == cgltf_component_type_r_32u || accessor->component_type == cgltf_component_type_r_16u || accessor->component_type == cgltf_component_type_r_8u);
+        indices.resize(accessor->count);
+
+        // convert cgltf index buffer to vector<uint32>
+        if (accessor->component_type == cgltf_component_type_r_16u)
         {
-            indices[i] = (uint32)(pData[i]);
+            auto pData = GetBufferPtrAs<uint16>(accessor);
+            for (unsigned int i = 0; i < accessor->count; i++)
+            {
+                indices[i] = (uint32)(pData[i]);
+            }
+        }
+        else if (accessor->component_type == cgltf_component_type_r_32u)
+        {
+            auto pData = GetBufferPtrAs<uint32>(accessor);
+            for (unsigned int i = 0; i < accessor->count; i++)
+            {
+                indices[i] = (uint32)(pData[i]);
+            }
+        }
+        else if (accessor->component_type == cgltf_component_type_r_8u)
+        {
+            auto pData = GetBufferPtrAs<uint8>(accessor);
+            for (unsigned int i = 0; i < accessor->count; i++)
+            {
+                indices[i] = (uint32)(pData[i]);
+            }
         }
     }
-    else if (accessor->component_type == cgltf_component_type_r_32u)
-    {
-        auto pData = GetBufferPtrAs<uint32>(accessor);
-        for (unsigned int i = 0; i < accessor->count; i++)
-        {
-            indices[i] = (uint32)(pData[i]);
-        }
-    }
-    else if (accessor->component_type == cgltf_component_type_r_8u)
-    {
-        auto pData = GetBufferPtrAs<uint8>(accessor);
-        for (unsigned int i = 0; i < accessor->count; i++)
-        {
-            indices[i] = (uint32)(pData[i]);
-        }
-    }
-
 }
+
+
 
 static void GetVertexPositionsBuffer(const cgltf_accessor* accessor, std::vector<vaVector3>& vertices)
 {
@@ -758,8 +709,10 @@ static bool ProcessMeshes(const cgltf_data* loadedScene, LoadingTempStorage& tem
             assert(prim->type == cgltf_primitive_type_triangles);
 
 
+            // In glTF, index buffers are optional per primitive. 
+            // Let's force primitives to have index buffers for the time being..This will currently crash on primitives with no indices, e.g. fox.        
             std::vector<uint32> indices;
-            GetIndexBuffer(indices, prim);
+            GetIndexBuffer(indices, prim);            
 
             std::vector<vaVector3>   vertices;
             std::vector<uint32>      colors;
@@ -783,6 +736,7 @@ static bool ProcessMeshes(const cgltf_data* loadedScene, LoadingTempStorage& tem
                     vertices.resize(accessor->count);
                     texcoords0.resize(vertices.size());
                     texcoords1.resize(vertices.size());
+                    normals.resize(vertices.size());
                     GetVertexPositionsBuffer(accessor, vertices);
                 }
 
@@ -817,6 +771,12 @@ static bool ProcessMeshes(const cgltf_data* loadedScene, LoadingTempStorage& tem
             }
             // TODO: ensure that vertices, colors, normals, texcoords0 and texcoords1 all have the same size
             auto materialAsset = tempStorage.FindMaterial(prim->material);
+            if (materialAsset == nullptr)
+            {
+                VA_LOG_ERROR("AssetImporterGLTF: mesh '%s' can't find material, skipping.", newMeshName.c_str());
+                continue;
+            }
+            
             auto material = materialAsset->GetRenderMaterial();
 
             shared_ptr<vaAssetRenderMesh> newAsset;
@@ -835,8 +795,8 @@ static bool ProcessMeshes(const cgltf_data* loadedScene, LoadingTempStorage& tem
             }))
                 return false;
 
-
-            //cgltf_attribute_type_tangent,
+            // currently ignoring the following attributes:
+            //cgltf_attribute_type_tangent
             //cgltf_attribute_type_joints,
             //cgltf_attribute_type_weights,  
             tempStorage.LoadedMeshes.push_back(LoadingTempStorage::LoadedMesh(prim, newAsset));

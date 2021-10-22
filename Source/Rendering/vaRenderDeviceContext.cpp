@@ -86,7 +86,7 @@ void vaRenderDeviceContext::PostPresent( )
 
 static void UpdateRenderItemGlobals( vaRenderDeviceContext & renderContext, vaShaderItemGlobals & shaderGlobals, const vaDrawAttributes * drawAttributes, vaRenderTypeFlags renderTypeFlags )
 {
-    VA_TRACE_CPU_SCOPE( UpdateRenderItemGlobals );
+    //VA_TRACE_CPU_SCOPE( UpdateRenderItemGlobals );
 
     if( drawAttributes != nullptr )
         shaderGlobals = drawAttributes->BaseGlobals;

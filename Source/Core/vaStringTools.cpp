@@ -58,7 +58,7 @@ wstring vaStringTools::Format(const wchar_t * fmtString, va_list args)
 string vaStringTools::Format(const char * fmtString, va_list args)
 {
    int nBuf;
-   char szBuffer[65536];
+   char szBuffer[128*1024];
 
 #pragma warning (suppress : 4996)
    nBuf = _vsnprintf(szBuffer, sizeof(szBuffer) / sizeof(char), fmtString, args);

@@ -2077,7 +2077,8 @@ void vaRaytracePSODX12::CreatePSO( vaRenderDeviceDX12 & device, ID3D12RootSignat
                         const vaRenderMaterialManagerDX12::CallableShaders & materialCallables = materialCallablesTable[index];
                         if( materialCallables.LibraryBlob == nullptr )
                         {
-                            inner->Incomplete = true;
+                            // this is actually fine - it should never get referenced - only unique ones do
+                            //inner->Incomplete = true;
                             for( int i = 0; i < vaRenderMaterialManagerDX12::CallableShaders::CallablesPerMaterial; i++ )
                                 missShaderTable.PushBack( ShaderRecord( nullptr, shaderIdentifierSize ) );
                         }
@@ -2160,6 +2161,8 @@ void vaRaytracePSODX12::CreatePSO( vaRenderDeviceDX12 & device, ID3D12RootSignat
     // associated with it, so let's not allow it for now.
     if( inner->Incomplete )
     {
+        VA_LOG( "ray tracing PSO incomplete - shader had an error or did not finish compiling" );
+
         delete inner;
         inner = nullptr;
         hr = E_FAIL;

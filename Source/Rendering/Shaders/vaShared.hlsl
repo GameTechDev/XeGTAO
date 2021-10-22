@@ -33,11 +33,31 @@
 #ifndef VA_FLOAT_ONE_MINUS_EPSILON
 #define VA_FLOAT_ONE_MINUS_EPSILON  (0x1.fffffep-1)                                         // biggest float smaller than 1 (see OneMinusEpsilon in pbrt book!)
 #endif
+//
+#define HALF_FLT_MAX        65504.0
+#define HALF_FLT_MIN        0.00006103515625
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 float Sq( float x ) 
 { 
     return x*x; 
+}
+
+float Pow5( float x )
+{
+    float x2 = x * x;
+    return x2 * x2 * x;
+}
+
+float Max3(const float3 v) 
+{
+    return max(v.x, max(v.y, v.z));
+}
+
+float Min3(const float3 v) 
+{
+    return min(v.x, min(v.y, v.z));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -185,12 +205,18 @@ float FastSqrt( float x )
 // input [-1, 1] and output [0, PI]
 float FastAcos(float inX) 
 { 
-    const float PI = 3.141593f;
-    const float HALF_PI = 1.570796f;
     float x = abs(inX); 
-    float res = -0.156583f * x + HALF_PI; 
-    res *= FastSqrt(1.0f - x); 
-    return (inX >= 0) ? res : PI - res; 
+    float res = -0.156583f * x + VA_PI*0.5; 
+    res *= FastSqrt(1.0f - x);                  // consider using normal sqrt here?
+    return (inX >= 0) ? res : VA_PI - res; 
+}
+//
+// Approximates acos(x) with a max absolute error of 9.0x10^-3.
+// Input [0, 1]
+float FastAcosPositive(float x) 
+{
+    float p = -0.1565827f * x + 1.570796f;
+    return p * sqrt(1.0 - x);
 }
 //
 // input [-1, 1] and output [-PI/2, PI/2]
@@ -486,14 +512,9 @@ float3 HDRClamp( float3 color )
     return color / m.xxx;
 }
 //
-// this is not really correct because the CCIR 601 weights are for gamma RGB but the 'color' parameter here is linear
-// see https://en.wikipedia.org/wiki/Luma_(video) for more detail
 float CalcLuminance( float3 color )
 {
-    // https://www.w3.org/TR/AERT#color-contrast
-    //return max( 0.0000001, dot( color, float3( 0.299, 0.587, 0.114 ) ) );
-
-    // https://en.wikipedia.org/wiki/Relative_luminance
+    // https://en.wikipedia.org/wiki/Relative_luminance - Rec. 709
     return max( 0.0000001, dot(color, float3(0.2126f, 0.7152f, 0.0722f) ) );
 }
 //

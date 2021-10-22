@@ -12,11 +12,11 @@
 
 #include "Rendering/vaTexture.h"
 
-#include "Rendering/Shaders/vaLightingShared.h"
+#include "Rendering/Shaders/Lighting/vaLightingShared.h"
 
 #include "Rendering/vaRenderingIncludes.h"
 
-#include "Rendering/Shaders/vaIBLShared.h"
+#include "Rendering/Shaders/Lighting/vaIBLShared.h"
 
 #include "Core/System/vaFileTools.h"
 #include "Core/vaApplicationBase.h"
@@ -183,7 +183,7 @@ shared_ptr<vaTexture> vaIBLProbe::ImportCubemap( vaRenderDeviceContext & renderC
                 if( m_CSEquirectangularToCubemap == nullptr )
                 {
                     m_CSEquirectangularToCubemap = GetRenderDevice().CreateModule< vaComputeShader>(); // get the platform dependent object
-                    m_CSEquirectangularToCubemap->CompileFromFile( "vaIBL.hlsl", "CSEquirectangularToCubemap", { }, true );
+                    m_CSEquirectangularToCubemap->CompileFromFile( "Lighting/vaIBL.hlsl", "CSEquirectangularToCubemap", { }, true );
 
                     //m_CSEquirectangularToCubemap->WaitFinishIfBackgroundCreateActive( );
                 }
@@ -775,7 +775,7 @@ void vaIBLCubemapPreFilter::Init( uint32 outputBaseSize, uint32 outputMinSize, u
                                                         { "IBL_ROUGHNESS_PREFILTER_THREADGROUPSIZE", vaStringTools::Format( "(%d)", (int)levelInfo.CSThreadGroupSize ) },
                                                     };
         levelInfo.CSCubePreFilter = GetRenderDevice().CreateModule< vaComputeShader>(); // get the platform dependent object
-        levelInfo.CSCubePreFilter->CompileFromFile( "vaIBL.hlsl", "CSCubePreFilter", shaderMacros, false );
+        levelInfo.CSCubePreFilter->CompileFromFile( "Lighting/vaIBL.hlsl", "CSCubePreFilter", shaderMacros, false );
     }
 
 }
@@ -849,10 +849,10 @@ vaIrradianceSHCalculator::vaIrradianceSHCalculator( vaRenderDevice& renderDevice
     const vaShaderMacroContaner shaderMacros = { { "IBL_NUM_SH_BANDS", vaStringTools::Format( "(%d)", c_numSHBands )} };
 
     m_CSComputeSH = GetRenderDevice().CreateModule< vaComputeShader>( ); // get the platform dependent object
-    m_CSComputeSH->CompileFromFile( "vaIBL.hlsl", "CSComputeSH", shaderMacros, false );
+    m_CSComputeSH->CompileFromFile( "Lighting/vaIBL.hlsl", "CSComputeSH", shaderMacros, false );
 
     m_CSPostProcessSH = GetRenderDevice().CreateModule< vaComputeShader>( ); // get the platform dependent object
-    m_CSPostProcessSH->CompileFromFile( "vaIBL.hlsl", "CSPostProcessSH", shaderMacros, false );
+    m_CSPostProcessSH->CompileFromFile( "Lighting/vaIBL.hlsl", "CSPostProcessSH", shaderMacros, false );
 
     m_SH = vaTexture::Create1D( renderDevice, vaResourceFormat::R32_UINT, numCoefs * 3, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
     m_SHCPUReadback = vaTexture::Create1D( renderDevice, m_SH->GetResourceFormat( ), numCoefs * 3, 1, 1, vaResourceBindSupportFlags::None, vaResourceAccessFlags::CPURead );

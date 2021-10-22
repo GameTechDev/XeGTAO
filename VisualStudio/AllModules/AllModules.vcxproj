@@ -75,10 +75,6 @@
     <ClCompile Include="..\..\Source\Rendering\Effects\vaSimpleParticles.cpp">
       <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
     </ClCompile>
-    <ClCompile Include="..\..\Source\Rendering\Effects\vaSimpleShadowMap.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\Source\Rendering\Effects\vaSky.cpp" />
     <ClCompile Include="..\..\Source\Rendering\Effects\vaSkybox.cpp" />
     <ClCompile Include="..\..\Source\Rendering\Effects\vaTAA.cpp" />
@@ -92,10 +88,6 @@
     <ClCompile Include="..\..\Source\Rendering\vaGPUTimer.cpp" />
     <ClCompile Include="..\..\Source\Rendering\vaIBL.cpp" />
     <ClCompile Include="..\..\Source\Rendering\vaPathTracer.cpp" />
-    <ClCompile Include="..\..\Source\Rendering\vaPrimitiveShapeRenderer.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\Source\Rendering\vaRenderBuffers.cpp" />
     <ClCompile Include="..\..\Source\Rendering\vaRenderCamera.cpp" />
     <ClCompile Include="..\..\Source\Rendering\vaRenderDevice.cpp" />
@@ -197,20 +189,19 @@
     <ClInclude Include="..\..\Source\Rendering\Effects\vaPostProcessBlur.h" />
     <ClInclude Include="..\..\Source\Rendering\Effects\vaPostProcessTonemap.h" />
     <ClInclude Include="..\..\Source\Rendering\Effects\vaSimpleParticles.h" />
-    <ClInclude Include="..\..\Source\Rendering\Effects\vaSimpleShadowMap.h" />
     <ClInclude Include="..\..\Source\Rendering\Effects\vaSky.h" />
     <ClInclude Include="..\..\Source\Rendering\Effects\vaSkybox.h" />
     <ClInclude Include="..\..\Source\Rendering\Effects\vaTAA.h" />
     <ClInclude Include="..\..\Source\Rendering\Misc\vaImageCompareTool.h" />
     <ClInclude Include="..\..\Source\Rendering\Misc\vaTextureReductionTestTool.h" />
     <ClInclude Include="..\..\Source\Rendering\Misc\vaZoomTool.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\FFX_ParallelSort.h" />
     <ClInclude Include="..\..\Source\Rendering\Shaders\IntelTAA.h" />
-    <ClInclude Include="..\..\Source\Rendering\Shaders\SLC\LightTreeMacros.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\Lighting\vaIBLShared.h" />
+    <ClInclude Include="..\..\Source\Rendering\Shaders\Lighting\vaLightingShared.h" />
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaASSAOLite_types.h" />
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaConversions.h" />
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaHelperToolsShared.h" />
-    <ClInclude Include="..\..\Source\Rendering\Shaders\vaIBLShared.h" />
-    <ClInclude Include="..\..\Source\Rendering\Shaders\vaLightingShared.h" />
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaPathTracerShared.h" />
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaPoissonDisk64.h" />
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaPoissonDisk8.h" />
@@ -229,10 +220,6 @@
     <ClInclude Include="..\..\Source\Rendering\vaGPUTimer.h" />
     <ClInclude Include="..\..\Source\Rendering\vaIBL.h" />
     <ClInclude Include="..\..\Source\Rendering\vaPathTracer.h" />
-    <ClInclude Include="..\..\Source\Rendering\vaPrimitiveShapeRenderer.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="..\..\Source\Rendering\vaRenderBuffers.h" />
     <ClInclude Include="..\..\Source\Rendering\vaRenderCamera.h" />
     <ClInclude Include="..\..\Source\Rendering\vaRenderDevice.h" />
@@ -269,61 +256,16 @@
     <None Include="..\..\Source\Core\Platform\WindowsPC\System\vaPlatformSystemTimer.inl" />
     <None Include="..\..\Source\Core\vaGeometry.inl" />
     <None Include="..\..\Source\Core\vaSerializer.inl" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\ambient_occlusion.fs" />
     <None Include="..\..\Source\Rendering\Shaders\Filament\ambient_occlusion.va.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\brdf.fs" />
     <None Include="..\..\Source\Rendering\Shaders\Filament\brdf.va.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\common_getters.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\Filament\common_getters.va.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\common_graphics.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\Filament\common_graphics.va.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\common_lighting.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\Filament\common_lighting.va.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\common_material.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\common_math.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\common_post_process.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\common_shading.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\Filament\common_shading.va.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\common_types.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\conversion_functions.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\Filament\conversion_functions.va.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\depth_main.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\depth_main.vs" />
     <None Include="..\..\Source\Rendering\Shaders\filament\dithering.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\fxaa.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\getters.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\getters.vs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\inputs.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\inputs.vs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\light_directional.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\Filament\light_directional.va.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\light_indirect.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\Filament\fog.fs" />
     <None Include="..\..\Source\Rendering\Shaders\Filament\light_indirect.va.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\light_punctual.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\Filament\light_punctual.va.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\main.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\main.vs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\material_inputs.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\Filament\material_inputs.va.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\material_inputs.vs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\post_process.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\post_process.vs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\post_process_old.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\post_process_old.vs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\shading_lit.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\Filament\shading_lit.va.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\shading_model_cloth.fs" />
     <None Include="..\..\Source\Rendering\Shaders\Filament\shading_model_cloth.va.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\shading_model_standard.fs" />
     <None Include="..\..\Source\Rendering\Shaders\Filament\shading_model_standard.va.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\shading_model_subsurface.fs" />
     <None Include="..\..\Source\Rendering\Shaders\Filament\shading_model_subsurface.va.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\shading_parameters.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\Filament\shading_parameters.va.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\shading_unlit.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\shadowing.fs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\shadowing.vs" />
-    <None Include="..\..\Source\Rendering\Shaders\filament\tone_mapping.fs" />
+    <None Include="..\..\Source\Rendering\Shaders\Lighting\vaPointLight.hlsli" />
+    <None Include="..\..\Source\Rendering\Shaders\Materials\vaMaterialShared.hlsli" />
     <None Include="..\..\Source\Rendering\Shaders\vaTonemappers.hlsli" />
     <None Include="..\..\Source\Rendering\Shaders\XeGTAO.hlsli" />
     <None Include="..\..\Source\vaDocumentation.md" />
@@ -342,17 +284,6 @@
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaHelperTools.hlsl">
       <FileType>Document</FileType>
     </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\Shaders\SLC\SLCMain.hlsl">
-      <FileType>Document</FileType>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\Shaders\SLC\SLCRayGen.hlsl">
-      <FileType>Document</FileType>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\Shaders\vaLighting.hlsl">
-      <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaPostProcess.hlsl">
       <FileType>Document</FileType>
     </ClInclude>
@@ -360,9 +291,6 @@
       <FileType>Document</FileType>
     </ClInclude>
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaPostProcessTonemap.hlsl">
-      <FileType>Document</FileType>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\Shaders\vaPrimitiveShapeRenderer.hlsl">
       <FileType>Document</FileType>
     </ClInclude>
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaRenderingShared.hlsl">
@@ -410,20 +338,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\Shaders\vaMaterialFilament.hlsl">
-      <FileType>Document</FileType>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\Shaders\vaIBL.hlsl">
-      <FileType>Document</FileType>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\Source\Rendering\Shaders\vaMaterialLoaders.hlsl">
-      <FileType>Document</FileType>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\Shaders\vaRenderMaterial.hlsl">
-      <FileType>Document</FileType>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaPathTracer.hlsl">
@@ -465,6 +379,40 @@
       <FileType>Document</FileType>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\Materials\vaStandardPBR.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\Materials\vaSpecGlossPBR.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\Materials\vaMaterialInteraction.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaGeometryInteraction.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\Materials\vaMaterialLoaders.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\Materials\vaRenderMaterial.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\Lighting\vaIBL.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\Lighting\vaLighting.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{30430E2D-C12E-4537-866E-52B1B49F6410}</ProjectGuid>
     <RootNamespace>Vanilla</RootNamespace>
@@ -497,14 +445,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetExt>.lib</TargetExt>
     <IncludePath>$(ProjectDir)..\..\Source;$(ProjectDir)..\..\Source\Core\Platform\WindowsPC;$(VC_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\code\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\zlib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\rapidjson\include;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\unzip\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\irrXML\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\openddlparser\include\;$(WindowsSDK_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\Include\WinPixEventRuntime</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\bin\x64</LibraryPath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\bin\x64;$(ProjectDir)..\..\Source\IntegratedExternals\OpenImageDenoise</LibraryPath>
     <OutDir>$(SolutionDir).intermediate\.lib\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir).intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetExt>.lib</TargetExt>
     <IncludePath>$(ProjectDir)..\..\Source;$(ProjectDir)..\..\Source\Core\Platform\WindowsPC;$(VC_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\code\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\zlib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\rapidjson\include;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\unzip\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\irrXML\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\openddlparser\include\;$(WindowsSDK_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\Include\WinPixEventRuntime</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\bin\x64</LibraryPath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\bin\x64;$(ProjectDir)..\..\Source\IntegratedExternals\OpenImageDenoise</LibraryPath>
     <OutDir>$(SolutionDir).intermediate\.lib\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir).intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>

@@ -1,3 +1,6 @@
+#ifndef VA_LIGHT_INDIRECT_INCLUDED
+#define VA_LIGHT_INDIRECT_INCLUDED
+
 //------------------------------------------------------------------------------
 // Image based lighting configuration
 //------------------------------------------------------------------------------
@@ -18,33 +21,15 @@
 // IBL utilities
 //------------------------------------------------------------------------------
 
-vec3 decodeDataForIBL(const vec4 data) {
+float3 decodeDataForIBL(const float4 data) {
     return data.rgb;
-}
-
-//------------------------------------------------------------------------------
-// IBL prefiltered DFG term implementations
-//------------------------------------------------------------------------------
-
-vec3 PrefilteredDFG_LUT(float lod, float NoV) {
-    // coord = sqrt(linear_roughness), which is the mapping used by cmgen.
-    return g_DFGLookupTable.SampleLevel( g_samplerLinearClamp, float2(NoV, 1.0-lod), 0.0 ).rgb;
-}
-
-//------------------------------------------------------------------------------
-// IBL environment BRDF dispatch
-//------------------------------------------------------------------------------
-
-vec3 prefilteredDFG(float perceptualRoughness, float NoV) {
-    // PrefilteredDFG_LUT() takes a LOD, which is sqrt(roughness) = perceptualRoughness
-    return PrefilteredDFG_LUT(perceptualRoughness, NoV);
 }
 
 //------------------------------------------------------------------------------
 // IBL irradiance implementations
 //------------------------------------------------------------------------------
 
-vec3 Irradiance_SphericalHarmonics(const vec3 n, vaVector4 DiffuseSH[9] ) 
+float3 Irradiance_SphericalHarmonics(const float3 n, vaVector4 DiffuseSH[9] ) 
 {
     return max(
           DiffuseSH[0].xyz
@@ -67,7 +52,7 @@ vec3 Irradiance_SphericalHarmonics(const vec3 n, vaVector4 DiffuseSH[9] )
 // IBL irradiance dispatch
 //------------------------------------------------------------------------------
 
-vec3 DiffuseIrradiance( const ShadingParams shading, vec3 n, bool useLocalIBL, bool useDistantIBL ) 
+float3 DiffuseIrradiance( const MaterialInteraction materialSurface, float3 n, bool useLocalIBL, bool useDistantIBL ) 
 {
     float3 local = 0, distant = 0;
 
@@ -75,28 +60,28 @@ vec3 DiffuseIrradiance( const ShadingParams shading, vec3 n, bool useLocalIBL, b
     // n = mul( (float3x3)g_DistantIBL.WorldToIBLRotation, n );                // this should go out in the future
 
 #if IBL_IRRADIANCE_SOURCE == IBL_IRRADIANCE_SH
-    [branch] if( shading.IBL.UseLocal && useLocalIBL )
-        local   = g_lighting.LocalIBL.PreExposedLuminance * Irradiance_SphericalHarmonics( ComputeIBLDirection( shading.Position, g_lighting.LocalIBL, n ), g_lighting.LocalIBL.DiffuseSH );
-    [branch] if( shading.IBL.UseDistant && useDistantIBL )
-        distant = g_lighting.DistantIBL.PreExposedLuminance * Irradiance_SphericalHarmonics( ComputeIBLDirection( shading.Position, g_lighting.DistantIBL, n ), g_lighting.DistantIBL.DiffuseSH );
+    [branch] if( materialSurface.IBL.UseLocal && useLocalIBL )
+        local   = g_lighting.LocalIBL.PreExposedLuminance * Irradiance_SphericalHarmonics( ComputeIBLDirection( materialSurface.Position, g_lighting.LocalIBL, n ), g_lighting.LocalIBL.DiffuseSH );
+    [branch] if( materialSurface.IBL.UseDistant && useDistantIBL )
+        distant = g_lighting.DistantIBL.PreExposedLuminance * Irradiance_SphericalHarmonics( ComputeIBLDirection( materialSurface.Position, g_lighting.DistantIBL, n ), g_lighting.DistantIBL.DiffuseSH );
 #elif IBL_IRRADIANCE_SOURCE == IBL_IRRADIANCE_CUBEMAP
     #ifdef VA_RAYTRACING
         // not a huge loss sampling only MIP0 since these are very low res anyhow
-        [branch] if( shading.IBL.UseLocal && useLocalIBL )
-            local   = g_lighting.LocalIBL.PreExposedLuminance * g_LocalIBLIrradianceMap.SampleLevel( g_samplerLinearClamp, ComputeIBLDirection( shading.Position, g_lighting.LocalIBL, n ), 0 ).rgb;
-        [branch] if( shading.IBL.UseDistant && useDistantIBL )
-            distant = g_lighting.DistantIBL.PreExposedLuminance * g_DistantIBLIrradianceMap.SampleLevel( g_samplerLinearClamp, ComputeIBLDirection( shading.Position, g_lighting.DistantIBL, n ), 0 ).rgb;
+        [branch] if( materialSurface.IBL.UseLocal && useLocalIBL )
+            local   = g_lighting.LocalIBL.PreExposedLuminance * g_LocalIBLIrradianceMap.SampleLevel( g_samplerLinearClamp, ComputeIBLDirection( materialSurface.Position, g_lighting.LocalIBL, n ), 0 ).rgb;
+        [branch] if( materialSurface.IBL.UseDistant && useDistantIBL )
+            distant = g_lighting.DistantIBL.PreExposedLuminance * g_DistantIBLIrradianceMap.SampleLevel( g_samplerLinearClamp, ComputeIBLDirection( materialSurface.Position, g_lighting.DistantIBL, n ), 0 ).rgb;
     #else // ifdef VA_RAYTRACING
-        [branch] if( shading.IBL.UseLocal && useLocalIBL )
-            local   = g_lighting.LocalIBL.PreExposedLuminance * g_LocalIBLIrradianceMap.Sample( g_samplerLinearClamp, ComputeIBLDirection( shading.Position, g_lighting.LocalIBL, n ) ).rgb;
-        [branch] if( shading.IBL.UseDistant && useDistantIBL )
-            distant = g_lighting.DistantIBL.PreExposedLuminance * g_DistantIBLIrradianceMap.Sample( g_samplerLinearClamp, ComputeIBLDirection( shading.Position, g_lighting.DistantIBL, n ) ).rgb;
+        [branch] if( materialSurface.IBL.UseLocal && useLocalIBL )
+            local   = g_lighting.LocalIBL.PreExposedLuminance * g_LocalIBLIrradianceMap.Sample( g_samplerLinearClamp, ComputeIBLDirection( materialSurface.Position, g_lighting.LocalIBL, n ) ).rgb;
+        [branch] if( materialSurface.IBL.UseDistant && useDistantIBL )
+            distant = g_lighting.DistantIBL.PreExposedLuminance * g_DistantIBLIrradianceMap.Sample( g_samplerLinearClamp, ComputeIBLDirection( materialSurface.Position, g_lighting.DistantIBL, n ) ).rgb;
     #endif
 #else
 #error IBL_IRRADIANCE_SOURCE not correctly defined / supported
 #endif
     
-    return lerp( local, distant, shading.IBL.LocalToDistantK );
+    return lerp( local, distant, materialSurface.IBL.LocalToDistantK );
 }
 
 
@@ -104,7 +89,7 @@ vec3 DiffuseIrradiance( const ShadingParams shading, vec3 n, bool useLocalIBL, b
 // IBL specular
 //------------------------------------------------------------------------------
 
-vec3 prefilteredRadiance( const ShadingParams shading, vec3 r, float perceptualRoughness, bool useLocalIBL, bool useDistantIBL ) 
+float3 prefilteredRadiance( const MaterialInteraction materialSurface, float3 r, float perceptualRoughness, bool useLocalIBL, bool useDistantIBL ) 
 {
     // lod = lod_count * sqrt(roughness), which is the mapping used by cmgen
     // where roughness = perceptualRoughness^2
@@ -118,62 +103,62 @@ vec3 prefilteredRadiance( const ShadingParams shading, vec3 r, float perceptualR
     [branch] if( useLocalIBL )
     {
         float lod = min( g_lighting.LocalIBL.MaxReflMipLevel.x * perceptualRoughness, g_lighting.LocalIBL.ReflMipLevelClamp );
-        local   = g_lighting.LocalIBL.PreExposedLuminance * decodeDataForIBL( g_LocalIBLReflectionsMap.SampleLevel( g_samplerLinearClamp, ComputeIBLDirection( shading.Position, g_lighting.LocalIBL, r ), lod ) );
+        local   = g_lighting.LocalIBL.PreExposedLuminance * decodeDataForIBL( g_LocalIBLReflectionsMap.SampleLevel( g_samplerLinearClamp, ComputeIBLDirection( materialSurface.Position, g_lighting.LocalIBL, r ), lod ) );
     }
     [branch] if( useDistantIBL )
     {
         float lod = min( g_lighting.DistantIBL.MaxReflMipLevel.x * perceptualRoughness, g_lighting.DistantIBL.ReflMipLevelClamp );
-        distant = g_lighting.DistantIBL.PreExposedLuminance * decodeDataForIBL( g_DistantIBLReflectionsMap.SampleLevel( g_samplerLinearClamp, ComputeIBLDirection( shading.Position, g_lighting.DistantIBL, r ), lod ) );
+        distant = g_lighting.DistantIBL.PreExposedLuminance * decodeDataForIBL( g_DistantIBLReflectionsMap.SampleLevel( g_samplerLinearClamp, ComputeIBLDirection( materialSurface.Position, g_lighting.DistantIBL, r ), lod ) );
     }
 
-    return lerp( local, distant, shading.IBL.LocalToDistantK );
+    return lerp( local, distant, materialSurface.IBL.LocalToDistantK );
 }
 
-vec3 getSpecularDominantDirection(const vec3 n, const vec3 r, float roughness) {
-    return mix(r, n, roughness * roughness);
+float3 getSpecularDominantDirection(const float3 n, const float3 r, float roughness) {
+    return lerp(r, n, roughness * roughness);
 }
 
-vec3 specularDFG( const PixelParams pixel ) {
+float3 specularDFG( const MaterialInteraction materialSurface ) {
 #if defined(SHADING_MODEL_CLOTH)
-    return pixel.F0 * pixel.DFG.z;
+    return materialSurface.F0 * materialSurface.DFG.z;
 #elif defined( SHADING_MODEL_SPECULAR_GLOSSINESS )
-    return pixel.F0; // this seems to match better what the spec-gloss looks like in general
+    return materialSurface.F0; // this seems to match better what the spec-gloss looks like in general
 #else
-    return mix(pixel.DFG.xxx, pixel.DFG.yyy, pixel.F0);
+    return lerp(materialSurface.DFG.xxx, materialSurface.DFG.yyy, materialSurface.F0);
 #endif
 }
 
 /**
- * Returns the reflected vector at the current shading point. The reflected vector
- * return by this function might be different from shading_reflected:
+ * Returns the reflected vector at the current materialSurface point. The reflected vector
+ * return by this function might be different from materialSurface.Reflected:
  * - For anisotropic material, we bend the reflection vector to simulate
  *   anisotropic indirect lighting
  * - The reflected vector may be modified to point towards the dominant specular
  *   direction to match reference renderings when the roughness increases
  */
 
-vec3 getReflectedVector(const PixelParams pixel, const vec3 v, const vec3 n) {
+float3 getReflectedVector(const MaterialInteraction materialSurface, const float3 v, const float3 n) {
 #if defined(MATERIAL_HAS_ANISOTROPY)
-    vec3  anisotropyDirection = pixel.Anisotropy >= 0.0 ? pixel.AnisotropicB : pixel.AnisotropicT;
-    vec3  anisotropicTangent  = cross(anisotropyDirection, v);
-    vec3  anisotropicNormal   = cross(anisotropicTangent, anisotropyDirection);
-    float bendFactor          = abs(pixel.Anisotropy) * saturate(5.0 * pixel.PerceptualRoughness);
-    vec3  bentNormal          = normalize(mix(n, anisotropicNormal, bendFactor));
+    float3  anisotropyDirection = materialSurface.Anisotropy >= 0.0 ? materialSurface.AnisotropicB : materialSurface.AnisotropicT;
+    float3  anisotropicTangent  = cross(anisotropyDirection, v);
+    float3  anisotropicNormal   = cross(anisotropicTangent, anisotropyDirection);
+    float bendFactor          = abs(materialSurface.Anisotropy) * saturate(5.0 * materialSurface.PerceptualRoughness);
+    float3  bentNormal          = normalize(lerp(n, anisotropicNormal, bendFactor));
 
-    vec3 r = reflect(-v, bentNormal);
+    float3 r = reflect(-v, bentNormal);
 #else
-    vec3 r = reflect(-v, n);
+    float3 r = reflect(-v, n);
 #endif
     return r;
 }
 
-vec3 getReflectedVector( const ShadingParams shading, const PixelParams pixel, const vec3 n ) {
+float3 getReflectedVector( const MaterialInteraction materialSurface, const float3 n ) {
 #if defined(MATERIAL_HAS_ANISOTROPY)
-    vec3 r = getReflectedVector( pixel, shading.View, n );
+    float3 r = getReflectedVector( materialSurface, materialSurface.View, n );
 #else
-    vec3 r = shading.Reflected;
+    float3 r = materialSurface.Reflected;
 #endif
-    return getSpecularDominantDirection( n, r, pixel.Roughness );
+    return getSpecularDominantDirection( n, r, materialSurface.Roughness );
 }
 
 //------------------------------------------------------------------------------
@@ -199,27 +184,27 @@ vec2 hammersley(uint index) {
     return vec2(float(i), float(bits)) * invNumSamples;
 }
 
-vec3 importanceSamplingNdfDggx(vec2 u, float roughness) {
+float3 importanceSamplingNdfDggx(vec2 u, float roughness) {
     // Importance sampling D_GGX
     float a2 = roughness * roughness;
     float phi = 2.0 * PI * u.x;
     float cosTheta2 = (1.0 - u.y) / (1.0 + (a2 - 1.0) * u.y);
     float cosTheta = sqrt(cosTheta2);
     float sinTheta = sqrt(1.0 - cosTheta2);
-    return vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
+    return float3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
 }
 
-vec3 importanceSamplingVNdfDggx(vec2 u, float roughness, vec3 v) {
+float3 importanceSamplingVNdfDggx(vec2 u, float roughness, float3 v) {
     // See: "A Simpler and Exact Sampling Routine for the GGX Distribution of Visible Normals", Eric Heitz
     float alpha = roughness;
 
     // stretch view
-    v = normalize(vec3(alpha * v.x, alpha * v.y, v.z));
+    v = normalize(float3(alpha * v.x, alpha * v.y, v.z));
 
     // orthonormal basis
-    vec3 up = abs(v.z) < 0.9999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
-    vec3 t = normalize(cross(up, v));
-    vec3 b = cross(t, v);
+    float3 up = abs(v.z) < 0.9999 ? float3(0.0, 0.0, 1.0) : float3(1.0, 0.0, 0.0);
+    float3 t = normalize(cross(up, v));
+    float3 b = cross(t, v);
 
     // sample point with polar coordinates (r, phi)
     float a = 1.0 / (1.0 + v.z);
@@ -229,10 +214,10 @@ vec3 importanceSamplingVNdfDggx(vec2 u, float roughness, vec3 v) {
     float p2 = r * sin(phi) * ((u.y < a) ? 1.0 : v.z);
 
     // compute normal
-    vec3 h = p1 * t + p2 * b + sqrt(max(0.0, 1.0 - p1*p1 - p2*p2)) * v;
+    float3 h = p1 * t + p2 * b + sqrt(max(0.0, 1.0 - p1*p1 - p2*p2)) * v;
 
     // unstretch
-    h = normalize(vec3(alpha * h.x, alpha * h.y, max(0.0, h.z)));
+    h = normalize(float3(alpha * h.x, alpha * h.y, max(0.0, h.z)));
     return h;
 }
 
@@ -250,24 +235,24 @@ float prefilteredImportanceSampling(float ipdf, vec2 iblMaxMipLevel) {
     return mipLevel;
 }
 
-vec3 isEvaluateIBL( const PixelParams pixel, vec3 n, vec3 v, float NoV, bool useLocalIBL, bool useDistantIBL )
+float3 isEvaluateIBL( const MaterialInteraction materialSurface, float3 n, float3 v, float NoV, bool useLocalIBL, bool useDistantIBL )
 {
     if( !useDistantIBL )
-        return vec3(0,0,0);
+        return float3(0,0,0);
     // no longer needed; n and v are in worldspace and IBL cube is in worldspace too
     // // viewspace to worldspace
     // n = mul( (float3x3)g_DistantIBL.WorldToIBLRotation, n );
     // v = mul( (float3x3)g_DistantIBL.WorldToIBLRotation, v );
 
     // TODO: for a true anisotropic BRDF, we need a real tangent space
-    vec3 up = abs(n.z) < 0.9999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    float3 up = abs(n.z) < 0.9999 ? float3(0.0, 0.0, 1.0) : float3(1.0, 0.0, 0.0);
 
     float3x3 tangentToWorld;
     tangentToWorld[0] = normalize(cross(up, n));
     tangentToWorld[1] = cross(n, tangentToWorld[0]);
     tangentToWorld[2] = n;
 
-    float roughness = pixel.Roughness;
+    float roughness = materialSurface.Roughness;
     float a2 = roughness * roughness;
 
     float2 iblMaxMipLevel = float2( g_DistantIBL.MaxReflMipLevel, g_DistantIBL.Pow2MaxReflMipLevel );
@@ -278,11 +263,11 @@ vec3 isEvaluateIBL( const PixelParams pixel, vec3 n, vec3 v, float NoV, bool use
     for (uint i = 0u; i < numSamples; i++)
     {
         vec2 u = hammersley(i);
-        vec3 h = mul( importanceSamplingNdfDggx(u, roughness), tangentToWorld );
+        float3 h = mul( importanceSamplingNdfDggx(u, roughness), tangentToWorld );
 
         // Since anisotropy doesn't work with prefiltering, we use the same "faux" anisotropy
         // we do when we use the prefiltered cubemap
-        vec3 l = getReflectedVector(pixel, v, h);
+        float3 l = getReflectedVector(materialSurface, v, h);
 
         // Compute this sample's contribution to the brdf
         float NoL = dot(n, l);
@@ -296,12 +281,12 @@ vec3 isEvaluateIBL( const PixelParams pixel, vec3 n, vec3 v, float NoV, bool use
             float mipLevel = prefilteredImportanceSampling(ipdf, iblMaxMipLevel);
 
             // we use texture() instead of textureLod() to take advantage of mipmapping
-            vec3 L = decodeDataForIBL( g_DistantIBLReflectionsMap.SampleLevel( g_samplerLinearClamp, l, min( mipLevel, g_DistantIBL.ReflMipLevelClamp ) ) );
+            float3 L = decodeDataForIBL( g_DistantIBLReflectionsMap.SampleLevel( g_samplerLinearClamp, l, min( mipLevel, g_DistantIBL.ReflMipLevelClamp ) ) );
 
             float D = distribution(roughness, NoH, h);
             float V = visibility(roughness, NoV, NoL);
-            vec3  F = fresnel(pixel.F0, LoH);
-            vec3 Fr = F * (D * V * NoL * ipdf * invNumSamples);
+            float3  F = fresnel(materialSurface.F0, LoH);
+            float3 Fr = F * (D * V * NoL * ipdf * invNumSamples);
 
             indirectSpecular += (Fr * L);
         }
@@ -310,30 +295,26 @@ vec3 isEvaluateIBL( const PixelParams pixel, vec3 n, vec3 v, float NoV, bool use
     return indirectSpecular;
 }
 
-void isEvaluateClearCoatIBL(const PixelParams pixel, float specularAO, inout vec3 Fd, inout vec3 Fr, bool useLocalIBL, bool useDistantIBL) {
+void isEvaluateClearCoatIBL( const MaterialInteraction materialSurface, float specularAO, inout float3 Fd, inout float3 Fr, bool useLocalIBL, bool useDistantIBL ) 
+{
 #if defined(MATERIAL_HAS_CLEAR_COAT)
-#if defined(MATERIAL_HAS_NORMAL) || defined(MATERIAL_HAS_CLEAR_COAT_NORMAL)
     // We want to use the geometric normal for the clear coat layer
-    float clearCoatNoV = clampNoV(dot(shading_clearCoatNormal, shading_view));
-    vec3 clearCoatNormal = shading_clearCoatNormal;
-#else
-    float clearCoatNoV = shading_NoV;
-    vec3 clearCoatNormal = shading_normal;
-#endif
+    float clearCoatNoV = clampNoV(dot(materialSurface.ClearCoatNormal, materialSurface.View));
+    float3 clearCoatNormal = materialSurface.ClearCoatNormal;
     // The clear coat layer assumes an IOR of 1.5 (4% reflectance)
-    float Fc = F_Schlick(0.04, 1.0, clearCoatNoV) * pixel.clearCoat;
+    float Fc = F_Schlick(0.04, 1.0, clearCoatNoV) * materialSurface.clearCoat;
     float attenuation = 1.0 - Fc;
     Fd *= attenuation;
     Fr *= attenuation;
 
-    PixelParams p;
-    p.perceptualRoughness = pixel.clearCoatPerceptualRoughness;
-    p.f0 = vec3(0.04);
-    p.roughness = perceptualRoughnessToRoughness(p.perceptualRoughness);
+    PixelParams p; <- copy to temporarily modify before sending on?
+    p.perceptualRoughness = materialSurface.clearCoatPerceptualRoughness;
+    p.f0 = float3(0.04);
+    p.roughness = PerceptualRoughnessToRoughness(p.perceptualRoughness);
     p.anisotropy = 0.0;
 
-    vec3 clearCoatLobe = isEvaluateIBL(p, clearCoatNormal, shading_view, clearCoatNoV, useLocalIBL, useDistantIBL);
-    Fr += clearCoatLobe * (specularAO * pixel.clearCoat);
+    float3 clearCoatLobe = isEvaluateIBL(p, clearCoatNormal, materialSurface.View, clearCoatNoV, useLocalIBL, useDistantIBL);
+    Fr += clearCoatLobe * (specularAO * materialSurface.clearCoat);
 #endif
 }
 #endif
@@ -342,112 +323,105 @@ void isEvaluateClearCoatIBL(const PixelParams pixel, float specularAO, inout vec
 // IBL evaluation
 //------------------------------------------------------------------------------
 
-void evaluateClothIndirectDiffuseBRDF( const ShadingParams shading, const PixelParams pixel, inout float diffuse) {
+void evaluateClothIndirectDiffuseBRDF( const MaterialInteraction materialSurface, inout float diffuse) {
 #if defined(SHADING_MODEL_CLOTH)
 #if defined(MATERIAL_HAS_SUBSURFACE_COLOR)
     // Simulate subsurface scattering with a wrap diffuse term
-    diffuse *= Fd_Wrap(shading.NoV, 0.5);
+    diffuse *= Fd_Wrap(materialSurface.NoV, 0.5);
 #endif
 #endif
 }
 
-void evaluateClearCoatIBL( const ShadingParams shading, const PixelParams pixel, float specularAO, inout vec3 Fd, inout vec3 Fr, bool useLocalIBL, bool useDistantIBL ) {
+void evaluateClearCoatIBL( const MaterialInteraction materialSurface, float specularAO, inout float3 Fd, inout float3 Fr, bool useLocalIBL, bool useDistantIBL ) {
 #if IBL_INTEGRATION_ALGORITHM == IBL_INTEGRATION_IMPORTANCE_SAMPLING
-    isEvaluateClearCoatIBL(pixel, specularAO, Fd, Fr, useLocalIBL, useDistantIBL);
+    isEvaluateClearCoatIBL(materialSurface, specularAO, Fd, Fr, useLocalIBL, useDistantIBL);
     return;
 #endif
 
 #if defined(MATERIAL_HAS_CLEAR_COAT)
-#if defined(MATERIAL_HAS_NORMAL) || defined(MATERIAL_HAS_CLEAR_COAT_NORMAL)
     // We want to use the geometric normal for the clear coat layer
-    float clearCoatNoV = clampNoV(dot(shading_clearCoatNormal, shading_view));
-    vec3 clearCoatR = reflect(-shading_view, shading_clearCoatNormal);
-#else
-    float clearCoatNoV = shading_NoV;
-    vec3 clearCoatR = shading_reflected;
-#endif
+    float clearCoatNoV = clampNoV(dot(materialSurface.ClearCoatNormal, materialSurface.View));
+    float3 clearCoatR = reflect(-materialSurface.View, materialSurface.ClearCoatNormal);
     // The clear coat layer assumes an IOR of 1.5 (4% reflectance)
-    float Fc = F_Schlick(0.04, 1.0, clearCoatNoV) * pixel.clearCoat;
+    float Fc = F_Schlick(0.04, 1.0, clearCoatNoV) * materialSurface.clearCoat;
     float attenuation = 1.0 - Fc;
     Fd *= attenuation;
     Fr *= attenuation;
-    Fr += prefilteredRadiance( shading, clearCoatR, pixel.clearCoatPerceptualRoughness, useLocalIBL, useDistantIBL ) * (specularAO * Fc);
+    Fr += prefilteredRadiance( materialSurface, clearCoatR, materialSurface.clearCoatPerceptualRoughness, useLocalIBL, useDistantIBL ) * (specularAO * Fc);
 #endif
 }
 
-void evaluateSubsurfaceIBL( const ShadingParams shading, const PixelParams pixel, const vec3 diffuseIrradiance, inout vec3 Fd, inout vec3 Fr, bool useLocalIBL, bool useDistantIBL )
+void evaluateSubsurfaceIBL( const MaterialInteraction materialSurface, const float3 diffuseIrradiance, inout float3 Fd, inout float3 Fr, bool useLocalIBL, bool useDistantIBL )
 {
 #if defined(SHADING_MODEL_SUBSURFACE)
-    vec3 viewIndependent = diffuseIrradiance;
-    vec3 viewDependent = prefilteredRadiance( shading, -shading.View, pixel.Roughness, 1.0 + pixel.Thickness, useLocalIBL, useDistantIBL );
-    float attenuation = (1.0 - pixel.Thickness) / (2.0 * PI);
-    Fd += pixel.SubsurfaceColor * (viewIndependent + viewDependent) * attenuation;
+    float3 viewIndependent = diffuseIrradiance;
+    float3 viewDependent = prefilteredRadiance( materialSurface, -materialSurface.View, materialSurface.Roughness, 1.0 + materialSurface.Thickness, useLocalIBL, useDistantIBL );
+    float attenuation = (1.0 - materialSurface.Thickness) / (2.0 * PI);
+    Fd += materialSurface.SubsurfaceColor * (viewIndependent + viewDependent) * attenuation;
 #elif defined(SHADING_MODEL_CLOTH) && defined(MATERIAL_HAS_SUBSURFACE_COLOR)
-    Fd *= saturate(pixel.SubsurfaceColor + shading.NoV);
+    Fd *= saturate(materialSurface.SubsurfaceColor + materialSurface.NoV);
 #endif
 }
 
 #if defined(HAS_REFRACTION)
 
 struct Refraction {
-    vec3 position;
-    vec3 direction;
+    float3 position;
+    float3 direction;
     float d;
 };
 
-void refractionSolidSphere(const PixelParams pixel,
-    const vec3 n, vec3 r, out Refraction ray) {
-    r = refract(r, n, pixel.etaIR);
+void refractionSolidSphere( const MaterialInteraction materialSurface, const float3 n, float3 r, out Refraction ray )
+{
+    r = refract(r, n, materialSurface.etaIR);
     float NoR = dot(n, r);
-    float d = pixel.thickness * -NoR;
-    ray.position = vec3(shading_position + r * d);
+    float d = materialSurface.thickness * -NoR;
+    ray.position = float3(materialSurface.Position + r * d);
     ray.d = d;
-    vec3 n1 = normalize(NoR * r - n * 0.5);
-    ray.direction = refract(r, n1,  pixel.etaRI);
+    float3 n1 = normalize(NoR * r - n * 0.5);
+    ray.direction = refract(r, n1,  materialSurface.etaRI);
 }
 
-void refractionSolidBox(const PixelParams pixel,
-    const vec3 n, vec3 r, out Refraction ray) {
-    vec3 rr = refract(r, n, pixel.etaIR);
+void refractionSolidBox( const MaterialInteraction materialSurface, const float3 n, float3 r, out Refraction ray )
+{
+    float3 rr = refract(r, n, materialSurface.etaIR);
     float NoR = dot(n, rr);
-    float d = pixel.thickness / max(-NoR, 0.001);
-    ray.position = vec3(shading_position + rr * d);
+    float d = materialSurface.thickness / max(-NoR, 0.001);
+    ray.position = float3(materialSurface.Position + rr * d);
     ray.direction = r;
     ray.d = d;
 #if REFRACTION_MODE == REFRACTION_MODE_CUBEMAP
     // fudge direction vector, so we see the offset due to the thickness of the object
     float envDistance = 10.0; // this should come from a ubo
-    ray.direction = normalize((ray.position - shading_position) + ray.direction * envDistance);
+    ray.direction = normalize((ray.position - materialSurface.Position) + ray.direction * envDistance);
 #endif
 }
 
-void refractionThinSphere(const PixelParams pixel,
-    const vec3 n, vec3 r, out Refraction ray) {
+void refractionThinSphere( const MaterialInteraction materialSurface, const float3 n, float3 r, out Refraction ray) 
+{
     float d = 0.0;
 #if defined(MATERIAL_HAS_MICRO_THICKNESS)
     // note: we need the refracted ray to calculate the distance traveled
-    // we could use shading_NoV, but we would lose the dependency on ior.
-    vec3 rr = refract(r, n, pixel.etaIR);
+    // we could use materialSurface.NoV, but we would lose the dependency on ior.
+    float3 rr = refract(r, n, materialSurface.etaIR);
     float NoR = dot(n, rr);
-    d = pixel.uThickness / max(-NoR, 0.001);
-    ray.position = vec3(shading_position + rr * d);
+    d = materialSurface.uThickness / max(-NoR, 0.001);
+    ray.position = float3(materialSurface.Position + rr * d);
 #else
-    ray.position = vec3(shading_position);
+    ray.position = float3(materialSurface.Position);
 #endif
     ray.direction = r;
     ray.d = d;
 }
 
-void applyRefraction(const PixelParams pixel,
-    const vec3 n0, vec3 E, vec3 Fd, vec3 Fr,
-    inout vec3 color, bool useLocalIBL, bool useDistantIBL) {
-
+void applyRefraction( const MaterialInteraction materialSurface, const float3 n0, float3 E, float3 Fd, float3 Fr, inout float3 color, bool useLocalIBL, bool useDistantIBL) 
+{
     Refraction ray;
 
 #if REFRACTION_TYPE == REFRACTION_TYPE_SOLID
-    refractionSolidSphere(pixel, n0, -shading_view, ray);
+    refractionSolidSphere(materialSurface, n0, -materialSurface.View, ray);
 #elif REFRACTION_TYPE == REFRACTION_TYPE_THIN
-    refractionThinSphere(pixel, n0, -shading_view, ray);
+    refractionThinSphere(materialSurface, n0, -materialSurface.View, ray);
 #else
 #error "invalid REFRACTION_TYPE"
 #endif
@@ -455,16 +429,16 @@ void applyRefraction(const PixelParams pixel,
     /* compute transmission T */
 #if defined(MATERIAL_HAS_ABSORPTION)
 #if defined(MATERIAL_HAS_THICKNESS) || defined(MATERIAL_HAS_MICRO_THICKNESS)
-    vec3 T = min(vec3(1.0), exp(-pixel.absorption * ray.d));
+    float3 T = min(float3(1.0), exp(-materialSurface.absorption * ray.d));
 #else
-    vec3 T = 1.0 - pixel.absorption;
+    float3 T = 1.0 - materialSurface.absorption;
 #endif
 #endif
 
-    float perceptualRoughness = pixel.perceptualRoughnessUnclamped;
+    float perceptualRoughness = materialSurface.perceptualRoughnessUnclamped;
 #if REFRACTION_TYPE == REFRACTION_TYPE_THIN
     // Roughness remaping for thin layers, see Burley 2012, "Physically-Based Shading at Disney"
-    perceptualRoughness = saturate((0.65 * pixel.etaRI - 0.35) * perceptualRoughness);
+    perceptualRoughness = saturate((0.65 * materialSurface.etaRI - 0.35) * perceptualRoughness);
 
     // For thin surfaces, the light will bounce off at the second interface in the direction of
     // the reflection, effectively adding to the specular, but this process will repeat itself.
@@ -473,17 +447,17 @@ void applyRefraction(const PixelParams pixel,
     // This infinite serie converges and is easy to simplify.
     // Note: we calculate these bounces only on a single component,
     // since it's a fairly subtle effect.
-    E *= 1.0 + pixel.transmission * (1.0 - E.g) / (1.0 + E.g);
+    E *= 1.0 + materialSurface.transmission * (1.0 - E.g) / (1.0 + E.g);
 #endif
 
     /* sample the cubemap or screen-space */
 #if REFRACTION_MODE == REFRACTION_MODE_CUBEMAP
     // when reading from the cubemap, we are not pre-exposed so we apply iblLuminance
     // which is not the case when we'll read from the screen-space buffer
-    vec3 Ft = prefilteredRadiance( shading, ray.direction, perceptualRoughness, bool useLocalIBL, bool useDistantIBL ) * frameUniforms.iblLuminance;
+    float3 Ft = prefilteredRadiance( materialSurface, ray.direction, perceptualRoughness, bool useLocalIBL, bool useDistantIBL ) * frameUniforms.iblLuminance;
 #else
     // compute the point where the ray exits the medium, if needed
-    vec4 p = vec4(frameUniforms.clipFromWorldMatrix * vec4(ray.position, 1.0));
+    float4 p = float4(frameUniforms.clipFromWorldMatrix * float4(ray.position, 1.0));
     p.xy = uvToRenderTargetUV(p.xy * (0.5 / p.w) + 0.5);
 
     // perceptualRoughness to LOD
@@ -492,7 +466,7 @@ void applyRefraction(const PixelParams pixel,
     float tweakedPerceptualRoughness = perceptualRoughness * 1.74;
     float lod = max(0.0, 2.0 * log2(tweakedPerceptualRoughness) + frameUniforms.refractionLodOffset);
 
-    vec3 Ft = textureLod(light_ssr, p.xy, lod).rgb;
+    float3 Ft = textureLod(light_ssr, p.xy, lod).rgb;
 #endif
 
     /* fresnel from the first interface */
@@ -505,58 +479,59 @@ void applyRefraction(const PixelParams pixel,
 
     Fr *= frameUniforms.iblLuminance;
     Fd *= frameUniforms.iblLuminance;
-    color.rgb += Fr + mix(Fd, Ft, pixel.transmission);
+    color.rgb += Fr + lerp(Fd, Ft, materialSurface.transmission);
 }
 #endif
 
-void combineDiffuseAndSpecular(const PixelParams pixel,
-        const vec3 n, const vec3 E, const vec3 Fd, const vec3 Fr,
-        inout float3 color ) {
+void combineDiffuseAndSpecular( const MaterialInteraction materialSurface, const float3 n, const float3 E, const float3 Fd, const float3 Fr, inout float3 color ) 
+{
 #if defined(HAS_REFRACTION)
-    applyRefraction(pixel, n, E, Fd, Fr, color);
+    applyRefraction(materialSurface, n, E, Fd, Fr, color);
 #else
     color += Fd + Fr;
 #endif
 }
 
-void evaluateIBL( const ShadingParams shading, const MaterialInputs material, const PixelParams pixel, inout float3 color, bool useLocalIBL, bool useDistantIBL )
+void evaluateIBL( const MaterialInteraction materialSurface, inout float3 color, bool useLocalIBL, bool useDistantIBL )
 {
     // Apply transform here if we wanted to rotate the IBL
-    float3 normal       = shading.Normal;
-    float3 bentNormal   = shading.BentNormal; //shading.Normal;
+    float3 normal       = materialSurface.Normal;
+    float3 bentNormal   = materialSurface.BentNormal; //materialSurface.Normal;
 
-    float diffuseAO = shading.DiffuseAmbientOcclusion;
-    float specularAO = computeSpecularAO( shading, diffuseAO, pixel.Roughness );
+    float diffuseAO = materialSurface.DiffuseAmbientOcclusion;
+    float specularAO = computeSpecularAO( materialSurface, diffuseAO, materialSurface.Roughness );
 
     // specular layer
-    vec3 Fr;
+    float3 Fr;
 #if IBL_INTEGRATION_ALGORITHM == IBL_INTEGRATION_PREFILTERED_CUBEMAP
-    vec3 E = specularDFG( pixel );
-    vec3 r = getReflectedVector( shading, pixel, normal );
-    Fr = E * prefilteredRadiance( shading, r, pixel.PerceptualRoughness, useLocalIBL, useDistantIBL );
+    float3 E = specularDFG( materialSurface );
+    float3 r = getReflectedVector( materialSurface, normal );
+    Fr = E * prefilteredRadiance( materialSurface, r, materialSurface.PerceptualRoughness, useLocalIBL, useDistantIBL );
 #elif IBL_INTEGRATION_ALGORITHM == IBL_INTEGRATION_IMPORTANCE_SAMPLING
-    vec3 E = vec3(0.0.xxx); // TODO: fix for importance sampling
-    Fr = isEvaluateIBL( pixel, normal, shading.View, shading.NoV, useLocalIBL, useDistantIBL );
+    float3 E = float3(0.0.xxx); // TODO: fix for importance sampling
+    Fr = isEvaluateIBL( materialSurface, normal, materialSurface.View, materialSurface.NoV, useLocalIBL, useDistantIBL );
 #endif
-    Fr *= singleBounceAO(specularAO) * pixel.EnergyCompensation;
+    Fr *= singleBounceAO(specularAO) * materialSurface.EnergyCompensation;
 
     // diffuse layer
     float diffuseBRDF = singleBounceAO( diffuseAO ); // Fd_Lambert() is baked in the SH below
-    evaluateClothIndirectDiffuseBRDF( shading, pixel, diffuseBRDF );
+    evaluateClothIndirectDiffuseBRDF( materialSurface, diffuseBRDF );
 
-    vec3 diffuseIrradiance = DiffuseIrradiance( shading, normalize(normal+bentNormal), useLocalIBL, useDistantIBL );
-    vec3 Fd = pixel.DiffuseColor * diffuseIrradiance * (1.0 - E) * diffuseBRDF;
+    float3 diffuseIrradiance = DiffuseIrradiance( materialSurface, normalize(normal+bentNormal), useLocalIBL, useDistantIBL );
+    float3 Fd = materialSurface.DiffuseColor * diffuseIrradiance * (1.0 - E) * diffuseBRDF;
 
     // clear coat layer
-    evaluateClearCoatIBL( shading, pixel, specularAO, Fd, Fr, useLocalIBL, useDistantIBL );
+    evaluateClearCoatIBL( materialSurface, specularAO, Fd, Fr, useLocalIBL, useDistantIBL );
 
     // subsurface layer
-    evaluateSubsurfaceIBL( shading, pixel, diffuseIrradiance, Fd, Fr, useLocalIBL, useDistantIBL );
+    evaluateSubsurfaceIBL( materialSurface, diffuseIrradiance, Fd, Fr, useLocalIBL, useDistantIBL );
 
     // extra ambient occlusion term
-    multiBounceAO(diffuseAO, pixel.DiffuseColor, Fd);
-    multiBounceSpecularAO(specularAO, pixel.F0, Fr);
+    multiBounceAO(diffuseAO, materialSurface.DiffuseColor, Fd);
+    multiBounceSpecularAO(specularAO, materialSurface.F0, Fr);
 
     // Note: iblLuminance is already premultiplied by the exposure
-    combineDiffuseAndSpecular(pixel, normal, E, Fd, Fr, color);
+    combineDiffuseAndSpecular(materialSurface, normal, E, Fd, Fr, color);
 }
+
+#endif // VA_LIGHT_INDIRECT_INCLUDED

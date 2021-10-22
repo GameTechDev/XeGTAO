@@ -103,6 +103,9 @@
     <Filter Include="IntegratedExternals\cgltf">
       <UniqueIdentifier>{5f8baa84-fc60-440e-ad89-aeacc94e1c95}</UniqueIdentifier>
     </Filter>
+    <Filter Include="IntegratedExternals\OpenImageDenoise">
+      <UniqueIdentifier>{2a29c936-4fa3-46a8-92c9-9e380201991b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Source\IntegratedExternals\imgui\imgui.cpp">
@@ -2228,6 +2231,18 @@
     <ClInclude Include="..\..\Source\IntegratedExternals\cgltf\cgltf_write.h">
       <Filter>IntegratedExternals\cgltf</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaOIDNIntegration.h">
+      <Filter>IntegratedExternals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\OpenImageDenoise\config.h">
+      <Filter>IntegratedExternals\OpenImageDenoise</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\OpenImageDenoise\oidn.h">
+      <Filter>IntegratedExternals\OpenImageDenoise</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\OpenImageDenoise\oidn.hpp">
+      <Filter>IntegratedExternals\OpenImageDenoise</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Source\IntegratedExternals\imgui\LICENSE">
@@ -2295,6 +2310,12 @@
     <Library Include="..\..\Source\IntegratedExternals\dxc\dxcompiler.lib">
       <Filter>IntegratedExternals\dxc</Filter>
     </Library>
+    <Library Include="..\..\Source\IntegratedExternals\OpenImageDenoise\OpenImageDenoise.lib">
+      <Filter>IntegratedExternals\OpenImageDenoise</Filter>
+    </Library>
+    <Library Include="..\..\Source\IntegratedExternals\OpenImageDenoise\tbb.lib">
+      <Filter>IntegratedExternals\OpenImageDenoise</Filter>
+    </Library>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\Source\IntegratedExternals\dxc\info.txt">
@@ -2310,6 +2331,12 @@
     </CopyFileToFolders>
     <CopyFileToFolders Include="..\..\Source\IntegratedExternals\WinPixEventRuntime\bin\x64\WinPixEventRuntime.dll">
       <Filter>IntegratedExternals\WinPixEventRuntime</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\..\Source\IntegratedExternals\OpenImageDenoise\OpenImageDenoise.dll">
+      <Filter>IntegratedExternals\OpenImageDenoise</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\..\Source\IntegratedExternals\OpenImageDenoise\tbb12.dll">
+      <Filter>IntegratedExternals\OpenImageDenoise</Filter>
     </CopyFileToFolders>
   </ItemGroup>
 </Project>

@@ -18,7 +18,7 @@
 
 #include "vaIBL.h"
 
-#include "Rendering/Shaders/vaLightingShared.h"
+#include "Rendering/Shaders/Lighting/vaLightingShared.h"
 
 #include "Scene/vaSceneAsync.h"
 

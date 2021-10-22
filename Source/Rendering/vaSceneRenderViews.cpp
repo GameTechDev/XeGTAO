@@ -192,14 +192,22 @@ void vaSceneMainRenderView::UITickAlways( vaApplicationBase & )
 {
 #ifndef VA_GTAO_SAMPLE
     if( ( vaInputKeyboardBase::GetCurrent( ) != NULL ) && vaInputKeyboardBase::GetCurrent( )->IsKeyDown( KK_CONTROL ) && vaInputKeyboardBase::GetCurrent( )->IsKeyClicked( ( vaKeyboardKeys )'P' ) )
-        m_settings.PathTracer = !m_settings.PathTracer;
+        m_settings.RenderPath = (m_settings.RenderPath == vaRenderType::PathTracing)?(vaRenderType::Rasterization):(vaRenderType::PathTracing);
 #endif
 }
 
 void vaSceneMainRenderView::UITick( vaApplicationBase & application )
 {
-    // AA (some remnants of old compatibility code here)
+#ifndef VA_GTAO_SAMPLE
+    ImGuiEx_Combo( "Renderer (Ctrl+P)", (int&)m_settings.RenderPath, {"Rasterizer", "Path Tracer"} );
+#else
+    m_settings.RenderPath = vaRenderType::Rasterization;
+#endif
+
+    if( m_settings.RenderPath == vaRenderType::Rasterization )
     {
+        // AA (some remnants of old compatibility code here)
+        // 
         //bool aaTypeApplicable[(int)vaAAType::MaxValue]; for( int i = 0; i < _countof( aaTypeApplicable ); i++ ) aaTypeApplicable[i] = true;
 
         std::vector<string> aaOptions;
@@ -239,35 +247,33 @@ void vaSceneMainRenderView::UITick( vaApplicationBase & application )
             m_SSDDXDDYBias[indx] = vaMath::Clamp( m_SSDDXDDYBias[indx], 0.0f, 1.0f );
         }
 #endif    
-    }
 
-    ImGuiEx_Combo( "AO", (int&)m_settings.AOOption, { string("Disabled"), string("ASSAOLite"), string("XeGTAO"), string("XeGTAO+BentNormals") } );
+        ImGuiEx_Combo( "AO", (int&)m_settings.AOOption, { string("Disabled"), string("ASSAOLite"), string("XeGTAO"), string("XeGTAO+BentNormals") } );
     
-    if( m_settings.AOOption != 0 )
-    {
-//        VA_GENERIC_RAII_SCOPE( ImGui::Indent();, ImGui::Unindent(); );
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.0f, 0.8f, 0.5f, 1.0f ) );
-        ImGui::Checkbox( (m_settings.AOOption == 3)?("Display debug AO*BentNormal channel only"):("Display debug AO channel only"), &m_settings.DebugShowAO );
-        ImGui::PopStyleColor( );
-        //ImGui::Text( (m_settings.AOOption==1)?("ASSAO-specific settings:"):("XeGTAO-specific settings") );
+        if( m_settings.AOOption != 0 )
+        {
+    //        VA_GENERIC_RAII_SCOPE( ImGui::Indent();, ImGui::Unindent(); );
+            ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.0f, 0.8f, 0.5f, 1.0f ) );
+            ImGui::Checkbox( (m_settings.AOOption == 3)?("Display debug AO*BentNormal channel only"):("Display debug AO channel only"), &m_settings.DebugShowAO );
+            ImGui::PopStyleColor( );
+            //ImGui::Text( (m_settings.AOOption==1)?("ASSAO-specific settings:"):("XeGTAO-specific settings") );
 #ifdef VA_GTAO_SAMPLE
-        if( m_settings.AOOption == 1 )
-            m_ASSAO->UIPanelTickCollapsable( application, false, true, true );
-        else if( m_settings.AOOption == 2 || m_settings.AOOption == 3 )
-            m_GTAO->UIPanelTickCollapsable( application, false, true, true );
+            if( m_settings.AOOption == 1 )
+                m_ASSAO->UIPanelTickCollapsable( application, false, true, true );
+            else if( m_settings.AOOption == 2 || m_settings.AOOption == 3 )
+                m_GTAO->UIPanelTickCollapsable( application, false, true, true );
 #endif
+        }
     }
-
-#ifndef VA_GTAO_SAMPLE
-    ImGui::Separator();
-    ImGui::Checkbox( "Experimental path tracer (Ctrl+P)", &m_settings.PathTracer );
-
-    if( m_settings.PathTracer && m_pathTracer != nullptr )
+    else if( m_settings.RenderPath == vaRenderType::PathTracing )
     {
-        VA_GENERIC_RAII_SCOPE( ImGui::Indent();, ImGui::Unindent(); );
-        m_pathTracer->UITick( application );
+        if( m_pathTracer != nullptr )
+        {
+            VA_GENERIC_RAII_SCOPE( ImGui::Indent();, ImGui::Unindent(); );
+            m_pathTracer->UITick( application );
+        }
     }
-#endif
+    else { assert( false ); }
 
     ImGui::Separator();
     ImGui::Checkbox( "Draw wireframe", &m_settings.ShowWireframe );
@@ -276,15 +282,13 @@ void vaSceneMainRenderView::UITick( vaApplicationBase & application )
     {
         VA_GENERIC_RAII_SCOPE( ImGui::Indent( ); , ImGui::Unindent( ); );
         ImGui::InputFloat( "Camera exposure", &m_camera->Settings().ExposureSettings.Exposure ); m_camera->Settings().ExposureSettings.Exposure = vaMath::Clamp( m_camera->Settings().ExposureSettings.Exposure, m_camera->Settings().ExposureSettings.ExposureMin, m_camera->Settings().ExposureSettings.ExposureMax ); }
-#if 0
-    ImGui::Checkbox( "HalfResUpscale", &m_settings.HalfResUpscale );
-#endif
     }
 
 void vaSceneMainRenderView::PreRenderTick( float deltaTime )
 {
+    // temporary debug stuff:
     // path tracer can request camera position move, used for experiments - weird but it is what it is; move to some earlier place if moving camera here causes any issues anywhere
-    if( m_settings.PathTracer && m_pathTracer != nullptr )
+    if( m_settings.RenderPath == vaRenderType::PathTracing && m_pathTracer != nullptr )
     {
         auto camPosRequest = m_pathTracer->GetNextCameraRequest( );
         if( camPosRequest != nullptr )
@@ -308,18 +312,18 @@ void vaSceneMainRenderView::PreRenderTick( float deltaTime )
     auto raytracer = sceneRenderer->GetRaytracer();
 
     // path racing is 'special' - some conditions need to be checked first
-    if( m_settings.PathTracer )
+    if( m_settings.RenderPath == vaRenderType::PathTracing )
     {
         if( raytracer == nullptr )
         {
             VA_LOG_WARNING( "Raytracing not supported on this hardware or a similar error - disabling the path tracer." );
-            m_settings.PathTracer = false;
+            m_settings.RenderPath = vaRenderType::Rasterization;
         }
 
         if( m_SS != nullptr )
         {
             VA_LOG_WARNING( "Rasterization super-sampling not compatible with path tracer path - disabling the path tracer." );
-            m_settings.PathTracer = false;
+            m_settings.RenderPath = vaRenderType::Rasterization;
         }
     }
 
@@ -340,7 +344,7 @@ void vaSceneMainRenderView::PreRenderTick( float deltaTime )
     static bool prevSuppressTAA = false;
     if( m_settings.AAType == vaAAType::TAA )
     {
-        if( m_settings.PathTracer )
+        if( m_settings.RenderPath == vaRenderType::PathTracing )
         {
             if( !prevSuppressTAA )
                 VA_LOG_WARNING( "TAA does not work with pure path tracer at the moment - disabling TAA." );
@@ -421,7 +425,7 @@ void vaSceneMainRenderView::RenderTickInternal( vaRenderDeviceContext & renderCo
     vaDrawResultFlags drawResults = vaDrawResultFlags::None;
 
     // depth pre-pass not needed/useful with the path tracer - disable
-    if( m_settings.PathTracer )
+    if( m_settings.RenderPath == vaRenderType::PathTracing )
         depthPrepass = vaSceneMainRenderView::DepthPrepassType::None;
 
     shared_ptr<vaSceneRenderer> sceneRenderer = m_parentRenderer.lock( );
@@ -495,7 +499,7 @@ void vaSceneMainRenderView::RenderTickInternal( vaRenderDeviceContext & renderCo
     vaRenderOutputs preTonemapOutputs = vaRenderOutputs::FromRTDepth( m_workingPreTonemapColor, m_workingDepth );
 
     // for now only replace opaque stuff with the path tracer
-    if( !m_settings.PathTracer )
+    if( m_settings.RenderPath == vaRenderType::Rasterization )
     {
         // Opaque stuff
         drawResults |= sceneRenderer->DrawOpaque( renderContext, preTonemapOutputs, m_selectionOpaque, m_sortOpaque, *m_camera, globalSettings, (m_settings.AOOption!=0)?(m_SSAOData):(nullptr), true );
@@ -539,7 +543,7 @@ void vaSceneMainRenderView::RenderTickInternal( vaRenderDeviceContext & renderCo
                     drawResults |= pp.MergeTextures( renderContext, m_workingPreTonemapColor, m_SSAOData, nullptr, nullptr, "float4( srcA.xxx/255.0, 1.0 )", true ); 
             }
         }
-        if( m_settings.PathTracer && m_pathTracer != nullptr && m_pathTracer->DebugViz() != ShaderDebugViewType::None )
+        if( m_settings.RenderPath == vaRenderType::PathTracing && m_pathTracer != nullptr && m_pathTracer->DebugViz() != ShaderDebugViewType::None )
         { debugViewActive = true; } //drawResults |= pp.MergeTextures( renderContext, m_workingPreTonemapColor, m_workingPreTonemapColor, nullptr, nullptr, "float4( SRGB_to_LINEAR(srcA.rgb), 1.0 )" ); }
     }
 
@@ -549,7 +553,7 @@ void vaSceneMainRenderView::RenderTickInternal( vaRenderDeviceContext & renderCo
         uint32 currentSettingsHash = 0;
         currentSettingsHash = vaMath::Hash32Combine( currentSettingsHash, (int)(m_settings.AOOption) );
         currentSettingsHash = vaMath::Hash32Combine( currentSettingsHash, (m_settings.DebugShowAO)?(1):(0) );
-        currentSettingsHash = vaMath::Hash32Combine( currentSettingsHash, (m_settings.PathTracer)?(1):(0) );
+        currentSettingsHash = vaMath::Hash32Combine( currentSettingsHash, (m_settings.RenderPath == vaRenderType::PathTracing)?(1):(0) );
         currentSettingsHash = vaMath::Hash32Combine( currentSettingsHash, (m_settings.ShowWireframe)?(1):(0) );
         currentSettingsHash = vaMath::Hash32Combine( currentSettingsHash, (debugViewActive)?(1):(0) );
         if( m_GTAO != nullptr )
@@ -573,7 +577,7 @@ void vaSceneMainRenderView::RenderTickInternal( vaRenderDeviceContext & renderCo
     }
 
     // Transparencies and effects
-    if( !debugViewActive && !m_settings.PathTracer )
+    if( !debugViewActive && m_settings.RenderPath == vaRenderType::Rasterization )
     {
         drawResults |= sceneRenderer->DrawTransparencies( renderContext, preTonemapOutputs, m_selectionTransparent, m_sortTransparent, *m_camera, globalSettings );
         m_basicStats.ItemsDrawn += (int)m_selectionTransparent.Count( );
@@ -712,13 +716,6 @@ void vaSceneMainRenderView::RenderTick( float deltaTime, vaRenderDeviceContext &
         workingViewport = vaViewport( outputViewport.Width * m_SS->GetSSResScale(), outputViewport.Height * m_SS->GetSSResScale() );
 
     } 
-#if 0
-    else if( m_settings.HalfResUpscale )
-    {
-        workingViewport.Width  = (workingViewport.Width  + 1) / 2;
-        workingViewport.Height = (workingViewport.Height + 1) / 2;
-    }
-#endif
 
     // do our working buffers need to be re-created?
     if( m_workingDepth == nullptr || m_workingDepth->GetWidth( ) != workingViewport.Width || m_workingDepth->GetHeight( ) != workingViewport.Height || m_workingDepth->GetSampleCount() != msaaSampleCount )
@@ -857,78 +854,6 @@ void vaSceneMainRenderView::RenderTick( float deltaTime, vaRenderDeviceContext &
             m_basicStats.ItemsDrawn += (int)m_selectionOpaque.Count( );
         }
     }
-#if 0
-    else if( m_settings.HalfResUpscale )
-    {
-        m_camera->SetSubpixelOffset( vaVector2( -0.5f, -0.5f ) );
-        m_camera->Tick( 0, false );
-
-        // first high-res depth
-        {
-            m_outputDepth->ClearDSV( renderContext, true, m_camera->GetUseReversedZ( ) ? ( 0.0f ) : ( 1.0f ), false, 0 );
-            drawResults |= sceneRenderer->DrawDepthOnly( renderContext, vaRenderOutputs::FromRTDepth( nullptr, m_outputDepth ), m_selectionOpaque, m_sortDepthPrepass, *m_camera, globalSettings );
-            m_basicStats.ItemsDrawn += (int)m_selectionOpaque.Count( );
-        }
-
-        m_camera->SetViewport( workingViewport );
-        m_camera->SetSubpixelOffset( );
-        m_camera->Tick( 0, false );
-
-        // now low-res depth
-        {
-#if 0
-            m_workingDepth->ClearDSV( renderContext, true, m_camera->GetUseReversedZ( ) ? ( 0.0f ) : ( 1.0f ), false, 0 );
-            drawResults |= sceneRenderer->DrawDepthOnly( renderContext, vaRenderOutputs::FromRTDepth( nullptr, m_workingDepth ), m_selectionOpaque, m_sortDepthPrepass, *m_camera, globalSettings );
-            m_basicStats.ItemsDrawn += (int)m_selectionOpaque.Count( );
-#else
-            vaGraphicsItem graphicsItem;
-            vaRenderOutputs outputs;
-            GetRenderDevice().FillFullscreenPassGraphicsItem( graphicsItem );
-            graphicsItem.ShaderResourceViews[1] = m_outputDepth;
-            graphicsItem.PixelShader = m_PSSmartUpsampleDepth;
-            graphicsItem.DepthEnable = true;
-            graphicsItem.DepthWriteEnable = true;
-            graphicsItem.DepthFunc = vaComparisonFunc::Always;
-            vaDrawAttributes drawAttributes( *m_camera );
-            renderContext.ExecuteSingleItem( graphicsItem, vaRenderOutputs::FromRTDepth( /*m_workingPostTonemapColor*/nullptr, m_workingDepth ), &drawAttributes );
-#endif
-        }
-
-        RenderTickInternal( renderContext, currentDrawResults, globalSettings, skipCameraLuminanceUpdate, vaSceneMainRenderView::DepthPrepassType::UseExisting );
-
-        // restore camera
-        m_camera->SetViewport( outputViewport );
-        m_camera->SetSubpixelOffset( );
-        m_camera->Tick( 0, false );
-
-#if 0
-        {
-            vaComputeItem computeItem;
-            vaRenderOutputs outputs;
-
-            //computeItem.ConstantBuffers[ZOOMTOOL_CONSTANTSBUFFERSLOT] = m_constantBuffer;
-            outputs.UnorderedAccessViews[0] = m_outputColor;
-            computeItem.ShaderResourceViews[0] = m_workingPostTonemapColor;
-            computeItem.ShaderResourceViews[1] = m_workingDepth;
-            computeItem.ShaderResourceViews[2] = m_outputDepth;
-
-            int threadGroupCountX = ( m_outputColor->GetSizeX( ) + 16 - 1 ) / 16;
-            int threadGroupCountY = ( m_outputColor->GetSizeY( ) + 16 - 1 ) / 16;
-
-            computeItem.ComputeShader = ( vaResourceFormatHelpers::IsFloat( m_outputColor->GetUAVFormat( ) ) ) ? ( m_CSSmartUpsampleFloat.get( ) ) : ( m_CSSmartUpsampleUnorm.get( ) );
-            computeItem.SetDispatch( threadGroupCountX, threadGroupCountY, 1 );
-
-            vaDrawAttributes drawAttributes( *m_camera );
-            renderContext.ExecuteSingleItem( computeItem, outputs, &drawAttributes );
-
-        }
-#else
-        {
-            drawResults |= GetRenderDevice( ).StretchRect( renderContext, m_outputColor, m_workingPostTonemapColor, {0,0,0,0}, {0,0,0,0}, false );
-        }
-#endif
-    }
-#endif
     else
     {
         if( m_enableCursorHoverInfo )
@@ -962,7 +887,7 @@ void vaSceneMainRenderView::RenderTick( float deltaTime, vaRenderDeviceContext &
 bool vaSceneMainRenderView::RequiresRaytracing( ) const
 { 
     // additional requirements will be added here
-    return m_settings.PathTracer || (m_GTAO != nullptr && m_GTAO->ReferenceRTAOEnabled()); 
+    return (m_settings.RenderPath == vaRenderType::PathTracing) || (m_GTAO != nullptr && m_GTAO->ReferenceRTAOEnabled()); 
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

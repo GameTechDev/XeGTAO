@@ -319,7 +319,7 @@ std::vector<string> vaRenderMaterial::GetPresetMaterials( )
     return { /*c_Legacy, c_Unlit,*/ c_FilamentStandard, c_FilamentSubsurface, c_FilamentCloth, c_FilamentUnlit, c_FilamentSpecGloss  };
 }
 
-bool vaRenderMaterial::SetupFromPreset( const string& presetName, bool removeNodes )
+bool vaRenderMaterial::SetupFromPreset( const string & presetName, bool removeNodes )
 {
     m_shaderSettings.BaseMacros.clear();
     m_computedTextureSlotCount      = 0;
@@ -431,13 +431,14 @@ bool vaRenderMaterial::SetupFromPreset( const string& presetName, bool removeNod
         SetInputSlot( "SpecularColor",      vaVector3( 0.0f, 0.0f, 0.0f ),          true, true    );
         SetInputSlot( "Glossiness",         0.0f,                                   false, false   );
 
-        m_shaderSettings.PS_RichPrepass    = std::make_pair( "vaRenderMaterial.hlsl", "PS_RichPrepass" );
+        m_shaderSettings.PS_RichPrepass     = std::make_pair( "vaRenderMaterial.hlsl", "PS_RichPrepass" );
         m_shaderSettings.PS_DepthOnly       = std::make_pair( "vaRenderMaterial.hlsl", "PS_DepthOnly" );
         m_shaderSettings.PS_Forward         = std::make_pair( "vaRenderMaterial.hlsl", "PS_Forward" );
 
         retVal = true;
     } 
 
+    UpgradeToNewMaterial( );
 
     assert( retVal );    // preset not recognized, material no longer correct
     return retVal;
@@ -505,7 +506,7 @@ void vaRenderMaterial::UpdateShaderMacros( )
     m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_ALPHATEST",                 ( ( IsAlphaTested() ) ? ( "1" ) : ( "0" ) ) ) );
     //m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_ALPHATEST_THRESHOLD",       vaStringTools::Format( "(%.3f)", m_materialSettings.AlphaTestThreshold ) ) );
     m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_WIREFRAME",                 ( ( m_materialSettings.Wireframe         ) ? ( "1" ) : ( "0" ) ) ) );
-    m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_ADVANCED_SPECULAR_SHADER",  ( ( m_materialSettings.AdvancedSpecularShader ) ? ( "1" ) : ( "0" ) ) ) );
+    //m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_ADVANCED_SPECULAR_SHADER",  ( ( m_materialSettings.AdvancedSpecularShader ) ? ( "1" ) : ( "0" ) ) ) );
 
     //if( m_materialSettings.LocalIBLNormalBasedBias != 0 )
     //    m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_LOCALIBL_NORMALBIAS",       vaStringTools::Format( "(%.3f)", m_materialSettings.LocalIBLNormalBasedBias ) ) );
@@ -692,15 +693,11 @@ bool vaRenderMaterial::SerializeUnpacked( vaXMLSerializer & serializer, const st
 
     VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<int32>( "FaceCull", (int32&)          m_materialSettings.FaceCull ) );
     VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "AlphaTestThreshold",         m_materialSettings.AlphaTestThreshold ) );
-    //VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<bool>( "ReceiveShadows",              m_materialSettings.ReceiveShadows ) );
     VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<bool>( "Wireframe",                   m_materialSettings.Wireframe ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<bool>( "AdvancedSpecularShader",      m_materialSettings.AdvancedSpecularShader,  m_materialSettings.AdvancedSpecularShader ) );
-    //VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<bool>( "SpecialEmissiveLight",        m_materialSettings.SpecialEmissiveLight,    m_materialSettings.SpecialEmissiveLight ) );
-    //VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<bool>( "NoDepthPrePass",              m_materialSettings.NoDepthPrePass,          m_materialSettings.NoDepthPrePass ) );
+    //VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<bool>( "AdvancedSpecularShader",      m_materialSettings.AdvancedSpecularShader,  m_materialSettings.AdvancedSpecularShader ) );
     /*VERIFY_TRUE_RETURN_ON_FALSE*/( serializer.Serialize<float>( "LocalIBLNormalBasedBias", m_materialSettings.LocalIBLNormalBasedBias ) );
     /*VERIFY_TRUE_RETURN_ON_FALSE*/( serializer.Serialize<float>( "LocalIBLBasedBias", m_materialSettings.LocalIBLBasedBias ) );
-    /*VERIFY_TRUE_RETURN_ON_FALSE*/( serializer.Serialize<int>( "VRSRateOffset", m_materialSettings.VRSRateOffset ) );
-    /*VERIFY_TRUE_RETURN_ON_FALSE*/( serializer.Serialize<bool>( "VRSPreferHorizontal", m_materialSettings.VRSPreferHorizontal ) );
+    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "IndexOfRefraction",           m_materialSettings.IndexOfRefraction, 1.00029f ) );
 
     // handle backward compatibility
     if( !serializer.Serialize<int32>( "LayerMode", (int32&)m_materialSettings.LayerMode ) )
@@ -734,41 +731,42 @@ bool vaRenderMaterial::SerializeUnpacked( vaXMLSerializer & serializer, const st
         {
             assert( false );
         }
-
-        // // earlier override
-        // if( vaStringTools::CompareNoCase( oldFormatShaderFileName, "vaMaterialPhong.hlsl" ) == 0 )
-        //     oldFormatShaderFileName = "vaMaterialBasic.hlsl";
     }
 
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderFileNameVS_Standard",       m_shaderSettings.VS_Standard.first, oldFormatShaderFileName ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderFileNameGS_Standard",       m_shaderSettings.GS_Standard.first, "" ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderFileNamePS_DepthOnly",      m_shaderSettings.PS_DepthOnly.first, oldFormatShaderFileName ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderFileNamePS_Forward",        m_shaderSettings.PS_Forward.first, oldFormatShaderFileName ) );
-    //VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderFileNamePS_Deferred",       m_shaderSettings.PS_Deferred.first, oldFormatShaderFileName ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderFileNamePS_RichPrepass",   m_shaderSettings.PS_RichPrepass.first, oldFormatShaderFileName ) ); // default to be removed in the future
+    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "Class", m_class, "" ) );
 
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderEntryVS_Standard",       m_shaderSettings.VS_Standard.second ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderEntryGS_Standard",       m_shaderSettings.GS_Standard.second, "" ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderEntryPS_DepthOnly",      m_shaderSettings.PS_DepthOnly.second ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderEntryPS_Forward",        m_shaderSettings.PS_Forward.second ) );
-    //VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderEntryPS_Deferred",       m_shaderSettings.PS_Deferred.second, string("") ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderEntryPS_RichPrepass",   m_shaderSettings.PS_RichPrepass.second, string("PS_RichPrepass") ) ); // default to be removed in the future but make sure all assets have been re-saved!
-
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderEntryCAL_LibraryFile",   m_shaderSettings.CAL_LibraryFile , "vaRenderMaterial.hlsl"   ) );
-
-    if( serializer.IsReading() )
+    if( m_class == "" )
     {
-        m_shaderSettings.BaseMacros.clear();
+        VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderFileNameVS_Standard",       m_shaderSettings.VS_Standard.first, oldFormatShaderFileName ) );
+        VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderFileNameGS_Standard",       m_shaderSettings.GS_Standard.first, "" ) );
+        VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderFileNamePS_DepthOnly",      m_shaderSettings.PS_DepthOnly.first, oldFormatShaderFileName ) );
+        VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderFileNamePS_Forward",        m_shaderSettings.PS_Forward.first, oldFormatShaderFileName ) );
+        //VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderFileNamePS_Deferred",       m_shaderSettings.PS_Deferred.first, oldFormatShaderFileName ) );
+        VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderFileNamePS_RichPrepass",   m_shaderSettings.PS_RichPrepass.first, oldFormatShaderFileName ) ); // default to be removed in the future
 
-        auto updateShaderFileName = []( string & current ) {
+        VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderEntryVS_Standard",       m_shaderSettings.VS_Standard.second ) );
+        VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderEntryGS_Standard",       m_shaderSettings.GS_Standard.second, "" ) );
+        VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderEntryPS_DepthOnly",      m_shaderSettings.PS_DepthOnly.second ) );
+        VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderEntryPS_Forward",        m_shaderSettings.PS_Forward.second ) );
+        //VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderEntryPS_Deferred",       m_shaderSettings.PS_Deferred.second, string("") ) );
+        VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderEntryPS_RichPrepass",   m_shaderSettings.PS_RichPrepass.second, string("PS_RichPrepass") ) ); // default to be removed in the future but make sure all assets have been re-saved!
 
-            if( current == "vaMaterialFilament.hlsl" || current == "" )
-                current = "vaRenderMaterial.hlsl";
-        };
+        VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "ShaderEntryCAL_LibraryFile",   m_shaderSettings.CAL_LibraryFile , "vaRenderMaterial.hlsl"   ) );
 
-        updateShaderFileName( m_shaderSettings.PS_Forward.first );
-        updateShaderFileName( m_shaderSettings.PS_RichPrepass.first );
-        updateShaderFileName( m_shaderSettings.PS_DepthOnly.first );
+        if( serializer.IsReading() )
+        {
+            m_shaderSettings.BaseMacros.clear();
+
+            auto updateShaderFileName = []( string & current ) {
+
+                if( current == "vaMaterialFilament.hlsl" || current == "" )
+                    current = "vaRenderMaterial.hlsl";
+            };
+
+            updateShaderFileName( m_shaderSettings.PS_Forward.first );
+            updateShaderFileName( m_shaderSettings.PS_RichPrepass.first );
+            updateShaderFileName( m_shaderSettings.PS_DepthOnly.first );
+        }
     }
 
     if( !serializer.SerializeArrayGeneric<std::vector<pair<string, string>>>( "ShaderBaseMacros", m_shaderSettings.BaseMacros, 
@@ -839,7 +837,40 @@ bool vaRenderMaterial::SerializeUnpacked( vaXMLSerializer & serializer, const st
     assert( m_inputSlots.size() <= RENDERMATERIAL_MAX_INPUT_SLOTS );
     assert( m_nodes.size() <= RENDERMATERIAL_MAX_NODES );
 
+    // converting to new material system
+    if( serializer.IsReading() )
+    {
+        UpgradeToNewMaterial( );
+    }
+
     return true;
+}
+
+void vaRenderMaterial::UpgradeToNewMaterial( )
+{
+    for( int index = 0; index < m_shaderSettings.BaseMacros.size(); index++ )
+    {
+        if( m_shaderSettings.BaseMacros[index].first == "VA_FILAMENT_STANDARD" )
+        {
+            m_shaderSettings.BaseMacros.erase( m_shaderSettings.BaseMacros.begin()+index );
+            m_class = "StandardPBR";
+            break;
+        } else if( m_shaderSettings.BaseMacros[index].first == "VA_FILAMENT_SPECGLOSS" )
+        {
+            m_shaderSettings.BaseMacros.erase( m_shaderSettings.BaseMacros.begin()+index );
+            m_class = "SpecGlossPBR";
+            break;
+        }
+
+    }
+
+    assert( m_class != "" );
+    m_shaderSettings.VS_Standard        = { "", "" };
+    m_shaderSettings.GS_Standard        = { "", "" };
+    m_shaderSettings.PS_DepthOnly       = { "", "" };
+    m_shaderSettings.PS_Forward         = { "", "" };
+    m_shaderSettings.PS_RichPrepass     = { "", "" };
+    m_shaderSettings.CAL_LibraryFile    = "";
 }
 
 void vaRenderMaterial::RegisterUsedAssetPacks( std::function<void( const vaAssetPack & )> registerFunction )
@@ -1242,7 +1273,7 @@ bool vaRenderMaterial::Update( )
 
     if( m_shadersDirty || (m_shaders == nullptr) )
     {
-        m_shaders = m_renderMaterialManager.FindOrCreateShaders( IsAlphaTested(), m_shaderSettings, m_shaderMacros );
+        m_shaders = m_renderMaterialManager.FindOrCreateShaders( IsAlphaTested(), m_class, m_shaderSettings, m_shaderMacros );
         m_shadersDirty = m_shaders == nullptr;
         assert( m_shaders != nullptr );
 
@@ -1320,9 +1351,10 @@ bool vaRenderMaterial::PreRenderUpdate( vaRenderDeviceContext & renderContext )
         shaderConstantsUpdateRequired = true;
     }
 
-    m_currentShaderConstants.AlphaTestThreshold = m_materialSettings.AlphaTestThreshold;
-    m_currentShaderConstants.VA_RM_LOCALIBL_NORMALBIAS = m_materialSettings.LocalIBLNormalBasedBias;
-    m_currentShaderConstants.VA_RM_LOCALIBL_BIAS = m_materialSettings.LocalIBLBasedBias;
+    m_currentShaderConstants.AlphaTestThreshold         = m_materialSettings.AlphaTestThreshold;
+    m_currentShaderConstants.VA_RM_LOCALIBL_NORMALBIAS  = m_materialSettings.LocalIBLNormalBasedBias;
+    m_currentShaderConstants.VA_RM_LOCALIBL_BIAS        = m_materialSettings.LocalIBLBasedBias;
+    m_currentShaderConstants.IndexOfRefraction          = m_materialSettings.IndexOfRefraction;
 
     // Textures might have changed, so doing it after the above pass every time
     // (frequency could be reduced if too costly but at the moment it has to be done every frame because GetSRVBindlessIndex also transitions the textures to shader readable!!)
@@ -1660,18 +1692,30 @@ bool vaRenderMaterial::UIPropertiesDraw( vaApplicationBase & application )
         //ImGui::Checkbox( "ReceiveShadows", &settings.ReceiveShadows );
         ImGui::Checkbox( "CastShadows", &settings.CastShadows );
         ImGui::Checkbox( "Wireframe", &settings.Wireframe );
-        ImGui::Checkbox( "AdvancedSpecularShader", &settings.AdvancedSpecularShader );
+        //ImGui::Checkbox( "AdvancedSpecularShader", &settings.AdvancedSpecularShader );
         //ImGui::Checkbox( "SpecialEmissiveLight", &settings.SpecialEmissiveLight );
         //ImGui::Checkbox( "NoDepthPrePass", &settings.NoDepthPrePass );
 
         ImGui::InputFloat( "LocalIBLNormalBasedBias", &settings.LocalIBLNormalBasedBias );
         ImGui::InputFloat( "LocalIBLBasedBias", &settings.LocalIBLBasedBias );
 
-        ImGui::InputInt( "VRSRateOffset", &settings.VRSRateOffset ); settings.VRSRateOffset = vaMath::Clamp( settings.VRSRateOffset, -4, 4 );
-
-        int hvPreference = (settings.VRSPreferHorizontal)?(0):(1);
-        if( ImGui::Combo( "VRSRectPreference", &hvPreference, "Horizontal\0Vertical\0\0" ) )
-            settings.VRSPreferHorizontal = hvPreference == 0;
+        if( ImGui::Button( "..." ) )
+            ImGui::OpenPopup("IoRSelectionContextMenu");
+        ImGui::SameLine( );
+        ImGui::InputFloat( "IndexOfRefraction", &settings.IndexOfRefraction ); 
+        if (ImGui::BeginPopupContextItem("IoRSelectionContextMenu"))
+        {
+            if( ImGui::Selectable("Vacuum:          1.0" ) )        settings.IndexOfRefraction = 1.0f;
+            if( ImGui::Selectable("Air, sea level:  1.00029" ) )    settings.IndexOfRefraction = 1.00029f;
+            if( ImGui::Selectable("Ice:             1.31" ) )       settings.IndexOfRefraction = 1.31f;
+            if( ImGui::Selectable("Water, 20C:      1.333" ) )      settings.IndexOfRefraction = 1.333f;
+            if( ImGui::Selectable("Fused quartz:    1.46" ) )       settings.IndexOfRefraction = 1.46f;
+            if( ImGui::Selectable("Glass:           1.5-1.6" ) )    settings.IndexOfRefraction = 1.55f;
+            if( ImGui::Selectable("Sapphire:        1.77" ) )       settings.IndexOfRefraction = 1.77f;
+            if( ImGui::Selectable("Diamond:         2.42" ) )       settings.IndexOfRefraction = 2.42f;
+            ImGui::EndPopup();
+        }
+        settings.IndexOfRefraction = std::max( 1.0f, settings.IndexOfRefraction );
 
         if( GetMaterialSettings( ) != settings )
         {
@@ -1691,18 +1735,18 @@ bool vaRenderMaterial::UIPropertiesDraw( vaApplicationBase & application )
 
         ImGui::Text( "Vertex Shader source file & entry point" );
         ImGui::Indent( indentSize );
-        float clientWidth = ImGui::GetContentRegionAvail( ).x;
+        //float clientWidth = ImGui::GetContentRegionAvail( ).x;
         vaShader::State shaderState; string shaderCompileError;
 
-        ImGui::PushItemWidth( -1 );
-        //ImGui::InputTextEx( "|###VS_file", &shaderSettings.VS_Standard.first, { clientWidth / 2.0f, 0.0f }, ImGuiInputTextFlags_None );
-        ImGui::SetNextItemWidth( clientWidth / 2.0f );
-        ImGui::InputText( "|###VS_file", &shaderSettings.VS_Standard.first, ImGuiInputTextFlags_None );
-        ImGui::SameLine( );
-        //ImGui::InputTextEx( "###VS_entry", &shaderSettings.VS_Standard.second, { clientWidth / 2.0f, 0.0f }, ImGuiInputTextFlags_None );
-        ImGui::SetNextItemWidth( clientWidth / 2.0f );
-        ImGui::InputText( "###VS_entry", &shaderSettings.VS_Standard.second, ImGuiInputTextFlags_None );
-        ImGui::PopItemWidth( );
+        // ImGui::PushItemWidth( -1 );
+        // //ImGui::InputTextEx( "|###VS_file", &shaderSettings.VS_Standard.first, { clientWidth / 2.0f, 0.0f }, ImGuiInputTextFlags_None );
+        // ImGui::SetNextItemWidth( clientWidth / 2.0f );
+        // ImGui::InputText( "|###VS_file", &shaderSettings.VS_Standard.first, ImGuiInputTextFlags_None );
+        // ImGui::SameLine( );
+        // //ImGui::InputTextEx( "###VS_entry", &shaderSettings.VS_Standard.second, { clientWidth / 2.0f, 0.0f }, ImGuiInputTextFlags_None );
+        // ImGui::SetNextItemWidth( clientWidth / 2.0f );
+        // ImGui::InputText( "###VS_entry", &shaderSettings.VS_Standard.second, ImGuiInputTextFlags_None );
+        // ImGui::PopItemWidth( );
         GetShaderState_VS_Standard( shaderState, shaderCompileError );
         ImGui::Text( "Current status: %s, %s", vaShader::StateToString( shaderState ).c_str( ), ( shaderCompileError == "" ) ? ( "OK" ) : ( shaderCompileError.c_str( ) ) );
 
@@ -1717,6 +1761,10 @@ bool vaRenderMaterial::UIPropertiesDraw( vaApplicationBase & application )
     }
 
 #endif // #ifdef VA_IMGUI_INTEGRATION_ENABLED
+
+    if( hadChanges )
+        SetSettingsDirty( );
+
     return hadChanges;
 }
 
@@ -1860,8 +1908,25 @@ void vaRenderMaterialManager::UIPanelTick( vaApplicationBase & )
 }
 
 shared_ptr<vaRenderMaterialCachedShaders>
-vaRenderMaterialManager::FindOrCreateShaders( bool alphaTest, const vaRenderMaterial::ShaderSettings & shaderSettings, const std::vector< pair< string, string > > & _shaderMacros )
+vaRenderMaterialManager::FindOrCreateShaders( bool alphaTest, string materialClass, const vaRenderMaterial::ShaderSettings & _shaderSettings, const std::vector< pair< string, string > > & _shaderMacros )
 {
+    vaRenderMaterial::ShaderSettings shaderSettings;
+    if( materialClass != "" )
+    {
+        assert( std::find( MaterialClasses.begin(), MaterialClasses.end(), materialClass ) != MaterialClasses.end() );
+        // TODO: make const vaRenderMaterial::ShaderSettings a local thing
+        shaderSettings.BaseMacros = _shaderSettings.BaseMacros;
+
+        shaderSettings.VS_Standard        = { "vaRenderMesh.hlsl", "VS_Standard" };
+        shaderSettings.GS_Standard        = { "", "" };
+        shaderSettings.PS_RichPrepass     = { "Materials/va"+materialClass+".hlsl", "PS_RichPrepass" };
+        shaderSettings.PS_DepthOnly       = { "Materials/va"+materialClass+".hlsl", "PS_DepthOnly" };
+        shaderSettings.PS_Forward         = { "Materials/va"+materialClass+".hlsl", "PS_Forward" };
+        shaderSettings.CAL_LibraryFile    = { "Materials/va"+materialClass+".hlsl" };
+    }
+    else
+        shaderSettings = _shaderSettings; // old path
+
     vaRenderMaterialCachedShaders::Key cacheKey( alphaTest, shaderSettings, _shaderMacros );
 
     std::unique_lock lock( m_cachedShadersMutex );
@@ -2240,9 +2305,9 @@ string vaRenderMaterial::TextureNode::GetShaderMaterialInputLoader( ) const
     // default: assert( false ); break;
     // }
 
-    //string accessorFunction = vaStringTools::Format( "%s.SampleBias( %s, surface.%s, g_globals.GlobalMIPOffset )", shaderTextureName.c_str( ), samplerName.c_str( ), UVAccessor.c_str( ) );
-    //string accessorFunction = vaStringTools::Format( "RMSampleTexture2D( %s, %s, surface.%s )", textureBindlessIndex.c_str( ), samplerName.c_str( ), UVAccessor.c_str( ) );
-    string accessorFunction = vaStringTools::Format( "RMSampleTexture2D( surface, %s, %s, %d )", textureBindlessIndex.c_str( ), samplerName.c_str( ), this->UVIndex );
+    //string accessorFunction = vaStringTools::Format( "%s.SampleBias( %s, geometrySurface.%s, g_globals.GlobalMIPOffset )", shaderTextureName.c_str( ), samplerName.c_str( ), UVAccessor.c_str( ) );
+    //string accessorFunction = vaStringTools::Format( "RMSampleTexture2D( %s, %s, geometrySurface.%s )", textureBindlessIndex.c_str( ), samplerName.c_str( ), UVAccessor.c_str( ) );
+    string accessorFunction = vaStringTools::Format( "RMSampleTexture2D( geometrySurface, %s, %s, %d )", textureBindlessIndex.c_str( ), samplerName.c_str( ), this->UVIndex );
 
     // add normalmap unpacking if needed
     switch( texture->GetContentsType() )
@@ -2351,18 +2416,19 @@ void vaRenderMaterial::EnumerateUsedAssets( const std::function<void( vaAsset * 
 
 vaShadingRate vaRenderMaterial::ComputeShadingRate( int baseShadingRate ) const
 {
-    baseShadingRate += m_materialSettings.VRSRateOffset;
-    baseShadingRate = vaMath::Clamp( baseShadingRate, 0, 4 );
-    switch( baseShadingRate )
-    {
-    case( 0 ):    return vaShadingRate::ShadingRate1X1;
-    case( 1 ):    return ( m_materialSettings.VRSPreferHorizontal ) ? ( vaShadingRate::ShadingRate2X1 ) : ( vaShadingRate::ShadingRate1X2 );
-    case( 2 ):    return vaShadingRate::ShadingRate2X2;
-    case( 3 ):    return ( m_materialSettings.VRSPreferHorizontal ) ? ( vaShadingRate::ShadingRate4X2 ) : ( vaShadingRate::ShadingRate2X4 );
-    case( 4 ):    return vaShadingRate::ShadingRate4X4;
-    default: assert( false );
-        break;
-    }
+    baseShadingRate;
+    // baseShadingRate += m_materialSettings.VRSRateOffset;
+    // baseShadingRate = vaMath::Clamp( baseShadingRate, 0, 4 );
+    // switch( baseShadingRate )
+    // {
+    // case( 0 ):    return vaShadingRate::ShadingRate1X1;
+    // case( 1 ):    return ( m_materialSettings.VRSPreferHorizontal ) ? ( vaShadingRate::ShadingRate2X1 ) : ( vaShadingRate::ShadingRate1X2 );
+    // case( 2 ):    return vaShadingRate::ShadingRate2X2;
+    // case( 3 ):    return ( m_materialSettings.VRSPreferHorizontal ) ? ( vaShadingRate::ShadingRate4X2 ) : ( vaShadingRate::ShadingRate2X4 );
+    // case( 4 ):    return vaShadingRate::ShadingRate4X4;
+    // default: assert( false );
+    //     break;
+    // }
     return vaShadingRate::ShadingRate1X1;
 }
 

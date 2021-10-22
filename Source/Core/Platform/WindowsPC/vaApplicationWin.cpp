@@ -37,6 +37,13 @@
 
 using namespace Vanilla;
 
+// are we in a remote desktop session?
+bool IsRemoteSession( void )
+{
+    return ::GetSystemMetrics( SM_REMOTESESSION ) != 0;
+}
+
+
 // utility class to limit the fps if needed
 class vaFPSLimiter : public vaSingletonBase<vaFPSLimiter>
 {
@@ -318,7 +325,8 @@ void vaApplicationWin::CaptureMouse( )
 
     vaInputMouse::GetInstance( ).SetCapture( );
 
-    ::SetCursor( m_cursorNone );
+    if( !IsRemoteSession() )
+        ::SetCursor( m_cursorNone );
 
     Event_MouseCaptureChanged.Invoke( );
 }
@@ -657,8 +665,8 @@ LRESULT vaApplicationWin::WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARA
         // this currently never happens since ::SetCapture disables WM_SETCURSOR but leave it in for future possibility
         if( IsMouseCaptured() )
         {
-            SetCursor( m_cursorNone );
-            //SetWindowLongPtr( hWnd, DWLP_MSGRESULT, TRUE );
+            if( !IsRemoteSession() )
+                SetCursor( m_cursorNone );
             return TRUE;
         }
         else

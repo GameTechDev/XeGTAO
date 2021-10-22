@@ -627,7 +627,8 @@ void vaUIManager::TickUI( vaApplicationBase & application )
     if( m_showImGuiDemo )
         ImGui::ShowDemoWindow();
 
-    float styleItemWidth = 0; //ImGui::GetFontSize( ) * -15 ;
+    // The negative constant on the right is how wide the text to the right of the controls will be; bigger number - more text can fit (but less left for the data)
+    float styleItemWidth = ImGui::GetFontSize( ) * -10;
 
     if( m_panels.size() > 0 )
     {

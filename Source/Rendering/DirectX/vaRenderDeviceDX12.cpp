@@ -1743,6 +1743,8 @@ static PSOType * FindOrCreatePipelineStateTemplated( vaRenderDeviceDX12 & device
                         assert( false ); // not sure if this is valid - debug if happens
                     }
                 }
+#else
+                assert( retPSO->GetPSO( ) != nullptr );
 #endif
             }
         }

@@ -11,9 +11,7 @@
 #ifndef VA_RENDER_MESH_HLSL
 #define VA_RENDER_MESH_HLSL
 
-#include "vaShared.hlsl"
-#include "vaNoise.hlsl"
-#include "vaRenderingShared.hlsl"
+#include "vaGeometryInteraction.hlsl"
 
 // This is the "unpacked" vaRenderMesh::StandardVertex
 struct RenderMeshVertex

@@ -467,7 +467,7 @@ void vaRenderDeviceContextDX12::BeginItems( vaRenderTypeFlags typeFlags, const v
 {
     assert( GetRenderDevice( ).IsRenderThread( ) );
 
-    VA_TRACE_CPU_SCOPE( BeginItems );
+    //VA_TRACE_CPU_SCOPE( BeginItems );
 
     // beware, this can trigger flush and sync! and flush and sync clears all of these, which is why we loop
     PreAllocateTransientDescriptors( );

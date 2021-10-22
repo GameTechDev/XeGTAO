@@ -40,6 +40,7 @@ namespace Vanilla
         static void                         YieldProcessor( );
         static void                         GetCPUCoreCountInfo( int & physicalPackages, int & physicalCores, int & logicalCores );
         static bool                         IsMainThread( )                                                     { return s_threadLocal.MainThread || s_threadLocal.MainThreadSynced; }
+        static int                          GetCPULogicalCores( )                                               { int physicalPackages, physicalCores, logicalCores; GetCPUCoreCountInfo( physicalPackages, physicalCores, logicalCores ); return logicalCores; }
 
         static void                         SetSyncedWithMainThread( )                                          { s_threadLocal.MainThreadSynced = true; }
 

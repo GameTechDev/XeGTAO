@@ -3,33 +3,14 @@
     <FileVersion>3</FileVersion>
     <FaceCull>0</FaceCull>
     <AlphaTestThreshold>0.16</AlphaTestThreshold>
-    <ReceiveShadows>true</ReceiveShadows>
     <Wireframe>false</Wireframe>
-    <AdvancedSpecularShader>true</AdvancedSpecularShader>
-    <SpecialEmissiveLight>false</SpecialEmissiveLight>
     <LocalIBLNormalBasedBias>0</LocalIBLNormalBasedBias>
     <LocalIBLBasedBias>0</LocalIBLBasedBias>
-    <VRSRateOffset>0</VRSRateOffset>
-    <VRSPreferHorizontal>true</VRSPreferHorizontal>
+    <IndexOfRefraction>1.00029</IndexOfRefraction>
     <LayerMode>1</LayerMode>
     <DecalSortOrder>0</DecalSortOrder>
-    <ShaderFileNameVS_Standard>vaRenderMesh.hlsl</ShaderFileNameVS_Standard>
-    <ShaderFileNameGS_Standard></ShaderFileNameGS_Standard>
-    <ShaderFileNamePS_DepthOnly>vaRenderMaterial.hlsl</ShaderFileNamePS_DepthOnly>
-    <ShaderFileNamePS_Forward>vaRenderMaterial.hlsl</ShaderFileNamePS_Forward>
-    <ShaderFileNamePS_RichPrepass>vaRenderMaterial.hlsl</ShaderFileNamePS_RichPrepass>
-    <ShaderEntryVS_Standard>VS_Standard</ShaderEntryVS_Standard>
-    <ShaderEntryGS_Standard></ShaderEntryGS_Standard>
-    <ShaderEntryPS_DepthOnly>PS_DepthOnly</ShaderEntryPS_DepthOnly>
-    <ShaderEntryPS_Forward>PS_Forward</ShaderEntryPS_Forward>
-    <ShaderEntryPS_RichPrepass>PS_RichPrepass</ShaderEntryPS_RichPrepass>
-    <ShaderEntryCAL_LibraryFile>vaRenderMaterial.hlsl</ShaderEntryCAL_LibraryFile>
-    <ShaderBaseMacros array="true">
-        <_item_>
-            <Name>VA_FILAMENT_SPECGLOSS</Name>
-            <Definition>VA_FILAMENT_SPECGLOSS</Definition>
-        </_item_>
-    </ShaderBaseMacros>
+    <Class>SpecGlossPBR</Class>
+    <ShaderBaseMacros array="true"/>
     <InputSlots array="true">
         <_item_>
             <Name>BaseColor</Name>

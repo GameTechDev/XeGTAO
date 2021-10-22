@@ -31,6 +31,12 @@ namespace Vanilla
     class vaCMAA2;
     class vaPathTracer;
 
+    enum class vaRenderType : int32
+    {
+        Rasterization,
+        PathTracing
+    };
+
     enum class vaAAType : int32
     {
         None,
@@ -185,20 +191,17 @@ namespace Vanilla
         struct RenderSettings
         {
             bool                                ShowWireframe               = false;
-#if 0
-            bool                                HalfResUpscale              = false;
-#endif
-            int                                 AOOption                    = 3;        // 0 - disabled, 1 - ASSAO, 2 - GTAO, 3 - GTAO with bent normals
 
+            vaRenderType                        RenderPath                  = vaRenderType::Rasterization;
+
+            // these are all rasterization settings
+            int                                 AOOption                    = 3;        // 0 - disabled, 1 - ASSAO, 2 - GTAO, 3 - GTAO with bent normals
 #if defined(VA_GTAO_SAMPLE) && !defined(VA_SAMPLE_BUILD_FOR_LAB)
             bool                                DebugShowAO                 = true;
 #else
             bool                                DebugShowAO                 = false;
 #endif
-
             vaAAType                            AAType                      = vaAAType::TAA;
-
-            bool                                PathTracer                  = false;
         }                                   m_settings;
 
     protected:

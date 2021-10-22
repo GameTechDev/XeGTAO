@@ -94,7 +94,7 @@ namespace Vanilla
 
 #if defined(VA_COMPILED_AS_SHADER_CODE) || defined(__INTELLISENSE__)
 
-#include "vaRenderingShared.hlsl"
+#include "vaGeometryInteraction.hlsl"
 
 // http://www.pbr-book.org/3ed-2018/Light_Transport_I_Surface_Reflection/Sampling_Reflection_Functions.html
 struct BSDFSample
@@ -108,7 +108,7 @@ struct BSDFSample
 
 RaytracingAccelerationStructure g_raytracingScene   : register( T_CONCATENATER( SHADERGLOBAL_SRV_SLOT_RAYTRACING_ACCELERATION ), space0 );
 
-void LoadHitSurfaceInteraction( /*const uint2 dispatchRaysIndex,*/ const float2 barycentrics, const uint instanceIndex, const uint primitiveIndex, const float3 rayDirLength, const float rayConeSpreadAngle, const float rayConeWidth, out ShaderInstanceConstants instanceConstants, out ShaderMeshConstants meshConstants, out ShaderMaterialConstants materialConstants, out SurfaceInteraction surface )
+void LoadHitSurfaceInteraction( /*const uint2 dispatchRaysIndex,*/ const float2 barycentrics, const uint instanceIndex, const uint primitiveIndex, const float3 rayDirLength, const float rayConeSpreadAngle, const float rayConeWidth, out ShaderInstanceConstants instanceConstants, out ShaderMeshConstants meshConstants, out ShaderMaterialConstants materialConstants, out GeometryInteraction geometrySurface )
 {
     instanceConstants = LoadInstanceConstants( instanceIndex );
     materialConstants = g_materialConstants[instanceConstants.MaterialGlobalIndex];
@@ -139,7 +139,7 @@ void LoadHitSurfaceInteraction( /*const uint2 dispatchRaysIndex,*/ const float2 
     interpB = RenderMeshVertexShader( vertB, instanceConstants );
     interpC = RenderMeshVertexShader( vertC, instanceConstants );
 
-    surface = SurfaceInteraction::ComputeAtRayHit( interpA, interpB, interpC, barycentrics, rayDirLength, rayConeSpreadAngle, rayConeWidth, meshConstants.FrontFaceIsClockwise );
+    geometrySurface = GeometryInteraction::ComputeAtRayHit( interpA, interpB, interpC, barycentrics, rayDirLength, rayConeSpreadAngle, rayConeWidth, meshConstants.FrontFaceIsClockwise );
 
 #if 0 // debugging
     [branch] if( IsUnderCursorRange( dispatchRaysIndex, int2(1,1) ) )
@@ -147,7 +147,7 @@ void LoadHitSurfaceInteraction( /*const uint2 dispatchRaysIndex,*/ const float2 
         DebugDraw3DLine( interpA.WorldspacePos, interpB.WorldspacePos, float4( 1, 0, 0, 1 ) );
         DebugDraw3DLine( interpB.WorldspacePos, interpC.WorldspacePos, float4( 0, 1, 0, 1 ) );
         DebugDraw3DLine( interpC.WorldspacePos, interpA.WorldspacePos, float4( 0, 0, 1, 1 ) );
-        DebugDraw3DText( surface.WorldspacePos, float2( 0, 40 ), float4( 0.8, 0.8, 0.8, 1 ), surface.NormalVariance );
+        DebugDraw3DText( geometrySurface.WorldspacePos, float2( 0, 40 ), float4( 0.8, 0.8, 0.8, 1 ), geometrySurface.NormalVariance );
     }
 #endif
 }

@@ -24,6 +24,12 @@ namespace Vanilla
 
     class vaPathTracer : public vaRenderingModule//, public vaUIPanel
     {
+        enum class Mode
+        {
+            StaticAccumulate,
+            RealTime
+        };
+
     protected:
 
         shared_ptr<vaConstantBuffer>                m_constantBuffer;
@@ -47,15 +53,24 @@ namespace Vanilla
 
         shared_ptr<vaGPUSort>                       m_GPUSort;
 
+        Mode                                        m_mode                          = Mode::StaticAccumulate;
+        int                                         m_staticAccumSampleTarget       = 512; //32768;     // stop at this number of samples (full paths) per pixel
+        int                                         m_realtimeAccumSampleTarget     = 4;                // stop at this number of samples (full paths) per pixel
+        bool                                        m_realtimeAccumDenoise          = false;            // at the moment there's only OIDN 
+
         // these manage frame sample accumulation and track changes that require restarting accumulation
         vaCameraBase                                m_accumLastCamera;          
         int64                                       m_accumLastShadersID            = -1;
-        int                                         m_accumFrameTargetCount         = 256; //32768;     // stop at this number of samples per pixel
-        int                                         m_accumFrameCount               = 0;        // current number of samples per pixel
+        int                                         m_accumSampleTarget             = 0;        // determined by m_staticAccumSampleTarget or m_realtimeAccumSampleTarget based on mode
+        int                                         m_accumSampleIndex              = 0;        // current number of samples (full paths) per pixel
         int                                         m_maxBounces                    = 4;
         constexpr static int                        c_maxBounceUpperBound           = 16;
+        int                                         m_sampleNoiseOffset             = 0;        // always 0 in Mode::StaticAccumulate, and varies by frame in Mode::RealTime
 
         bool                                        m_enableAA                      = true;
+        bool                                        m_enableFireflyClamp            = true;
+
+        bool                                        m_enablePerBounceSort           = true;
 
         bool                                        m_debugPathUnderCursor          = false;
         int                                         m_debugPathVizDim               = 1;
@@ -65,6 +80,8 @@ namespace Vanilla
         ShaderDebugViewType                         m_debugViz                      = ShaderDebugViewType::None;
 
         float                                       m_debugForcedDispatchDivergence = 0.0f;
+
+        float                                       m_globalMIPOffset               = -2.0f;
 
         bool                                        m_enablePathRegularization      = true;
 
@@ -76,6 +93,12 @@ namespace Vanilla
         float                                       m_divergenceMirrorRoughness     = 0.0f;
 
         int                                         m_replaceAllBistroMaterials     = 0;    // 0 - not active; 1 - "are you sure"? 2 - replaced
+
+        //////////////////////////////////////////////////////////////////////////
+        /// denoiser stuff
+        shared_ptr<struct OIDNData>                 m_oidn;
+        //////////////////////////////////////////////////////////////////////////
+
 
     protected:
         VA_RENDERING_MODULE_MAKE_FRIENDS( );
@@ -95,6 +118,10 @@ namespace Vanilla
 
     private:
         void                                        UpdateDivergenceMirrorExperiment();
+
+        vaDrawResultFlags                           Denoise( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & outputColor, const shared_ptr<vaTexture> & outputDepth );
+
+        vaDrawResultFlags                           InnerPass( vaRenderDeviceContext & renderContext, vaDrawAttributes & drawAttributes, const shared_ptr<vaSkybox> & skybox, /*const shared_ptr<vaTexture>& outputColor, const shared_ptr<vaTexture>& outputDepth,*/ uint totalPathCount, bool denoisingEnabled, vaRenderOutputs uavInputsOutputs );
     };
 
 } // namespace Vanilla

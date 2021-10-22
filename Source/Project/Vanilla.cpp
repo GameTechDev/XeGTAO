@@ -1425,7 +1425,7 @@ void VanillaSample::UIPanelTick( vaApplicationBase & application )
     ImGui::Separator( );
 
     //ImGui::Checkbox( "Use depth pre-pass", &m_settings.DepthPrePass );
-    if( ImGui::CollapsingHeader( "Main scene render view", ImGuiTreeNodeFlags_DefaultOpen ) )
+    //if( ImGui::CollapsingHeader( "Main scene render view", ImGuiTreeNodeFlags_DefaultOpen ) )
 #endif
         m_sceneMainView->UITick( application );
 
@@ -1599,7 +1599,7 @@ void VanillaSample::ScriptedGTAOAutoTune( vaApplicationBase & application )
             thisPtr->MainRenderView( )->Settings( ).AAType          = vaAAType::None;   // disables AA
             thisPtr->MainRenderView( )->Settings( ).AOOption        = 2;        // sets GTAO
             thisPtr->MainRenderView( )->Settings( ).DebugShowAO     = true;     // we're comparing vs AO output only
-            thisPtr->MainRenderView( )->Settings( ).PathTracer      = false;
+            thisPtr->MainRenderView( )->Settings( ).RenderPath      = vaRenderType::Rasterization;
             thisPtr->MainRenderView( )->Settings( ).ShowWireframe   = false;
 
             shared_ptr<vaGTAO> gtao = thisPtr->MainRenderView( )->GTAO( );
@@ -1671,7 +1671,7 @@ void VanillaSample::ScriptedGTAOAutoTune( vaApplicationBase & application )
             thisPtr->MainRenderView( )->Settings( ).AAType          = vaAAType::None;        // disables AA
             thisPtr->MainRenderView( )->Settings( ).AOOption        = 1;        // sets ASSAO
             thisPtr->MainRenderView( )->Settings( ).DebugShowAO     = true;     // we're comparing vs AO output only
-            thisPtr->MainRenderView( )->Settings( ).PathTracer      = false;
+            thisPtr->MainRenderView( )->Settings( ).RenderPath      = vaRenderType::Rasterization;
             thisPtr->MainRenderView( )->Settings( ).ShowWireframe   = false;
 
             shared_ptr<vaASSAOLite> assao = thisPtr->MainRenderView( )->ASSAO( );
@@ -1758,7 +1758,7 @@ void VanillaSample::ScriptedAutoBench( vaApplicationBase & application )
             // defaults
             thisPtr->MainRenderView( )->Settings( ).AAType          = vaAAType::TAA;        // doesn't matter, just make it consistent
             thisPtr->MainRenderView( )->Settings( ).DebugShowAO     = false;                // will disturb profiling
-            thisPtr->MainRenderView( )->Settings( ).PathTracer      = false;
+            thisPtr->MainRenderView( )->Settings( ).RenderPath      = vaRenderType::Rasterization;
             thisPtr->MainRenderView( )->Settings( ).ShowWireframe   = false;
 
             shared_ptr<vaASSAOLite> assao = thisPtr->MainRenderView( )->ASSAO( );

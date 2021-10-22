@@ -328,14 +328,14 @@ struct ShaderMaterialConstants
     float                   AlphaTestThreshold;
     float                   VA_RM_LOCALIBL_NORMALBIAS;  // these two are hacks and will go away in the future - they used to be macros so keeping the naming convention
     float                   VA_RM_LOCALIBL_BIAS      ;  // these two are hacks and will go away in the future - they used to be macros so keeping the naming convention
-    float                   Padding2;
+    float                   IndexOfRefraction;
 
 #ifndef VA_COMPILED_AS_SHADER_CODE
     inline void             Invalidate( )           
     { 
         for( int i = 0; i < countof(BindlessSRVIndices); i++ )  BindlessSRVIndices[i]   = 0xFFFFFFFF; 
         for( int i = 0; i < countof(Constants); i++ )           Constants[i]            = {0,0,0,0}; 
-        AlphaTestThreshold = 0.0f; VA_RM_LOCALIBL_NORMALBIAS = 0; VA_RM_LOCALIBL_BIAS = 0; Padding2 = 0;
+        AlphaTestThreshold = 0.0f; VA_RM_LOCALIBL_NORMALBIAS = 0; VA_RM_LOCALIBL_BIAS = 0; IndexOfRefraction = 0;
     }
 #endif
 };
@@ -468,6 +468,9 @@ enum class ShaderDebugViewType : uint
     MaterialID                      ,
     ShaderID                        ,
     SurfacePropsEnd                 = ShaderID,
+    DenoiserAuxAlbedo               ,
+    DenoiserAuxNormals              ,
+    MaxValue
 };
 
 #ifndef VA_COMPILED_AS_SHADER_CODE

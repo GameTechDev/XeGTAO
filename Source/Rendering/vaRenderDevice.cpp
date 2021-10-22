@@ -552,7 +552,7 @@ vaDrawResultFlags vaRenderDevice::CopySRVToRTV( vaRenderDeviceContext & renderCo
     
 vaDrawResultFlags vaRenderDevice::StretchRect( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & dstTexture, const shared_ptr<vaTexture> & srcTexture, const vaVector4 & _dstRect, const vaVector4 & _srcRect, bool linearFilter, vaBlendMode blendMode, const vaVector4 & colorMul, const vaVector4 & colorAdd )
 {
-    VA_TRACE_CPUGPU_SCOPE( PP_StretchRect, renderContext );
+    //VA_TRACE_CPUGPU_SCOPE( PP_StretchRect, renderContext );
 
     vaRenderOutputs scratchOutputs;
     scratchOutputs.SetRenderTarget( dstTexture, nullptr, true );

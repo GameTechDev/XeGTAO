@@ -52,8 +52,11 @@
     <Filter Include="Rendering\Shaders\Filament">
       <UniqueIdentifier>{3c1b47cb-3803-418e-9481-942f7ae911f5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Rendering\Shaders\SLC">
-      <UniqueIdentifier>{26120f58-5a07-41a7-b691-525997192e7f}</UniqueIdentifier>
+    <Filter Include="Rendering\Shaders\Materials">
+      <UniqueIdentifier>{51344f60-f68b-4fd1-9e17-9488713908be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Rendering\Shaders\Lighting">
+      <UniqueIdentifier>{d09f802f-303f-46fe-b023-20812558eee7}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -109,9 +112,6 @@
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Rendering\Effects\vaSimpleParticles.cpp">
-      <Filter>Rendering\Effects</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Source\Rendering\Effects\vaSimpleShadowMap.cpp">
       <Filter>Rendering\Effects</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Rendering\vaGPUTimer.cpp">
@@ -194,9 +194,6 @@
     </ClCompile>
     <ClCompile Include="..\..\Source\Rendering\Misc\vaZoomTool.cpp">
       <Filter>Rendering\Misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Source\Rendering\vaPrimitiveShapeRenderer.cpp">
-      <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Rendering\vaShader.cpp">
       <Filter>Rendering</Filter>
@@ -470,9 +467,6 @@
     <ClInclude Include="..\..\Source\Rendering\vaCanvasImpl.h">
       <Filter>Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\Effects\vaSimpleShadowMap.h">
-      <Filter>Rendering\Effects</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Source\Rendering\vaGPUTimer.h">
       <Filter>Rendering</Filter>
     </ClInclude>
@@ -558,9 +552,6 @@
     <ClInclude Include="..\..\Source\Rendering\Misc\vaZoomTool.h">
       <Filter>Rendering\Misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\vaPrimitiveShapeRenderer.h">
-      <Filter>Rendering</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Source\Rendering\vaShader.h">
       <Filter>Rendering</Filter>
     </ClInclude>
@@ -610,9 +601,6 @@
       <Filter>Rendering\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaPostProcessTonemap.hlsl">
-      <Filter>Rendering\Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\Shaders\vaPrimitiveShapeRenderer.hlsl">
       <Filter>Rendering\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaRenderingShared.hlsl">
@@ -681,9 +669,6 @@
     <ClInclude Include="..\..\Source\Rendering\vaRenderCamera.h">
       <Filter>Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\Shaders\vaMaterialFilament.hlsl">
-      <Filter>Rendering\Shaders</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaCMAA2.hlsl">
       <Filter>Rendering\Shaders</Filter>
     </ClInclude>
@@ -692,15 +677,6 @@
     </ClInclude>
     <ClInclude Include="..\..\Source\Rendering\vaIBL.h">
       <Filter>Rendering</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\Shaders\vaIBL.hlsl">
-      <Filter>Rendering\Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\Shaders\vaIBLShared.h">
-      <Filter>Rendering\Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\Shaders\vaLightingShared.h">
-      <Filter>Rendering\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaPoissonDisk8.h">
       <Filter>Rendering\Shaders</Filter>
@@ -747,20 +723,8 @@
     <ClInclude Include="..\..\Source\Scene\vaSceneComponentCore.h">
       <Filter>Scene</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\Shaders\SLC\LightTreeMacros.h">
-      <Filter>Rendering\Shaders\SLC</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\Shaders\SLC\SLCMain.hlsl">
-      <Filter>Rendering\Shaders\SLC</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\Shaders\SLC\SLCRayGen.hlsl">
-      <Filter>Rendering\Shaders\SLC</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Source\Core\vaSerializer.h">
       <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\Shaders\vaLighting.hlsl">
-      <Filter>Rendering\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaDepthOfField.hlsl">
       <Filter>Rendering\Shaders</Filter>
@@ -793,12 +757,6 @@
       <Filter>Rendering\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaPostProcessShared.h">
-      <Filter>Rendering\Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\Shaders\vaRenderMaterial.hlsl">
-      <Filter>Rendering\Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\Rendering\Shaders\vaMaterialLoaders.hlsl">
       <Filter>Rendering\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\Rendering\DirectX\vaRenderMaterialDX12.h">
@@ -864,8 +822,41 @@
     <ClInclude Include="..\..\Source\Rendering\vaGPUSort.h">
       <Filter>Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\FFX_ParallelSort.h">
+      <Filter>Rendering\Shaders</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Source\Rendering\Shaders\vaGPUSort.hlsl">
       <Filter>Rendering\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\Materials\vaStandardPBR.hlsl">
+      <Filter>Rendering\Shaders\Materials</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\Materials\vaSpecGlossPBR.hlsl">
+      <Filter>Rendering\Shaders\Materials</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaGeometryInteraction.hlsl">
+      <Filter>Rendering\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\Materials\vaMaterialInteraction.hlsl">
+      <Filter>Rendering\Shaders\Materials</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\Materials\vaMaterialLoaders.hlsl">
+      <Filter>Rendering\Shaders\Materials</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\Materials\vaRenderMaterial.hlsl">
+      <Filter>Rendering\Shaders\Materials</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\Lighting\vaLightingShared.h">
+      <Filter>Rendering\Shaders\Lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\Lighting\vaIBLShared.h">
+      <Filter>Rendering\Shaders\Lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\Lighting\vaIBL.hlsl">
+      <Filter>Rendering\Shaders\Lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\Lighting\vaLighting.hlsl">
+      <Filter>Rendering\Shaders\Lighting</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -875,148 +866,13 @@
     <None Include="..\..\Source\Core\Platform\WindowsPC\System\vaPlatformSystemTimer.inl">
       <Filter>Core\Platform\WindowsPC\System</Filter>
     </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\shading_model_standard.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\ambient_occlusion.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\brdf.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\common_getters.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\common_graphics.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\common_lighting.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\common_material.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\common_math.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\common_post_process.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\common_shading.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\common_types.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\conversion_functions.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\depth_main.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\depth_main.vs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
     <None Include="..\..\Source\Rendering\Shaders\filament\dithering.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\fxaa.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\getters.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\getters.vs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\inputs.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\inputs.vs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\light_directional.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\light_indirect.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\light_punctual.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\main.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\main.vs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\material_inputs.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\material_inputs.vs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\post_process.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\post_process.vs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\post_process_old.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\post_process_old.vs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\shading_lit.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\shading_model_cloth.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\shading_model_subsurface.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\shading_parameters.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\shading_unlit.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\shadowing.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\shadowing.vs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\filament\tone_mapping.fs">
       <Filter>Rendering\Shaders\Filament</Filter>
     </None>
     <None Include="..\..\Source\Rendering\Shaders\Filament\ambient_occlusion.va.fs">
       <Filter>Rendering\Shaders\Filament</Filter>
     </None>
     <None Include="..\..\Source\Rendering\Shaders\Filament\brdf.va.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\Filament\common_getters.va.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\Filament\common_graphics.va.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\Filament\common_lighting.va.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\Filament\common_shading.va.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\Filament\conversion_functions.va.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\Filament\light_directional.va.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\Filament\material_inputs.va.fs">
       <Filter>Rendering\Shaders\Filament</Filter>
     </None>
     <None Include="..\..\Source\Rendering\Shaders\Filament\shading_model_cloth.va.fs">
@@ -1031,15 +887,6 @@
     <None Include="..\..\Source\Rendering\Shaders\Filament\light_indirect.va.fs">
       <Filter>Rendering\Shaders\Filament</Filter>
     </None>
-    <None Include="..\..\Source\Rendering\Shaders\Filament\light_punctual.va.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\Filament\shading_parameters.va.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
-    <None Include="..\..\Source\Rendering\Shaders\Filament\shading_lit.va.fs">
-      <Filter>Rendering\Shaders\Filament</Filter>
-    </None>
     <None Include="..\..\Source\Core\vaSerializer.inl">
       <Filter>Core</Filter>
     </None>
@@ -1049,6 +896,15 @@
     </None>
     <None Include="..\..\Source\Rendering\Shaders\vaTonemappers.hlsli">
       <Filter>Rendering\Shaders</Filter>
+    </None>
+    <None Include="..\..\Source\Rendering\Shaders\Materials\vaMaterialShared.hlsli">
+      <Filter>Rendering\Shaders\Materials</Filter>
+    </None>
+    <None Include="..\..\Source\Rendering\Shaders\Filament\fog.fs">
+      <Filter>Rendering\Shaders\Filament</Filter>
+    </None>
+    <None Include="..\..\Source\Rendering\Shaders\Lighting\vaPointLight.hlsli">
+      <Filter>Rendering\Shaders\Lighting</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

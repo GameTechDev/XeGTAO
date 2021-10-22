@@ -18,7 +18,7 @@
 #include "Rendering/vaShader.h"
 #include "Rendering/vaRenderBuffers.h"
 
-//#define FFX_PARALLELSORT_ENABLED
+#define FFX_PARALLELSORT_ENABLED
 #ifdef FFX_PARALLELSORT_ENABLED
 
 #define FFX_CPP

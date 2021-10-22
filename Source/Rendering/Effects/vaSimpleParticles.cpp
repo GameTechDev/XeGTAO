@@ -8,6 +8,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#if 0
+
 #include "Rendering/Effects/vaSimpleParticles.h"
 
 #include "Rendering/vaRenderDeviceContext.h"
@@ -82,7 +84,7 @@ vaSimpleParticleSystem::vaSimpleParticleSystem( const vaRenderingModuleParams & 
         auto shSettings = m_defaultMaterial->GetShaderSettings();
 
         matSettings.FaceCull                = vaFaceCull::None;
-        matSettings.AdvancedSpecularShader  = false;
+        //matSettings.AdvancedSpecularShader  = false;
         //matSettings.ReceiveShadows          = false; //?
         matSettings.LayerMode = vaLayerMode::Transparent;
         matSettings.AlphaTestThreshold      = 0.005f;
@@ -792,3 +794,5 @@ vaDrawResultFlags vaSimpleParticleSystem::Draw( vaRenderDeviceContext & renderCo
 
     return vaDrawResultFlags::None;
 }
+
+#endif

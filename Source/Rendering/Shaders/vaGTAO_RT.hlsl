@@ -142,7 +142,7 @@ void AOClosestHit( inout ShaderRayPayloadGeneric rayPayload, in BuiltInTriangleI
     ShaderInstanceConstants     instanceConstants;
     ShaderMeshConstants         meshConstants;
     ShaderMaterialConstants     materialConstants;
-    SurfaceInteraction          surface;
+    GeometryInteraction          surface;
 
     LoadHitSurfaceInteraction( /*rayPayload.DispatchRaysIndex.xy,*/ attr.barycentrics, InstanceIndex( ), PrimitiveIndex( ), WorldRayDirection( ) * RayTCurrent( ), rayPayload.ConeSpreadAngle, rayPayload.ConeWidth, instanceConstants, meshConstants, materialConstants, surface );
 

@@ -1,3 +1,7 @@
+
+#ifndef VA_BRDF_INCLUDED
+#define VA_BRDF_INCLUDED
+
 //------------------------------------------------------------------------------
 // BRDF configuration
 //------------------------------------------------------------------------------
@@ -47,11 +51,13 @@
 #define BRDF_CLOTH_D                SPECULAR_D_CHARLIE
 #define BRDF_CLOTH_V                SPECULAR_V_NEUBELT
 
+#define saturateMediump(x) x
+
 //------------------------------------------------------------------------------
 // Specular BRDF implementations
 //------------------------------------------------------------------------------
 
-float D_GGX(float roughness, float NoH, const vec3 h) {
+float D_GGX(float roughness, float NoH, const float3 h) {
     // Walter et al. 2007, "Microfacet Models for Refraction through Rough Surfaces"
 
     // In mediump, there are two problems computing 1.0 - NoH^2
@@ -66,7 +72,7 @@ float D_GGX(float roughness, float NoH, const vec3 h) {
     // enough precision).
     // Overall this yields better performance, keeping all computations in mediump
 #if defined(TARGET_MOBILE)
-    vec3 NxH = cross(shading_normal, h);
+    float3 NxH = cross(shading_normal, h);
     float oneMinusNoHSquared = dot(NxH, NxH);
 #else
     float oneMinusNoHSquared = 1.0 - NoH * NoH;
@@ -74,7 +80,7 @@ float D_GGX(float roughness, float NoH, const vec3 h) {
 
     float a = NoH * roughness;
     float k = roughness / (oneMinusNoHSquared + a * a);
-    float d = k * k * (1.0 / PI);
+    float d = k * k * (1.0 / VA_PI);
     return saturateMediump(d);
 }
 
@@ -85,10 +91,10 @@ float D_GGX_Anisotropic(float at, float ab, float ToH, float BoH, float NoH) {
     // The dot product below computes perceptualRoughness^8. We cannot fit in fp16 without clamping
     // the roughness to too high values so we perform the dot product and the division in fp32
     float a2 = at * ab;
-    highp vec3 d = vec3(ab * ToH, at * BoH, a2 * NoH);
-    highp float d2 = dot(d, d);
+    float3 d = float3(ab * ToH, at * BoH, a2 * NoH);
+    float d2 = dot(d, d);
     float b2 = a2 / d2;
-    return a2 * b2 * b2 * (1.0 / PI);
+    return a2 * b2 * b2 * (1.0 / VA_PI);
 }
 
 float D_Charlie(float roughness, float NoH) {
@@ -96,7 +102,7 @@ float D_Charlie(float roughness, float NoH) {
     float invAlpha  = 1.0 / roughness;
     float cos2h = NoH * NoH;
     float sin2h = max(1.0 - cos2h, 0.0078125); // 2^(-14/2), so sin2h^2 > 0 in fp16
-    return (2.0 + invAlpha) * pow(sin2h, invAlpha * 0.5) / (2.0 * PI);
+    return (2.0 + invAlpha) * pow(sin2h, invAlpha * 0.5) / (2.0 * VA_PI);
 }
 
 float V_SmithGGXCorrelated(float roughness, float NoV, float NoL) {
@@ -114,7 +120,7 @@ float V_SmithGGXCorrelated(float roughness, float NoV, float NoL) {
 
 float V_SmithGGXCorrelated_Fast(float roughness, float NoV, float NoL) {
     // Hammon 2017, "PBR Diffuse Lighting for GGX+Smith Microsurfaces"
-    float v = 0.5 / mix(2.0 * NoL * NoV, NoL + NoV, roughness);
+    float v = 0.5 / lerp(2.0 * NoL * NoV, NoL + NoV, roughness);
     return saturateMediump(v);
 }
 
@@ -122,8 +128,8 @@ float V_SmithGGXCorrelated_Anisotropic(float at, float ab, float ToV, float BoV,
         float ToL, float BoL, float NoV, float NoL) {
     // Heitz 2014, "Understanding the Masking-Shadowing Function in Microfacet-Based BRDFs"
     // TODO: lambdaV can be pre-computed for all the lights, it should be moved out of this function
-    float lambdaV = NoL * length(vec3(at * ToV, ab * BoV, NoV));
-    float lambdaL = NoV * length(vec3(at * ToL, ab * BoL, NoL));
+    float lambdaV = NoL * length(float3(at * ToV, ab * BoV, NoV));
+    float lambdaL = NoV * length(float3(at * ToL, ab * BoL, NoL));
     float v = 0.5 / (lambdaV + lambdaL);
     return saturateMediump(v);
 }
@@ -138,12 +144,12 @@ float V_Neubelt(float NoV, float NoL) {
     return saturateMediump(1.0 / (4.0 * (NoL + NoV - NoL * NoV)));
 }
 
-vec3 F_Schlick(const vec3 f0, float f90, float VoH) {
+float3 F_Schlick(const float3 f0, float f90, float VoH) {
     // Schlick 1994, "An Inexpensive BRDF Model for Physically-Based Rendering"
-    return f0 + (f90 - f0) * pow5(1.0 - VoH);
+    return f0 + (f90 - f0) * Pow5(1.0 - VoH);
 }
 
-vec3 F_Schlick(const vec3 f0, float VoH) {
+float3 F_Schlick(const float3 f0, float VoH) {
     float f = pow(1.0 - VoH, 5.0);
     return f + f0 * (1.0 - f);
 }
@@ -154,14 +160,14 @@ float F_Schlick(const float f0, float VoH) {
 }
 
 float F_Schlick(float f0, float f90, float VoH) {
-    return f0 + (f90 - f0) * pow5(1.0 - VoH);
+    return f0 + (f90 - f0) * Pow5(1.0 - VoH);
 }
 
 //------------------------------------------------------------------------------
 // Specular BRDF dispatch
 //------------------------------------------------------------------------------
 
-float distribution(float roughness, float NoH, const vec3 h) {
+float distribution(float roughness, float NoH, const float3 h) {
 #if BRDF_SPECULAR_D == SPECULAR_D_GGX
     return D_GGX(roughness, NoH, h);
 #endif
@@ -175,7 +181,7 @@ float visibility(float roughness, float NoV, float NoL) {
 #endif
 }
 
-vec3 fresnel(const vec3 f0, float LoH) {
+float3 fresnel(const float3 f0, float LoH) {
 #if BRDF_SPECULAR_F == SPECULAR_F_SCHLICK
 #if defined(TARGET_MOBILE)
     return F_Schlick(f0, LoH); // f90 = 1.0
@@ -201,7 +207,7 @@ float visibilityAnisotropic(float roughness, float at, float ab,
 #endif
 }
 
-float distributionClearCoat(float roughness, float NoH, const vec3 h) {
+float distributionClearCoat(float roughness, float NoH, const float3 h) {
 #if BRDF_CLEAR_COAT_D == SPECULAR_D_GGX
     return D_GGX(roughness, NoH, h);
 #endif
@@ -230,7 +236,7 @@ float visibilityCloth(float NoV, float NoL) {
 //------------------------------------------------------------------------------
 
 float Fd_Lambert() {
-    return 1.0 / PI;
+    return 1.0 / VA_PI;
 }
 
 float Fd_Burley(float roughness, float NoV, float NoL, float LoH) {
@@ -238,12 +244,12 @@ float Fd_Burley(float roughness, float NoV, float NoL, float LoH) {
     float f90 = 0.5 + 2.0 * roughness * LoH * LoH;
     float lightScatter = F_Schlick(1.0, f90, NoL);
     float viewScatter  = F_Schlick(1.0, f90, NoV);
-    return lightScatter * viewScatter * (1.0 / PI);
+    return lightScatter * viewScatter * (1.0 / VA_PI);
 }
 
 // Energy conserving wrap diffuse term, does *not* include the divide by pi
 float Fd_Wrap(float NoL, float w) {
-    return saturate((NoL + w) / sq(1.0 + w));
+    return saturate((NoL + w) / Sq(1.0 + w));
 }
 
 //------------------------------------------------------------------------------
@@ -257,3 +263,5 @@ float diffuse(float roughness, float NoV, float NoL, float LoH) {
     return Fd_Burley(roughness, NoV, NoL, LoH);
 #endif
 }
+
+#endif // VA_BRDF_INCLUDED

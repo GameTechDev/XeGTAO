@@ -27,10 +27,12 @@ namespace Vanilla
 #define VA_PATH_TRACER_SKYBOX_SRV_SLOT                      1
 #define VA_PATH_TRACER_VIEWSPACE_DEPTH_SRV_SLOT             2
 #define VA_PATH_TRACER_NULL_ACC_STRUCT                      3
+#define VA_PATH_TRACER_DENOISE_AUX_ALBEDO_SRV_SLOT          4
+#define VA_PATH_TRACER_DENOISE_AUX_NORMALS_SRV_SLOT         5
 
 #define VA_PATH_TRACER_DISPATCH_TILE_SIZE                   8
 
-#define VA_USE_RAY_SORTING                                  0
+#define VA_USE_RAY_SORTING                                  1
 
     // this changes once per frame (or etc.)
     struct ShaderPathTracerConstants
@@ -42,10 +44,15 @@ namespace Vanilla
         int                     MaxBounces;                 // how many max bounces before we terminate the ray
         int                     EnableAA;                   // anti-aliasing
 
+        float                   FireflyClampThreshold;
+        bool                    DenoisingEnabled;           // collect AUX buffers and etc
+        float                   DummyParam1;
+        float                   DummyParam2;
+
         uint                    ViewportX;
         uint                    ViewportY;
-        uint                    StartPathCount;             // total ray count (for ex. 1920x1080 it's 1920*1080 or more because each dimension is rounded up to VA_PATH_TRACER_DISPATCH_TILE_SIZE)
-        uint                    Padding0;                   // 
+        uint                    MaxPathCount;               // total starting ray count (for ex. 1920x1080 it's 1920*1080 or more because each dimension is rounded up to VA_PATH_TRACER_DISPATCH_TILE_SIZE)
+        uint                    PerBounceSortEnabled;       // 
 
         uint                    Flags;                      // see VA_RAYTRACING_FLAG_XXX
         ShaderDebugViewType     DebugViewType;
@@ -112,15 +119,20 @@ RWStructuredBuffer<ShaderGeometryHitPayload>
 RWStructuredBuffer<ShaderPathPayload>
                                 g_pathPayloads                  : register( u3 );
 
-RWStructuredBuffer<ShaderPathTracerControl>
-                                g_pathTracerControl             : register( u4 );
+//RWStructuredBuffer<ShaderPathTracerControl>
+//                                g_pathTracerControl             : register( u4 );
 
-//RWStructuredBuffer<uint>        g_pathListUnsorted              : register( u5 );
-RWStructuredBuffer<uint>        g_pathListSorted                : register( u6 );   // this could/should be a SRV
-RWStructuredBuffer<uint>        g_pathSortKeys                  : register( u7 );
+RWStructuredBuffer<uint>        g_pathListSorted                : register( u4 );   // this could/should be a SRV
+RWStructuredBuffer<uint>        g_pathSortKeys                  : register( u5 );
+
+RWTexture2D<float4>             g_denoiserAuxAlbedo             : register( u6 );
+RWTexture2D<float4>             g_denoiserAuxNormals            : register( u7 );
 
 Texture2D<float4>               g_radianceAccumulationSRV       : register( T_CONCATENATER( VA_PATH_TRACER_RADIANCE_SRV_SLOT ) );
 Texture2D<float>                g_viewspaceDepthSRV             : register( T_CONCATENATER( VA_PATH_TRACER_VIEWSPACE_DEPTH_SRV_SLOT ) );
+
+Texture2D<float4>               g_denoiserAuxAlbedoSRV          : register( T_CONCATENATER( VA_PATH_TRACER_DENOISE_AUX_ALBEDO_SRV_SLOT  ) );
+Texture2D<float4>               g_denoiserAuxNormalsSRV         : register( T_CONCATENATER( VA_PATH_TRACER_DENOISE_AUX_NORMALS_SRV_SLOT ) );
 
 void PathTracerCommit( const in uint pathIndex, const in ShaderPathPayload rayPayload )
 {
@@ -176,13 +188,27 @@ void PathTracerCommit( const in uint pathIndex, const in ShaderPathPayload rayPa
     g_pathSortKeys[ pathIndex ] = 0;
 }
 
-void PathTracerOutputDepth( uint2 pixelPos, int bounceCount, float3 worldPos )
+void PathTracerOutputAUX( uint2 pixelPos, const in ShaderPathPayload rayPayload, float3 worldPos, float3 materialAlbedo, float3 materialNormal )
 {
     // output depth if needed
+    const int bounceIndex = rayPayload.BounceIndex;
     const uint sampleIndex  = g_pathTracerConsts.SampleIndex();
-    if( bounceCount == 0 && sampleIndex == 0 )
+    if( bounceIndex == 0 && sampleIndex == 0 )
         g_viewspaceDepth[pixelPos] = clamp( dot( g_globals.CameraDirection.xyz, worldPos.xyz - g_globals.CameraWorldPosition.xyz ), g_globals.CameraNearFar.x, g_globals.CameraNearFar.y );
 
+    // only first bounce for now
+    if( g_pathTracerConsts.DenoisingEnabled && bounceIndex == 0 )
+    {
+        float3 albedoPrev = 0;
+        float3 normalPrev = 0;
+        if( sampleIndex > 0 )
+        {
+            albedoPrev = g_denoiserAuxAlbedo [pixelPos].xyz;
+            normalPrev = g_denoiserAuxNormals[pixelPos].xyz;
+        }
+        g_denoiserAuxAlbedo [pixelPos].xyz = albedoPrev + materialAlbedo; //lerp( materialAlbedo, float3(1,1,1), saturate((rayPayload.PathSpecularness-0.95)/0.05) );
+        g_denoiserAuxNormals[pixelPos].xyz = normalPrev + materialNormal;
+    }
 }
 
 // Very rudimentary first pass implementation; 
@@ -192,7 +218,7 @@ void PathTracerOutputDepth( uint2 pixelPos, int bounceCount, float3 worldPos )
 //  * multiplied by roughly sqrt(g_pathTracerConsts.AccumFrameTargetCount) as variance reduces roughly with the square of sample number
 float3 RadianceCombineAndFireflyClamp( float pathSpecularness, float3 bxdf, float3 Li )
 {
-    const float userSetting = 10.0; // todo: expose from GUI
+    const float userSetting = g_pathTracerConsts.FireflyClampThreshold;
     const float threshold = userSetting * (4+sqrt( (float)g_pathTracerConsts.AccumFrameTargetCount ));   // to disable set to a very large number
     // no need to modify threshold with g_globals.PreExposureMultiplier because Li values are pre-exposed
     return min( threshold * 0.02 + threshold * pathSpecularness, bxdf * Li );
