@@ -34,6 +34,9 @@
 
 #define POSTPROCESS_TONEMAP_TEXTURE_SLOT0           0
 
+#define MOTIONVECTORS_BLOCK_SIZE_X              8
+#define MOTIONVECTORS_BLOCK_SIZE_Y              8
+
 
 #ifndef VA_COMPILED_AS_SHADER_CODE
 namespace Vanilla

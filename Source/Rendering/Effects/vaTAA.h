@@ -27,14 +27,12 @@ namespace Vanilla
 
         shared_ptr<vaTexture>                       m_debugImage;
 
-        shared_ptr<vaTexture>                       m_motionVectors;                // a.k.a. velocity buffer
-        shared_ptr<vaTexture>                       m_depth;
+        //shared_ptr<vaTexture>                       m_depth;
         shared_ptr<vaTexture>                       m_depthPrevious;
         shared_ptr<vaTexture>                       m_history;
         shared_ptr<vaTexture>                       m_historyPrevious;
         float                                       m_historyPreviousPreExposureMul = 1.0f;
 
-        vaAutoRMI<vaComputeShader>                  m_CSGenerateMotionVectors;
         vaAutoRMI<vaComputeShader>                  m_CSTAA;
         vaAutoRMI<vaComputeShader>                  m_CSFinalApply;
 
@@ -73,7 +71,7 @@ namespace Vanilla
         vaVector2                                   ComputeJitter( int64 frameIndex );
         vaVector2                                   GetCurrentJitter( ) const                           { return m_currentJitter; }
         float                                       GetGlobalMIPOffset( ) const                         { return m_globalMIPOffset; }
-        vaDrawResultFlags                           Apply( vaRenderDeviceContext & renderContext, const vaCameraBase & cameraBase, const shared_ptr<vaTexture> & inoutColor, const shared_ptr<vaTexture> & inputDepth, const vaMatrix4x4 & reprojectionMatrix );
+        vaDrawResultFlags                           Apply( vaRenderDeviceContext & renderContext, const vaCameraBase & cameraBase, const shared_ptr<vaTexture> & motionVectors, const shared_ptr<vaTexture> & viewspaceDepth, const shared_ptr<vaTexture> & inoutColor, const vaMatrix4x4 & reprojectionMatrix, const vaVector2 & cameraJitterDelta );
 
     public:
         bool                                        ShowDebugImage( )                                   { return false; }; //m_debugShowMotionVectors;  }
@@ -86,7 +84,7 @@ namespace Vanilla
         virtual void                                UIPanelTick( vaApplicationBase & application ) override;
 
         bool                                        UpdateTexturesAndShaders( int width, int height );
-        void                                        UpdateConstants( vaRenderDeviceContext & renderContext, const vaCameraBase & cameraBase, const vaMatrix4x4 & reprojectionMatrix );
+        void                                        UpdateConstants( vaRenderDeviceContext & renderContext, const vaCameraBase & cameraBase, const vaMatrix4x4 & reprojectionMatrix, const vaVector2 & cameraJitterDelta );
     };
 
 } // namespace Vanilla

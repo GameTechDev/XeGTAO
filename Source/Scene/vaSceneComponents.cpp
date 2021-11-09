@@ -90,7 +90,7 @@ bool WorldBounds::Update( const entt::registry & registry, entt::entity entity )
 void TransformLocal::Reset( entt::registry & registry, entt::entity entity )
 {
     static_cast<vaMatrix4x4&>( *this ) = vaMatrix4x4::Identity;
-    Scene::SetTransformDirtyRecursiveSafe( registry, entity );
+    Scene::SetTransformDirtyRecursive( registry, entity );
 }
 
 vaBoundingBox RenderMesh::GetAABB( ) const

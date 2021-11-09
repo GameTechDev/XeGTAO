@@ -437,6 +437,7 @@ void vaRenderInstance::WriteToShaderConstants( ShaderInstanceConstants & outCons
     // !!Warning!! !!Warning!! !!Warning!! !!Warning!! !!Warning!! !!Warning!! !!Warning!! !!Warning!! !!Warning!!
 
     outConstants.World                  = vaMatrix4x3(Transform);
+    outConstants.PreviousWorld          = vaMatrix4x3(PreviousTransform);
 
     // since we now support non-uniform scale, we need the 'normal matrix' to keep normals correct 
     // (for more info see : https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/geometry/transforming-normals or http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/ )
@@ -455,45 +456,4 @@ void vaRenderInstance::WriteToShaderConstants( ShaderInstanceConstants & outCons
     outConstants.Flags                  = 0;
     if( Material->IsTransparent( ) )
         outConstants.Flags |= VA_INSTANCE_FLAG_TRANSPARENT;
-}
-
-vaRenderInstanceSimple::vaRenderInstanceSimple( const shared_ptr<vaRenderMesh> & mesh, const vaMatrix4x4 & transform ) 
-{ 
-    SetDefaults(); 
-    Transform   = transform; 
-    Mesh        = mesh; 
-    Material    = mesh->GetMaterial();
-    if( Material == nullptr )
-        Material = mesh->GetRenderDevice( ).GetMaterialManager( ).GetDefaultMaterial( );
-}
-
-vaRenderInstanceSimple::vaRenderInstanceSimple( const shared_ptr<vaRenderMesh> & mesh,const vaMatrix4x4 & transform, const shared_ptr<vaRenderMaterial> & overrideMaterial, vaShadingRate shadingRate, const vaVector4 & emissiveAdd, const vaVector3 & emissiveMul, float meshLOD )
-{ 
-    SetDefaults();
-    Transform   = transform;
-    Mesh        = mesh;
-    Material    = overrideMaterial;
-    ShadingRate = shadingRate;
-    EmissiveAdd = emissiveAdd;
-    EmissiveMul = emissiveMul;
-    MeshLOD     = meshLOD;
-    if( Material == nullptr )
-        Material = mesh->GetRenderDevice( ).GetMaterialManager( ).GetDefaultMaterial( );
-}
-
-void vaRenderInstanceSimple::SetDefaults( )
-{
-    Transform                   = vaMatrix4x4::Identity;
-    Mesh                        = nullptr;
-    Material                    = nullptr;
-    ShadingRate                 = vaShadingRate::ShadingRate1X1;        // per-draw-call shading rate
-    EmissiveAdd                 = vaVector4( 0.0f, 0.0f, 0.0f, 1.0f );  // for debugging visualization (default means "do not override"); used for highlights, wireframe, lights, etc; rgb is added, alpha multiplies the original; for ex: " finalColor.rgb = finalColor.rgb * g_instance.EmissiveAdd.a + g_instance.EmissiveAdd.rgb; "
-    EmissiveMul                 = vaVector3( 1.0f, 1.0f, 1.0f );
-    MeshLOD                     = 0.0f;
-    OriginInfo.SceneID          = DrawOriginInfo::NullSceneRuntimeID;
-    OriginInfo.EntityID         = DrawOriginInfo::NullSceneEntityID;
-    OriginInfo.MeshAssetID      = DrawOriginInfo::NullAssetID;
-    OriginInfo.MaterialAssetID  = DrawOriginInfo::NullAssetID;
-    Flags.IsDecal               = false;
-    Flags.IsWireframe           = false;
 }

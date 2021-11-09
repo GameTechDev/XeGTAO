@@ -22,13 +22,14 @@ struct ShadedVertex
 {
     float4 Color                : COLOR;            // rarely used in practice - perhaps remove?
     float3 WorldspacePos        : TEXCOORD0;        // this is with the -g_globals.WorldBase offset applied
+    float3 PreviousWorldspacePos: TEXCOORD1;        // this is with the -g_globals.PreviousWorldBase offset applied
     float3 WorldspaceNormal     : NORMAL0;
-    float4 Texcoord01           : TEXCOORD1;
+    float4 Texcoord01           : TEXCOORD2;
 
-    float3 ObjectspacePos       : TEXCOORD2;
+    float3 ObjectspacePos       : TEXCOORD3;
 
 #ifdef VA_ENABLE_MANUAL_BARYCENTRICS
-    float3 Barycentrics         : TEXCOORD3;
+    float3 Barycentrics         : TEXCOORD4;
 #endif
 };
 
@@ -140,22 +141,24 @@ GeometryInteraction GeometryInteraction::Compute( const in ShadedVertex vertex, 
 #ifdef VA_RAYTRACING
     float3 b3 = float3(1 - barycentrics.x - barycentrics.y, barycentrics.x, barycentrics.y);
     //surface.Position         = b3.x * a.Position         + b3.y * b.Position         + b3.z * c.Position        ;
-    surface.Color            = b3.x * a.Color            + b3.y * b.Color            + b3.z * c.Color           ;
-    surface.WorldspacePos    = b3.x * a.WorldspacePos    + b3.y * b.WorldspacePos    + b3.z * c.WorldspacePos   ;
-    surface.WorldspaceNormal = b3.x * a.WorldspaceNormal + b3.y * b.WorldspaceNormal + b3.z * c.WorldspaceNormal;
-    surface.Texcoord01       = b3.x * a.Texcoord01       + b3.y * b.Texcoord01       + b3.z * c.Texcoord01      ;
-    surface.ObjectspacePos   = b3.x * a.ObjectspacePos   + b3.y * b.ObjectspacePos   + b3.z * c.ObjectspacePos  ;
+    surface.Color                   = b3.x * a.Color            + b3.y * b.Color            + b3.z * c.Color           ;
+    surface.WorldspacePos           = b3.x * a.WorldspacePos    + b3.y * b.WorldspacePos    + b3.z * c.WorldspacePos   ;
+    surface.PreviousWorldspacePos   = b3.x * a.PreviousWorldspacePos + b3.y * b.PreviousWorldspacePos + b3.z * c.PreviousWorldspacePos;
+    surface.WorldspaceNormal        = b3.x * a.WorldspaceNormal + b3.y * b.WorldspaceNormal + b3.z * c.WorldspaceNormal;
+    surface.Texcoord01              = b3.x * a.Texcoord01       + b3.y * b.Texcoord01       + b3.z * c.Texcoord01      ;
+    surface.ObjectspacePos          = b3.x * a.ObjectspacePos   + b3.y * b.ObjectspacePos   + b3.z * c.ObjectspacePos  ;
     // Proj -> NDC
     // surface.Position.xyz    /= surface.Position.w;
     // surface.Position.xy     = (surface.Position.xy * float2( 0.5, -0.5 ) + float2( 0.5, 0.5 ) ) * g_globals.ViewportSize.xy + 0.5;
 #else // !defined(VA_RAYTRACING)
     // surface.Position            = vertex.Position;
-    surface.Color               = vertex.Color;
-    surface.WorldspacePos       = vertex.WorldspacePos;
-    surface.WorldspaceNormal    = vertex.WorldspaceNormal;
-    surface.Texcoord01          = vertex.Texcoord01;
-    surface.ObjectspacePos      = vertex.ObjectspacePos;
-    surface.IsFrontFace         = isFrontFace;
+    surface.Color                   = vertex.Color;
+    surface.WorldspacePos           = vertex.WorldspacePos;
+    surface.PreviousWorldspacePos   = vertex.PreviousWorldspacePos;
+    surface.WorldspaceNormal        = vertex.WorldspaceNormal;
+    surface.Texcoord01              = vertex.Texcoord01;
+    surface.ObjectspacePos          = vertex.ObjectspacePos;
+    surface.IsFrontFace             = isFrontFace;
     float rayStartConeSpreadAngle   = g_globals.PixelFOVXY.x;
     float rayStartConeWidth         = 0; // always 0 for primary rays!
 #endif

@@ -25,25 +25,6 @@
 #define VA_RAYTRACING_SHADER_MISS_CALLABLES_SHADE_OFFSET    2	// effectively, ID of the specific callable shader  (first two are for vaRaytraceItem::Miss and MissSecondary)
 
 
-// nice 32bit random primes from here: https://asecuritysite.com/encryption/random3?val=32
-#define VA_RAYTRACING_HASH_SEED_AA                      0x09FFF95B
-#define VA_RAYTRACING_HASH_SEED_DIR_INDIR_LIGHTING_1D   0x2FB8FF47      // these are 1D (choice) and 2D (sample) used by both direct and indirect lighting - this can be done because:
-#define VA_RAYTRACING_HASH_SEED_DIR_INDIR_LIGHTING_2D   0x74DDDA53      // Turquin - From Ray to Path Tracing: "Note that you can and should reuse the same sample for light and material sampling at a given depth, since they are independent integral computations, merely combined together in a weighted sum by MIS."
-#define VA_RAYTRACING_HASH_SEED_RUSSIAN_ROULETTE        0x1D6F5FC9
-#define VA_RAYTRACING_HASH_SEED_LIGHTING_SPEC           0xD19ED69B      // used for tree traversal or etc
-#define VA_RAYTRACING_HASH_SEED_PLACEHOLDER2            0xFBD0A37F
-#define VA_RAYTRACING_HASH_SEED_PLACEHOLDER3            0xC6456085
-#define VA_RAYTRACING_HASH_SEED_PLACEHOLDER4            0x8FCEC1EF
-
-//#define VA_RAYTRACING_BOUCE_COUNT_MASK                  (0xFFFF)        // surely no more than 65535 bounces?
-#define VA_RAYTRACING_FLAG_NOT_USED_AT_THE_MOMENT       (1 << 16)       // this is a visibility only ray - no closest hit shader; this flag serves dual purpose: miss shader clears it to indicate a miss
-#define VA_RAYTRACING_FLAG_LAST_BOUNCE                  (1 << 17)       // 
-#define VA_RAYTRACING_FLAG_PATH_REGULARIZATION          (1 << 18)
-#define VA_RAYTRACING_FLAG_SHOW_DEBUG_PATH_VIZ          (1 << 19)
-#define VA_RAYTRACING_FLAG_SHOW_DEBUG_LIGHT_VIZ         (1 << 20)
-#define VA_RAYTRACING_FLAG_SHOW_DEBUG_PATH_DETAIL_VIZ   (1 << 21)
-#define VA_RAYTRACING_FLAG_STOPPED                      (1 << 22)       // 
-
 #ifndef VA_COMPILED_AS_SHADER_CODE
 namespace Vanilla
 {
@@ -67,7 +48,7 @@ namespace Vanilla
         vaVector3               AccumulatedRadiance;        // initialized by caller, updated by callee
         uint                    HashSeed;                   // set by caller, updated on the way
         vaVector3               Beta;                       // initialized by caller, updated by callee; a.k.a. accumulatedBSDF - Beta *= BSDFSample::F / BSDFSample::PDF
-        uint                    Flags;                      // Various VA_RAYTRACING_FLAG_* flags
+        uint                    Flags;                      // Various VA_PATH_TRACER_FLAG_* flags
         vaVector3               NextRayOrigin;              // fill in to continue path tracing or ignore
         int                     BounceIndex;                // each bounce adds one! (intentionally int)
         vaVector3               NextRayDirection;           // fill in to continue path tracing
@@ -342,6 +323,36 @@ float3 SampleGGXVNDF( float3 Wo, float alpha_x, float alpha_y, float2 u, out flo
     //pdf = SampleGGXVNDF_PDF( Wo, Wi, alpha_x, alpha_y, fireflyFudge ); ^^above is same as this but less math
 
     return Wi;
+}
+//
+// 'screenPos' is ([0, width], [0, height]) with the +0.5 center pixel offset!
+float3 ComputeScreenMotionVectors( float2 screenPos, float3 worldSpacePos, float3 previousWorldSpacePos, float2 cameraJitterDelta )
+{
+    float4 projectedPos = mul( g_globals.ViewProj, float4( worldSpacePos.xyz, 1.0 ) );
+    float depthNDC  = projectedPos.z/projectedPos.w;
+    float depth     = projectedPos.w;
+
+#if 0   // without vertex motion
+    float4 reprojectedPos = mul( g_globals.ReprojectionMatrix, float4( ScreenToNDCSpaceXY( position.xy ), depthNDC, 1 ) );
+#else   // with vertex motion
+    float4 projectedPrevPos = mul( g_globals.ViewProj, float4( previousWorldSpacePos.xyz, 1.0 ) );
+    float4 reprojectedPos = mul( g_globals.ReprojectionMatrix, float4( projectedPrevPos.xy/projectedPrevPos.w, projectedPrevPos.z/projectedPrevPos.w, 1 ) );
+#endif
+
+    reprojectedPos.xyz /= reprojectedPos.w;
+    float reprojectedDepth = NDCToViewDepth( reprojectedPos.z );
+
+    // reduce 16bit precision issues - push the older frame ever so slightly into foreground
+    reprojectedDepth *= 0.99999;
+
+    float3 delta;
+    delta.xy = NDCToScreenSpaceXY( reprojectedPos.xy ) - screenPos;
+    delta.z = reprojectedDepth - depth;
+
+    // de-jitter! not sure if this is the best way to do it for everything, but it's required for TAA
+    delta.xy -= cameraJitterDelta;
+
+    return delta;
 }
 //
 #endif // #ifdef VA_RAYTRACING

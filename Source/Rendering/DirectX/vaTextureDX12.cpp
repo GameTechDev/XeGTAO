@@ -59,12 +59,12 @@ vaTextureDX12::~vaTextureDX12( )
     Destroy( );
 }
 
-void vaTextureDX12::SetName( const string& name )
+void vaTextureDX12::SetName( const string & name )
 {
     if( m_resource != nullptr )
     {
-        wstring wname = vaStringTools::SimpleWiden( name );
-        m_resource->SetName( wname.c_str() );
+        m_wname = vaStringTools::SimpleWiden( name );
+        m_resource->SetName( m_wname.c_str() );
     }
 }
 
@@ -84,6 +84,11 @@ void vaTextureDX12::Destroy( )
         m_uav.SafeRelease();
         // reset the keep-alive ptr as resources got destroyed - all weak_ptr-s pointing to this will become invalid from now!
         m_smartThis = std::make_shared<vaTexture*>(this);
+    }
+    if( m_sharedApiHandle != 0 )
+    {
+        ::CloseHandle( m_sharedApiHandle );
+        m_sharedApiHandle = 0;
     }
 }
 
@@ -515,7 +520,7 @@ void vaTextureDX12::ProcessResource( bool notAllBindViewsNeeded, bool dontResetF
 void vaTextureDX12::ClearRTV( vaRenderDeviceContext & context, const vaVector4 & clearValue )
 {
     assert( GetRenderDevice( ).IsFrameStarted( ) );
-    assert( m_rtv.IsCreated() ); if( !m_rtv.IsCreated() ) return;
+    assert( m_rtv.IsCreated() ); if( !m_rtv.IsCreated() ) return;   // texture most likely missing vaResourceBindSupportFlags::RenderTarget flag!
     TransitionResource( AsDX12(context), D3D12_RESOURCE_STATE_RENDER_TARGET );
     AsDX12( context ).GetCommandList()->ClearRenderTargetView( m_rtv.GetCPUHandle(), &clearValue.x, 0, nullptr );
 
@@ -527,7 +532,7 @@ void vaTextureDX12::ClearUAV( vaRenderDeviceContext & context, const vaVector4ui
 {
     assert( GetRenderDevice( ).IsFrameStarted( ) );
     // see https://www.gamedev.net/forums/topic/672063-d3d12-clearunorderedaccessviewfloat-fails/ for the reason behind the mess below
-    assert( m_uav.IsCreated() ); if( !m_uav.IsCreated() ) return;
+    assert( m_uav.IsCreated() ); if( !m_uav.IsCreated() ) return;   // texture most likely missing vaResourceBindSupportFlags::UnorderedAccess flag!
     TransitionResource( AsDX12(context), D3D12_RESOURCE_STATE_UNORDERED_ACCESS );
 
 #if 0
@@ -1293,6 +1298,8 @@ bool vaTextureDX12::InternalCreate1D( vaResourceFormat format, int width, int mi
 
     D3D12_HEAP_TYPE heapType        = HeapTypeDX12FromAccessFlags( accessFlags );
     D3D12_HEAP_FLAGS heapFlags      = D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES;
+    if( (bindFlags & vaResourceBindSupportFlags::Shared) != 0 )
+        heapFlags |= D3D12_HEAP_FLAG_SHARED;
 
     HRESULT hr = E_FAIL;
     ID3D12Resource * resource = nullptr;
@@ -1403,6 +1410,8 @@ bool vaTextureDX12::InternalCreate2D( vaResourceFormat format, int width, int he
     // umm, getting "D3D12 ERROR: ID3D12Device::CreateCommittedResource: D3D12_HEAP_FLAGS has recognized flags set. The value is 0x400, and the following flags are unrecognized: 0x400. [ STATE_CREATION ERROR #639: CREATERESOURCEANDHEAP_UNRECOGNIZEDHEAPMISCFLAGS]" on certain hardware
     //if( (bindFlags & vaResourceBindSupportFlags::UnorderedAccess) != 0 )
     //    heapFlags |= D3D12_HEAP_FLAG_ALLOW_SHADER_ATOMICS;
+    if( (bindFlags & vaResourceBindSupportFlags::Shared) != 0 )
+        heapFlags |= D3D12_HEAP_FLAG_SHARED;
 
     HRESULT hr = E_FAIL;
     ID3D12Resource * resource = nullptr;
@@ -1508,6 +1517,9 @@ bool vaTextureDX12::InternalCreate3D( vaResourceFormat format, int width, int he
 
     D3D12_HEAP_TYPE heapType        = HeapTypeDX12FromAccessFlags( accessFlags );
     D3D12_HEAP_FLAGS heapFlags      = D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES;
+
+    if( (bindFlags & vaResourceBindSupportFlags::Shared) != 0 )
+        heapFlags |= D3D12_HEAP_FLAG_SHARED;
 
     HRESULT hr = E_FAIL;
     ID3D12Resource * resource = nullptr;
@@ -1787,3 +1799,11 @@ void vaTextureDX12::TransitionResource( vaRenderDeviceContextBaseDX12& context, 
             }
         }
 }
+
+// since this is the only CUDA user so far, do it like this
+#ifndef VA_OPTIX_DENOISER_ENABLED
+//bool vaTextureDX12::GetCUDAShared( void*& outPointer, size_t& outSize )
+//{
+//
+//}
+#endif

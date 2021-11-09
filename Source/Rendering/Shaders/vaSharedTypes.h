@@ -170,8 +170,10 @@ struct ShaderGlobalConstants
     vaMatrix4x4             ProjInv;                // a.k.a. projection to view
     vaMatrix4x4             ViewProj;               // a.k.a. world to projection
     vaMatrix4x4             ViewProjInv;            // a.k.a. projection to world
+    vaMatrix4x4             ReprojectionMatrix;     // see vaDrawAttributes::GlobalSettings::ReprojectionMatrix
 
     vaVector4               WorldBase;              // global world position offset for shading; used to make all shading computation close(r) to (0,0,0) for precision purposes
+    vaVector4               PreviousWorldBase;      // same as WorldBase except a frame old (same old frame used to compute ReprojectionMatrix)
     vaVector4               CameraDirection;
     vaVector4               CameraRightVector;
     vaVector4               CameraUpVector;
@@ -215,6 +217,9 @@ struct ShaderGlobalConstants
     float                   RaytracingMIPOffset;
     int                     AlphaTAAHackEnabled;
     int                     FrameIndexMod64;
+
+    vaVector2               CameraJitterDelta;      // see vaDrawAttributes::GlobalSettings::CameraJitterDelta
+    vaVector2               Dummy0;
 
     // // push (or pull) vertices by this amount away (towards) camera; to avoid z fighting for debug wireframe or for the shadow drawing offset
     // // 'absolute' is in world space; 'relative' means 'scale by distance to camera'
@@ -277,6 +282,7 @@ struct ShaderInstanceConstants
 {
     // world transform
     vaMatrix4x3             World;
+    vaMatrix4x3             PreviousWorld;  // previous frame's transform world
     
     // since we now support non-uniform scale, we need the 'normal matrix' to keep normals correct 
     // (for more info see : https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/geometry/transforming-normals or http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/ )
@@ -445,7 +451,18 @@ struct ShaderFeedbackDynamic
 };
 
 // used for various visualizations
-enum class ShaderDebugViewType : uint
+enum class RasterizerDebugViewType : uint
+{
+    None                            ,
+    ViewspaceDepth                  ,
+    ScreenspaceNormal               ,
+    AmbientOcclusion                ,
+    MotionVectors                   ,
+    MaxValue
+};
+
+// used for various visualizations
+enum class PathTracerDebugViewType : uint
 {
     None                            ,
     BounceIndex                     ,            // Could be used as OverdrawCount for rasterization
@@ -470,6 +487,7 @@ enum class ShaderDebugViewType : uint
     SurfacePropsEnd                 = ShaderID,
     DenoiserAuxAlbedo               ,
     DenoiserAuxNormals              ,
+    DenoiserAuxMotionVectors        ,
     MaxValue
 };
 

@@ -447,7 +447,9 @@ void vaSceneAsync::Begin( float deltaTime, int64 applicationTickIndex )
         static void NarrowPart( vaSceneAsync::WorkNode & node, tf::Subflow & subflow, int loopIndex ) 
         { 
             assert( loopIndex < 1024 ); // probably a bug
+            vaTracer::LocalThreadContext( )->OnBegin( node.MappedName, loopIndex );
             std::pair<int, int> nextWideParams = node.ExecuteNarrow( loopIndex, ConcurrencyContext{ &subflow } );
+            vaTracer::LocalThreadContext( )->OnEnd( node.MappedName );
             if( nextWideParams.second > 0 )
                 subflow.emplace( [&node, loopIndex, nextWideParams] (tf::Subflow & subflow) { WideNarrowPart( node, subflow, loopIndex, nextWideParams ); } );
         }
@@ -460,7 +462,9 @@ void vaSceneAsync::Begin( float deltaTime, int64 applicationTickIndex )
             {
                 auto wideCB = [ &node, loopIndex ]( int beg, int end, tf::Subflow& subflow )
                 {
+                    vaTracer::LocalThreadContext( )->OnBegin( node.MappedName, -1 );
                     node.ExecuteWide( loopIndex, beg, end, ConcurrencyContext{ &subflow } );
+                    vaTracer::LocalThreadContext( )->OnEnd( node.MappedName );
                 };
                 auto [wideStart, wideStop] = vaTF::parallel_for_emplace( subflow, 0, wideItemCount, std::move( wideCB ), wideItemChunkSize/*, item.NameWideBlock.c_str( ) */ );
                 // wideStart.name( "wide_start" );

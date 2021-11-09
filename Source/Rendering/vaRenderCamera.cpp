@@ -87,6 +87,8 @@ void vaRenderCamera::PreRenderTick( vaRenderDeviceContext & renderContext, float
             float value = data[0];
             value = expf( value ); // computing geometric mean - exp( avg( log( x ) ) )
             m_lastAverageLuminance = value;// m_avgLuminancePrevCPUPreExposure[m_avgLuminancePrevLastWrittenIndex];
+
+            // VA_LOG( "New luminance: %.4f", m_lastAverageLuminance );
         }
         else
         {

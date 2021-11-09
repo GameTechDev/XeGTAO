@@ -29,6 +29,7 @@
 #include "Rendering/Effects/vaGTAO.h"
 
 #include "Rendering/vaSceneRenderer.h"
+#include "Rendering/vaSceneMainRenderView.h"
 
 #include "IntegratedExternals/vaImguiIntegration.h"
 
@@ -58,38 +59,38 @@ void Sample01_FullscreenPass( vaRenderDevice & renderDevice, vaApplicationBase &
     static shared_ptr<vaPixelShader>    pixelShader;
     if( applicationState == vaApplicationState::Initializing )
     {
-        pixelShader = renderDevice.CreateModule<vaPixelShader>( );
-        pixelShader->CompileFromBuffer( 
+        pixelShader = vaPixelShader::CreateFromBuffer( renderDevice, 
             "float4 main( in const float4 xPos : SV_Position ) : SV_Target          \n"
             "{                                                                      \n"
             "   return float4( frac(xPos.x / 256.0), frac(xPos.y / 256.0), 0, 1 );  \n"
             "}                                                                      \n"
-            , "main", vaShaderMacroContaner(), true );        return;
+            , "main", {}, true );
     }
     else if( applicationState == vaApplicationState::ShuttingDown )
     {
-        pixelShader = nullptr;
-        return;
+        pixelShader = nullptr;  // to avoid memory leak warnings
     }
-    assert( applicationState == vaApplicationState::Running );
+    else if( applicationState == vaApplicationState::Running )
+    {
+        application.TickUI( );
 
-    application.TickUI( );
+        // Do the rendering tick and present 
+        renderDevice.BeginFrame( deltaTime );
 
-    // Do the rendering tick and present 
-    renderDevice.BeginFrame( deltaTime );
+        // no need to clear, we're doing a fullscreen pass
+        // renderDevice.GetCurrentBackbufferTexture()->ClearRTV( *renderDevice.GetMainContext(), vaVector4( 0.0f, 0.0f, 1.0f, 1.0f ) );
 
-    // no need to clear, we're doing a fullscreen pass
-    // renderDevice.GetCurrentBackbufferTexture()->ClearRTV( *renderDevice.GetMainContext(), vaVector4( 0.0f, 0.0f, 1.0f, 1.0f ) );
+        vaGraphicsItem renderItem;                                  // everything needed for one draw call
+        renderDevice.FillFullscreenPassGraphicsItem( renderItem );  // fill in full screen draw call stuff like vertex shader and full screen vertex buffer
+        renderItem.PixelShader = pixelShader;                       // our pixel shader
+        renderDevice.GetMainContext()->ExecuteSingleItem( renderItem, renderDevice.GetCurrentBackbuffer(), nullptr );   // draw to current backbuffer!
 
-    vaGraphicsItem renderItem;
-    renderDevice.FillFullscreenPassGraphicsItem( renderItem );
-    renderItem.PixelShader = pixelShader;
-    //renderItem.PixelShader->WaitFinishIfBackgroundCreateActive();
-    renderDevice.GetMainContext()->ExecuteSingleItem( renderItem, renderDevice.GetCurrentBackbuffer(), nullptr );
+        // Draw ImGUI stuff
+        application.DrawUI( *renderDevice.GetMainContext( ), renderDevice.GetCurrentBackbuffer(), nullptr );
 
-    application.DrawUI( *renderDevice.GetMainContext( ), renderDevice.GetCurrentBackbuffer(), nullptr );
-
-    renderDevice.EndAndPresentFrame( (application.GetVsync())?(1):(0) );
+        // Present and sync on vsync if required
+        renderDevice.EndAndPresentFrame( (application.GetVsync())?(1):(0) );
+    }
 }
 
 void Sample02_JustATriangle( vaRenderDevice & renderDevice, vaApplicationBase & application, float deltaTime, vaApplicationState applicationState )
@@ -2008,7 +2009,7 @@ void Sample16_Particles( vaRenderDevice & renderDevice, vaApplicationBase & appl
 
             auto & renderCameraSettings = globals->Camera->Settings();
 
-            renderCameraSettings.GeneralSettings.AutoExposureAdaptationSpeed = 10.0f;
+            renderCameraSettings.GeneralSettings.AutoExposureAdaptationSpeed = 8.0f;
             renderCameraSettings.BloomSettings.UseBloom         = true;
             renderCameraSettings.BloomSettings.BloomMultiplier  = 0.2f;
             renderCameraSettings.BloomSettings.BloomSize        = 0.3f;

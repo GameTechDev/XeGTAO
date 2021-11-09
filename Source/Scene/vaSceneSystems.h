@@ -42,13 +42,19 @@ namespace Vanilla
         // This will visit all the parents, and the direction is defined by 'fromRoot' (if 'true', it starts from the root and stops with the entity's parent)
         void                        VisitParents( const entt::registry & registry, entt::entity entity, std::function<void( entt::entity parent )> visitor, bool fromRoot = false );
         int                         UpdateRelationshipDepthsRecursive( entt::registry & registry, entt::entity entity );    // return max Depth
-        void                        SetTransformDirtyRecursive( entt::registry & registry, entt::entity entity );
+
+        // goes through all components and add all references to the list
+        void                        ListReferences( const entt::registry & registry, entt::entity entity, std::vector<Scene::EntityReference*> & referenceList );
+
+        // Copy an entity (or a subtree - 'recursive' param) from one registry to another; if 'remapUIDsAndRefs' enabled, new Scene::UID-s will be generated and all Scene::EntityReference updated
+        entt::entity                Copy( entt::registry & dstRegistry, const entt::registry & srcRegistry, entt::entity srcEntity, bool recursive );
 
         // Search by Scene::Name; Names are not unique and don't have to be part of an entity; if entt::null then search from the root; this function is not particularly fast (there is no 'index' of names)
         entt::entity                FindFirstByName( const entt::registry & registry, const string & name, entt::entity startEntity = entt::null, bool recursive = false );
 
-        // These will handle lack of Scene::Relationsip gracefully
-        void                        SetTransformDirtyRecursiveSafe( entt::registry & registry, entt::entity entity );
+        // If changing local transform, call this to make sure it's propagated to TransformWorld as well as child entities
+        void                        SetTransformDirtyRecursive( entt::registry & registry, entt::entity entity );   
+        void                        SetTransformDirtyRecursiveUnsafe( entt::registry & registry, entt::entity entity );     // same as SetTransformDirtyRecursive but does not check for relationship
 
         // Load/Save to JSON format using a hierarchical representation; entities can be skipped by returning false from the 'filter', but it will also skip their children.
         bool                        SaveJSON( entt::registry & registry, const string & filePath, std::function<bool( entt::entity entity )> filter = nullptr );
@@ -60,8 +66,9 @@ namespace Vanilla
         string                      GetIDString( const entt::registry & registry, entt::entity entity );
 
         // reactive handling of components needed based on other components
-        template<typename ComponentType>
-        void                        AutoEmplaceDestroy( entt::registry & registry, entt::entity entity );
+        // template<typename ComponentType>
+        inline void                 AutoEmplaceDestroyWorldBounds( entt::registry & registry, entt::entity entity );
+        inline void                 AutoEmplaceDestroyPreviousTransformWorld( entt::registry & registry, entt::entity entity );
 
         // used for concurrent processing of entities
         void                        UpdateTransforms( entt::registry & registry, entt::entity entity, class UniqueStaticAppendConsumeList & outBoundsDirtyList ) noexcept;
@@ -106,20 +113,19 @@ namespace Vanilla
         //////////////////////////////////////////////////////////////////////////
 
         // since I don't know how to do a templated visitor, let's just do one overload...
-        inline void                 VisitChildren( const entt::registry& registry, entt::entity parent, std::function<void( entt::entity child )> visitor )
+        inline void                     VisitChildren( const entt::registry& registry, entt::entity parent, std::function<void( entt::entity child )> visitor )
         {
             return VisitChildren( registry, parent, [visitor](entt::entity child, int, entt::entity ) { visitor(child); } );
         }
 
-        inline void                 SetTransformDirtyRecursiveSafe( entt::registry& registry, entt::entity entity )
+        inline void                     SetTransformDirtyRecursive( entt::registry & registry, entt::entity entity )
         {
             assert( !IsBeingDestroyed( registry, entity ) );
             if( registry.any_of<Scene::Relationship>(entity) )
-                SetTransformDirtyRecursive( registry, entity );
+                SetTransformDirtyRecursiveUnsafe( registry, entity );
         }
 
-        template<typename ComponentType = WorldBounds>
-        void                        AutoEmplaceDestroy( entt::registry& registry, entt::entity entity )
+        inline void                     AutoEmplaceDestroyWorldBounds( entt::registry& registry, entt::entity entity )
         {
             if( registry.ctx<Scene::AccessPermissions>().CanDestroyEntity() )
                 return;
@@ -135,6 +141,21 @@ namespace Vanilla
                 registry.emplace_or_replace<WorldBounds>( entity );
                 registry.emplace_or_replace<WorldBoundsDirtyTag>( entity );
             }
+        }
+
+        inline void                     AutoEmplaceDestroyPreviousTransformWorld( entt::registry & registry, entt::entity entity )
+        {
+            if( registry.ctx<Scene::AccessPermissions>().CanDestroyEntity() )
+                return;
+            assert( !IsBeingDestroyed( registry, entity ) );
+
+            assert( registry.valid(entity) );
+            bool hasPrimary = registry.any_of<PreviousTransformWorld>( entity );
+            bool hasAnyOf   = registry.any_of<TransformWorld>( entity );
+            if( hasPrimary && !hasAnyOf )
+                registry.remove<PreviousTransformWorld>( entity );
+            else if( !hasPrimary && hasAnyOf )
+                registry.emplace_or_replace<PreviousTransformWorld>( entity );
         }
 
         inline bool Scene::UniqueStaticAppendConsumeList::Append( entt::entity entity )

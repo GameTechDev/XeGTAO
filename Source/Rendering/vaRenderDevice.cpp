@@ -9,6 +9,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "Rendering/vaRenderDevice.h"
+#include "Rendering/vaRenderDeviceContext.h"
 #include "Rendering/vaTextureHelpers.h"
 
 #include "Rendering/vaRenderBuffers.h"

@@ -40,8 +40,8 @@ namespace Vanilla
         shared_ptr<vaComputeShader>                 m_CSKickoff                     = nullptr;
         //shared_ptr<vaComputeShader>                 m_CSTickCounters                = nullptr;
 
-        shared_ptr<vaTexture>                       m_radianceAccumulation;
-        shared_ptr<vaTexture>                       m_viewspaceDepth;
+        shared_ptr<vaTexture>                       m_radianceAccumulation;         // there's also viewspace depth stored in .w
+        //shared_ptr<vaTexture>                       m_viewspaceDepth;
 
         shared_ptr<vaRenderBuffer>                  m_pathTracerControl;
         shared_ptr<vaRenderBuffer>                  m_pathPayloads;
@@ -53,10 +53,13 @@ namespace Vanilla
 
         shared_ptr<vaGPUSort>                       m_GPUSort;
 
-        Mode                                        m_mode                          = Mode::StaticAccumulate;
+        Mode                                        m_mode                          = Mode::RealTime; // Mode::StaticAccumulate;
         int                                         m_staticAccumSampleTarget       = 512; //32768;     // stop at this number of samples (full paths) per pixel
-        int                                         m_realtimeAccumSampleTarget     = 4;                // stop at this number of samples (full paths) per pixel
-        bool                                        m_realtimeAccumDenoise          = false;            // at the moment there's only OIDN 
+        bool                                        m_staticEnableAA                = true;
+        bool                                        m_realtimeEnableAA              = false;
+        bool                                        m_realtimeEnableTemporalNoise   = false;            // noise between frames
+        int                                         m_realtimeAccumSampleTarget     = 1;                // stop at this number of samples (full paths) per pixel
+        int                                         m_realtimeAccumDenoiseType      = 0;                // 0 - disabled, 1 - OIDN (if enabled), 2 - OptiX (if enabled), 3 - OptiX temporal (if enabled)
 
         // these manage frame sample accumulation and track changes that require restarting accumulation
         vaCameraBase                                m_accumLastCamera;          
@@ -67,7 +70,6 @@ namespace Vanilla
         constexpr static int                        c_maxBounceUpperBound           = 16;
         int                                         m_sampleNoiseOffset             = 0;        // always 0 in Mode::StaticAccumulate, and varies by frame in Mode::RealTime
 
-        bool                                        m_enableAA                      = true;
         bool                                        m_enableFireflyClamp            = true;
 
         bool                                        m_enablePerBounceSort           = true;
@@ -77,7 +79,7 @@ namespace Vanilla
         bool                                        m_debugLightsForPathUnderCursor = false;
         //bool                                        m_debugCrosshairUnderCursor = false;
 
-        ShaderDebugViewType                         m_debugViz                      = ShaderDebugViewType::None;
+        PathTracerDebugViewType                     m_debugViz                      = PathTracerDebugViewType::None;
 
         float                                       m_debugForcedDispatchDivergence = 0.0f;
 
@@ -96,7 +98,14 @@ namespace Vanilla
 
         //////////////////////////////////////////////////////////////////////////
         /// denoiser stuff
-        shared_ptr<struct OIDNData>                 m_oidn;
+#ifdef VA_OIDN_INTEGRATION_ENABLED
+        shared_ptr<struct vaDenoiserOIDN>           m_oidn;
+        shared_ptr<struct vaDenoiserOptiX>          m_optix;
+#endif
+        shared_ptr<vaTexture>                       m_denoiserAuxAlbedoGPU;
+        shared_ptr<vaTexture>                       m_denoiserAuxNormalsGPU;
+        shared_ptr<vaTexture>                       m_denoiserAuxMotionVectorsGPU;
+        shared_ptr<vaComputeShader>                 m_CSPrepareDenoiserInputs;
         //////////////////////////////////////////////////////////////////////////
 
 
@@ -110,7 +119,7 @@ namespace Vanilla
     public:
         vaDrawResultFlags                           Draw( vaRenderDeviceContext & renderContext, vaDrawAttributes & drawAttributes, const shared_ptr<vaSkybox> & skybox, const shared_ptr<vaTexture> & outputColor, const shared_ptr<vaTexture> & outputDepth );
 
-        ShaderDebugViewType &                       DebugViz( )                                             { return m_debugViz; }
+        PathTracerDebugViewType &                       DebugViz( )                                             { return m_debugViz; }
 
         void                                        UITick( vaApplicationBase & application ); // override;
 
@@ -119,7 +128,7 @@ namespace Vanilla
     private:
         void                                        UpdateDivergenceMirrorExperiment();
 
-        vaDrawResultFlags                           Denoise( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & outputColor, const shared_ptr<vaTexture> & outputDepth );
+        vaDrawResultFlags                           Denoise( vaRenderDeviceContext & renderContext, vaDrawAttributes & drawAttributes, const shared_ptr<vaTexture> & outputColor, const shared_ptr<vaTexture> & outputDepth );
 
         vaDrawResultFlags                           InnerPass( vaRenderDeviceContext & renderContext, vaDrawAttributes & drawAttributes, const shared_ptr<vaSkybox> & skybox, /*const shared_ptr<vaTexture>& outputColor, const shared_ptr<vaTexture>& outputDepth,*/ uint totalPathCount, bool denoisingEnabled, vaRenderOutputs uavInputsOutputs );
     };

@@ -10,13 +10,15 @@
 
 #pragma once
 
-#include "Core/vaCoreIncludes.h"
+#include "Core\vaCoreIncludes.h"
 
 #include "vaApplicationWin.h"
 
-#include "Core/vaUI.h"
+#include "Core\vaUI.h"
 
-#include "Core/Misc/vaMiniScript.h"
+#include "Core\Misc\vaMiniScript.h"
+
+#include "Scene\vaSceneTypes.h"
 
 namespace Vanilla
 {
@@ -114,6 +116,19 @@ namespace Vanilla
 
         bool                                    m_hasTicked                     = false;
 
+        /// temporary bistro animation stuff for testing verious temporal issues
+        bool                                    m_simpleBistroAnimAvailable     = false;
+        bool                                    m_simpleBistroAnimMoveObjs      = true;
+        bool                                    m_simpleBistroAnimSwingLight    = true;
+        bool                                    m_simpleBistroAnimAdvanceTime   = false;
+        double                                  m_simpleBistroAnimTime          = 0;
+        entt::entity                            m_simpleBistroAnimCeilingFan    = entt::null;
+        entt::entity                            m_simpleBistroAnimSpaceship     = entt::null;
+        entt::entity                            m_simpleBistroAnimSpaceshipLL   = entt::null;
+        entt::entity                            m_simpleBistroAnimSpaceshipLR   = entt::null;
+        entt::entity                            m_simpleBistroAnimCeilingLight  = entt::null;
+        //////////////////////////////////////////////////////////////////////////
+
     public:
         VanillaSample( vaRenderDevice & renderDevice, vaApplicationBase & applicationBase, bool importerMode );
         virtual ~VanillaSample( );
@@ -175,7 +190,8 @@ namespace Vanilla
         void                                    ScriptedDemo( vaApplicationBase & application ) ;
 
     private:
-        //void                                    RandomizeCurrentPoissonDisk( int count = SSAO_MAX_SAMPLES );
+        void                                    SimpleBistroAnimStuff( float deltaTime, bool sceneChanged );
+
     };
 
 }

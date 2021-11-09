@@ -23,9 +23,6 @@ namespace Vanilla
 
     #define TAA_CONSTANTSBUFFERSLOT                 0
 
-    #define MOTIONVECTORS_BLOCK_SIZE_X              8
-    #define MOTIONVECTORS_BLOCK_SIZE_Y              8
-
     // used in a generic way depending on the shader
     struct TAAConstants
     {

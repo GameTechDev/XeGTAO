@@ -17,6 +17,7 @@
 #include "Scene/vaAssetImporter.h"
 #include "Scene/vaScene.h"
 #include "Rendering/vaSceneRenderer.h"
+#include "Rendering/vaSceneMainRenderView.h"
 
 #include "Rendering/vaRenderCamera.h"
 #include "Rendering/vaShader.h"

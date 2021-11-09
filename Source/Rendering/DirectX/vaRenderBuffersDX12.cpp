@@ -524,6 +524,8 @@ bool vaRenderBufferDX12::CreateInternal( uint64 elementCount, uint32 structByteS
 
     D3D12_HEAP_TYPE heapType = HeapTypeDX12FromAccessFlags( resourceAccessFlags );
     D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES;
+    if( (flags & vaRenderBufferFlags::Shared) != 0 )
+        heapFlags |= D3D12_HEAP_FLAG_SHARED;
     CD3DX12_HEAP_PROPERTIES heapProps(heapType);
 
     if( ( m_flags & vaRenderBufferFlags::RaytracingAccelerationStructure ) != 0 )
@@ -785,6 +787,17 @@ void vaRenderBufferDX12::CopyFrom( vaRenderDeviceContext & renderContext, vaRend
 
     //AsDX12( renderContext ).GetCommandList( ).Get( )->CopyResource( m_resource.Get( ), srcDX12->m_resource.Get( ) ); dataSizeInBytes;
 }
+
+// since this is the only CUDA user so far, do it like this
+#ifndef VA_OPTIX_DENOISER_ENABLED
+bool vaRenderBufferDX12::GetCUDAShared( void * & outPointer, size_t & outSize )
+{
+    assert( false );
+    outPointer = nullptr;
+    outSize = 0;
+    return false;
+}
+#endif
 
 void RegisterBuffersDX12( )
 {

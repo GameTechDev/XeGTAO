@@ -129,7 +129,8 @@ void PS_DepthOnly( const in ShadedVertex inVertex, const in float4 position : SV
 }
 
 // a more complex depth pre-pass that also outputs normals
-void PS_RichPrepass( const in ShadedVertex inVertex, const in float4 position : SV_Position, uint isFrontFace : SV_IsFrontFace, out uint outData0 : SV_Target0 )
+void PS_RichPrepass( const in ShadedVertex inVertex, const in float4 position : SV_Position, uint isFrontFace : SV_IsFrontFace, 
+    out uint outPackedNormals : SV_Target0, out float4 outMotionVectors : SV_Target1, out float outViewspaceDepth : SV_Target2 )
 {
     GeometryInteraction geometrySurface = GeometryInteraction::Compute( inVertex, isFrontFace );
     const ShaderInstanceConstants instanceConstants = LoadInstanceConstants( g_instanceIndex.InstanceIndex );
@@ -149,7 +150,41 @@ void PS_RichPrepass( const in ShadedVertex inVertex, const in float4 position : 
 #else // or worldspace!
     float3 outNormal = materialSurface.Normal;
 #endif
-    outData0.x = FLOAT3_to_R11G11B10_UNORM( saturate( outNormal.xyz * 0.5 + 0.5 ) );
+    outPackedNormals.x = FLOAT3_to_R11G11B10_UNORM( saturate( outNormal.xyz * 0.5 + 0.5 ) );
+
+    
+#if 1   // also output motion vectors and viewspace depth
+    //float depthNDC  = g_sourceDepth.Load( int3(pixCoord, 0)/*, offset*/).x;
+    //float depth     = NDCToViewDepth( depthNDC );
+
+    //float4 projectedPos = mul( g_globals.ViewProj, float4( geometrySurface.WorldspacePos.xyz, 1.0 ) );
+    float depthNDC  = position.z; //    same as: projectedPos.z/projectedPos.w;
+    float depth     = position.w; //    same as: projectedPos.w;                // also same as: dot( geometrySurface.WorldspacePos.xyz - g_globals.CameraWorldPosition.xyz, g_globals.CameraDirection.xyz );
+
+#if 0   // without vertex motion
+    float4 reprojectedPos = mul( g_globals.ReprojectionMatrix, float4( ScreenToNDCSpaceXY( position.xy ), depthNDC, 1 ) );
+#else   // with vertex motion
+    float4 projectedPrevPos = mul( g_globals.ViewProj, float4( geometrySurface.PreviousWorldspacePos.xyz, 1.0 ) );
+    float4 reprojectedPos = mul( g_globals.ReprojectionMatrix, float4( projectedPrevPos.xy/projectedPrevPos.w, projectedPrevPos.z/projectedPrevPos.w, 1 ) );
+#endif
+
+    reprojectedPos.xyz /= reprojectedPos.w;
+    float reprojectedDepth = NDCToViewDepth( reprojectedPos.z );
+
+    // reduce 16bit precision issues - push the older frame ever so slightly into foreground
+    reprojectedDepth *= 0.99999;
+
+    float3 delta;
+    delta.xy = NDCToScreenSpaceXY( reprojectedPos.xy ) - position.xy;
+    delta.z = reprojectedDepth - depth;
+
+    // de-jitter! not sure if this is the best way to do it for everything, but it's required for TAA
+    delta.xy -= g_globals.CameraJitterDelta;
+
+    outViewspaceDepth   = depth;
+    outMotionVectors    = float4( delta.xyz, 0 ); //(uint)(frac( clip ) * 10000);
+
+#endif
 
 #if 0
     [branch] if( IsUnderCursorRange( position.xy, int2(1,1) ) )
@@ -287,14 +322,15 @@ void PathTraceClosestHit( inout ShaderMultiPassRayPayload rayPayloadLocal, in Bu
     bool debugDrawDirectLighting    = false;
     bool debugDrawRayDetails        = false;
 #ifdef ENABLE_DEBUG_DRAW_RAYS
-    debugDrawRays           = (pathPayload.Flags & VA_RAYTRACING_FLAG_SHOW_DEBUG_PATH_VIZ) != 0;
-    debugDrawDirectLighting = debugDrawRays && ((pathPayload.Flags & VA_RAYTRACING_FLAG_SHOW_DEBUG_LIGHT_VIZ) != 0);
-    debugDrawRayDetails     = (pathPayload.Flags & VA_RAYTRACING_FLAG_SHOW_DEBUG_PATH_DETAIL_VIZ) != 0;
+    debugDrawRays           = (pathPayload.Flags & VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_VIZ) != 0;
+    debugDrawDirectLighting = debugDrawRays && ((pathPayload.Flags & VA_PATH_TRACER_FLAG_SHOW_DEBUG_LIGHT_VIZ) != 0);
+    debugDrawRayDetails     = (pathPayload.Flags & VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_DETAIL_VIZ) != 0;
 #endif
     if( debugDrawRays )
     {
+        float3 approxRayOrigin = geometrySurface.WorldspacePos.xyz - geometryHitPayload.RayDirLength;   // can't use WorldRayOrigin in the miss shader path!
         float4 rayDebugColor = float4( GradientRainbow( pathPayload.BounceIndex / 6.0 ), 0.4 );
-        DebugDraw3DCylinder( WorldRayOrigin( ), /*callablePayload.RayOrigin + callablePayload.RayDir + callablePayload.RayLength*/ geometrySurface.WorldspacePos.xyz, 
+        DebugDraw3DCylinder( approxRayOrigin, /*callablePayload.RayOrigin + callablePayload.RayDir + callablePayload.RayLength*/ geometrySurface.WorldspacePos.xyz, 
             pathPayload.ConeWidth * 0.5, geometrySurface.RayConeWidth * 0.5, rayDebugColor );
         DebugDraw3DSphere( geometrySurface.WorldspacePos.xyz, geometrySurface.RayConeWidth, float4( 0, 0, 0, 0.7 ) );
     }
@@ -309,7 +345,7 @@ void PathTraceClosestHit( inout ShaderMultiPassRayPayload rayPayloadLocal, in Bu
     MaterialInteraction materialSurface = Material_Surface( geometrySurface, materialInputs, uint2(0,0) );
 
     // "poor man's path regularization"
-    if( (pathPayload.Flags & VA_RAYTRACING_FLAG_PATH_REGULARIZATION) != 0 )
+    if( (pathPayload.Flags & VA_PATH_TRACER_FLAG_PATH_REGULARIZATION) != 0 )
     {
         // TODO: for a proper solution see 
         //  - paper: https://www2.in.tu-clausthal.de/~cgstore/publications/2019_Jendersie_brdfregularization.pdf
@@ -334,14 +370,14 @@ void PathTraceClosestHit( inout ShaderMultiPassRayPayload rayPayloadLocal, in Bu
     // rayPayload.AccumulatedRadiance  += rayPayload.Beta * materialInputs.BaseColor.rgb * g_lighting.AmbientLightIntensity.rgb;
 
     // decorrelate sampling for unrelated effects
-    const uint hashSeedDirectIndirect1D = Hash32Combine( pathPayload.HashSeed, VA_RAYTRACING_HASH_SEED_DIR_INDIR_LIGHTING_1D );
-    const uint hashSeedDirectIndirect2D = Hash32Combine( pathPayload.HashSeed, VA_RAYTRACING_HASH_SEED_DIR_INDIR_LIGHTING_2D );
+    const uint hashSeedDirectIndirect1D = Hash32Combine( pathPayload.HashSeed, VA_PATH_TRACER_HASH_SEED_DIR_INDIR_LIGHTING_1D );
+    const uint hashSeedDirectIndirect2D = Hash32Combine( pathPayload.HashSeed, VA_PATH_TRACER_HASH_SEED_DIR_INDIR_LIGHTING_2D );
 
     // let's use the same for indirect and direct lighting since they're used for non-correlated stuff
     const float  ldSample1D = LDSample1D( sampleIndex, hashSeedDirectIndirect1D );
     const float2 ldSample2D = LDSample2D( sampleIndex, hashSeedDirectIndirect2D );
 
-    bool lastBounce = (pathPayload.Flags & VA_RAYTRACING_FLAG_LAST_BOUNCE) != 0;
+    bool lastBounce = (pathPayload.Flags & VA_PATH_TRACER_FLAG_LAST_BOUNCE) != 0;
 
     if( debugDrawRays )
         DebugDraw3DText( geometrySurface.WorldspacePos.xyz, float2( -10, 16 ), float4(lastBounce?1:0,1,1,1), pathPayload.BounceIndex );
@@ -482,42 +518,42 @@ void PathTraceClosestHit( inout ShaderMultiPassRayPayload rayPayloadLocal, in Bu
         ReportCursorInfo( instanceConstants, pathPayload.PixelPos.xy, geometrySurface.WorldspacePos );
 
         // debugging viz stuff
-        if( (uint)g_pathTracerConsts.DebugViewType >= (uint)ShaderDebugViewType::SurfacePropsBegin && (uint)g_pathTracerConsts.DebugViewType <= (uint)ShaderDebugViewType::SurfacePropsEnd )
+        if( (uint)g_pathTracerConsts.DebugViewType >= (uint)PathTracerDebugViewType::SurfacePropsBegin && (uint)g_pathTracerConsts.DebugViewType <= (uint)PathTracerDebugViewType::SurfacePropsEnd )
         {
             pathPayload.AccumulatedRadiance = 0;
-            if( (uint)g_pathTracerConsts.DebugViewType == (uint)ShaderDebugViewType::GeometryTexcoord0        )
+            if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::GeometryTexcoord0        )
                 pathPayload.AccumulatedRadiance = float3(geometrySurface.Texcoord01.xy, 0);
-            if( (uint)g_pathTracerConsts.DebugViewType == (uint)ShaderDebugViewType::GeometryNormalNonInterpolated        )
+            if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::GeometryNormalNonInterpolated        )
                 pathPayload.AccumulatedRadiance = DisplayNormalSRGB( geometrySurface.TriangleNormal );
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)ShaderDebugViewType::GeometryNormalInterpolated      )
+            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::GeometryNormalInterpolated      )
                 pathPayload.AccumulatedRadiance = DisplayNormalSRGB( geometrySurface.WorldspaceNormal.xyz );
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)ShaderDebugViewType::GeometryTangentInterpolated     )
+            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::GeometryTangentInterpolated     )
                 pathPayload.AccumulatedRadiance = DisplayNormalSRGB( geometrySurface.WorldspaceTangent.xyz );
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)ShaderDebugViewType::GeometryBitangentInterpolated   )
+            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::GeometryBitangentInterpolated   )
                 pathPayload.AccumulatedRadiance = DisplayNormalSRGB( geometrySurface.WorldspaceBitangent.xyz );
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)ShaderDebugViewType::ShadingNormal                   )
+            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::ShadingNormal                   )
                 pathPayload.AccumulatedRadiance = DisplayNormalSRGB( materialSurface.Normal.xyz );
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)ShaderDebugViewType::MaterialBaseColor               )
+            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::MaterialBaseColor               )
                 pathPayload.AccumulatedRadiance = materialInputs.BaseColor.xyz;
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)ShaderDebugViewType::MaterialBaseColorAlpha          )
+            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::MaterialBaseColorAlpha          )
                 pathPayload.AccumulatedRadiance = materialInputs.BaseColor.aaa;
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)ShaderDebugViewType::MaterialEmissive                )
+            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::MaterialEmissive                )
                 pathPayload.AccumulatedRadiance = materialInputs.EmissiveColorIntensity;
 #if defined( VA_FILAMENT_STANDARD )
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)ShaderDebugViewType::MaterialMetalness               )
+            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::MaterialMetalness               )
                 pathPayload.AccumulatedRadiance = materialInputs.Metallic.xxx;
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)ShaderDebugViewType::MaterialReflectance             )
+            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::MaterialReflectance             )
                 pathPayload.AccumulatedRadiance = materialInputs.Reflectance.xxx;
 #endif
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)ShaderDebugViewType::MaterialRoughness               )
+            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::MaterialRoughness               )
                 pathPayload.AccumulatedRadiance = materialSurface.PerceptualRoughness;
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)ShaderDebugViewType::MaterialAmbientOcclusion        )
+            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::MaterialAmbientOcclusion        )
                 pathPayload.AccumulatedRadiance = materialInputs.AmbientOcclusion.xxx;
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)ShaderDebugViewType::ReflectivityEstimate        )
+            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::ReflectivityEstimate        )
                 pathPayload.AccumulatedRadiance = materialSurface.ReflectivityEstimate;
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)ShaderDebugViewType::MaterialID                      )
+            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::MaterialID                      )
                 pathPayload.AccumulatedRadiance = float3( asfloat(instanceConstants.MaterialGlobalIndex), 0, 0 );
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)ShaderDebugViewType::ShaderID                        )
+            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::ShaderID                        )
                 pathPayload.AccumulatedRadiance = float3( asfloat((uint)VA_RM_SHADER_ID), 0, 0 );
         }
     }
@@ -543,7 +579,8 @@ void PathTraceClosestHit( inout ShaderMultiPassRayPayload rayPayloadLocal, in Bu
     pathPayload.AccumulatedRadiance_Spec += specularColor;*/
 
     float3 auxAlbedo = saturate( materialSurface.DiffuseColor + materialSurface.F0 ); // the best I could do for now (effectively: lerp(albedo, float3(1,1,1), metallic ) )
-    PathTracerOutputAUX( pathPayload.PixelPos, pathPayload, geometrySurface.WorldspacePos.xyz, auxAlbedo, materialSurface.Normal );
+    PathTracerOutputAUX( pathPayload.PixelPos, pathPayload, geometrySurface.WorldspacePos.xyz, auxAlbedo, materialSurface.Normal, 
+        ComputeScreenMotionVectors( pathPayload.PixelPos + float2(0.5, 0.5), geometrySurface.WorldspacePos, geometrySurface.PreviousWorldspacePos, float2(0,0) ).xy );
 
     if( lastBounce )
     {
@@ -555,7 +592,7 @@ void PathTraceClosestHit( inout ShaderMultiPassRayPayload rayPayloadLocal, in Bu
         // advance these two parts of the payload - we're about to bounce
         pathPayload.BounceIndex++;
         pathPayload.HashSeed = Hash32( pathPayload.HashSeed );
-        pathPayload.Flags |= (pathPayload.BounceIndex == g_pathTracerConsts.MaxBounces)?(VA_RAYTRACING_FLAG_LAST_BOUNCE):(0);
+        pathPayload.Flags |= (pathPayload.BounceIndex == g_pathTracerConsts.MaxBounces)?(VA_PATH_TRACER_FLAG_LAST_BOUNCE):(0);
 
         g_pathPayloads[ rayPayloadLocal.PathIndex ] = pathPayload;
 

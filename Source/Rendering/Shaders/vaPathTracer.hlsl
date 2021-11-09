@@ -55,7 +55,7 @@ void CSKickoff( const uint pathIndex : SV_DispatchThreadID )
     uint  hashSeed = Hash32( pixelPos.x );
     hashSeed = Hash32Combine( hashSeed, pixelPos.y );
     hashSeed = Hash32( hashSeed );
-    const uint hashSeedAA   = Hash32Combine( hashSeed, VA_RAYTRACING_HASH_SEED_AA );
+    const uint hashSeedAA   = Hash32Combine( hashSeed, VA_PATH_TRACER_HASH_SEED_AA );
 
     // index of the sample within the pixel
     const uint sampleIndex  = g_pathTracerConsts.SampleIndex();
@@ -76,19 +76,19 @@ void CSKickoff( const uint pathIndex : SV_DispatchThreadID )
     }
 
     // debug draw for rays
-    const bool debugDrawRays = ((g_pathTracerConsts.Flags & VA_RAYTRACING_FLAG_SHOW_DEBUG_PATH_VIZ) != 0) && IsUnderCursorRange( pixelPos, int2(g_pathTracerConsts.DebugPathVizDim, g_pathTracerConsts.DebugPathVizDim) );
-    const bool debugDrawRayDetails = ((g_pathTracerConsts.Flags & VA_RAYTRACING_FLAG_SHOW_DEBUG_PATH_VIZ) != 0) && IsUnderCursorRange( pixelPos, int2(1, 1) );
+    const bool debugDrawRays = ((g_pathTracerConsts.Flags & VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_VIZ) != 0) && IsUnderCursorRange( pixelPos, int2(g_pathTracerConsts.DebugPathVizDim, g_pathTracerConsts.DebugPathVizDim) );
+    const bool debugDrawRayDetails = ((g_pathTracerConsts.Flags & VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_VIZ) != 0) && IsUnderCursorRange( pixelPos, int2(1, 1) );
 
     // draw camera frustum borders 
-    if( (g_pathTracerConsts.Flags & VA_RAYTRACING_FLAG_SHOW_DEBUG_PATH_VIZ) != 0 )
+    if( (g_pathTracerConsts.Flags & VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_VIZ) != 0 )
     {
         const int step = 40; const float length = 0.5;
         if( ((pixelPos.x == 0 || pixelPos.x == g_pathTracerConsts.ViewportX - 1)    && (pixelPos.y % step == 0) ) || ((pixelPos.y == 0 || pixelPos.y == g_pathTracerConsts.ViewportY - 1 )  && (pixelPos.x % step == 0) ) )
             DebugDraw3DLine( rayOrigin, rayOrigin + rayDir * length, float4( 1, 0.5, 0, 0.8 ) );
     }
 
-    uint flags = (g_pathTracerConsts.Flags & ~VA_RAYTRACING_FLAG_SHOW_DEBUG_PATH_VIZ) | (debugDrawRays?VA_RAYTRACING_FLAG_SHOW_DEBUG_PATH_VIZ:0) | (debugDrawRayDetails?VA_RAYTRACING_FLAG_SHOW_DEBUG_PATH_DETAIL_VIZ:0)
-                | ( ( g_pathTracerConsts.MaxBounces == 0 )?VA_RAYTRACING_FLAG_LAST_BOUNCE:0);
+    uint flags = (g_pathTracerConsts.Flags & ~VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_VIZ) | (debugDrawRays?VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_VIZ:0) | (debugDrawRayDetails?VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_DETAIL_VIZ:0)
+                | ( ( g_pathTracerConsts.MaxBounces == 0 )?VA_PATH_TRACER_FLAG_LAST_BOUNCE:0);
 
     // this is stored in UAVs
     ShaderPathPayload pathPayload;
@@ -158,7 +158,7 @@ void Raygen()
     uint2 pixelPos = g_pathPayloads[pathIndex].PixelPos;
     //ShaderPathPayload pathPayload = g_pathPayloads[pathIndex];
 
-    bool stopped   = (g_pathPayloads[pathIndex].Flags & VA_RAYTRACING_FLAG_STOPPED) != 0;
+    bool stopped   = (g_pathPayloads[pathIndex].Flags & VA_PATH_TRACER_FLAG_STOPPED) != 0;
 
     // pathIndex can be > number of pixel when rounding up to right/bottom border tile size, so mark those out of screen pixels as invalid
     [branch]
@@ -203,7 +203,7 @@ void Miss( inout ShaderMultiPassRayPayload rayPayloadLocal )
 {
     ShaderPathPayload pathPayload = g_pathPayloads[ rayPayloadLocal.PathIndex ];
 
-    const bool debugDrawRays = (pathPayload.Flags & VA_RAYTRACING_FLAG_SHOW_DEBUG_PATH_VIZ) != 0;
+    const bool debugDrawRays = (pathPayload.Flags & VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_VIZ) != 0;
 
     // we need this for outputting depth - path tracing will actually end
     float3 nextRayOrigin = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
@@ -212,7 +212,8 @@ void Miss( inout ShaderMultiPassRayPayload rayPayloadLocal )
     pathPayload.NextRayOrigin = nextRayOrigin;
 #endif
 
-    PathTracerOutputAUX( pathPayload.PixelPos, pathPayload, nextRayOrigin, float3(1,1,1), float3(0,0,1) );
+    PathTracerOutputAUX( pathPayload.PixelPos, pathPayload, nextRayOrigin, float3(1,1,1), float3(0,0,1),
+        ComputeScreenMotionVectors( pathPayload.PixelPos + float2(0.5, 0.5), nextRayOrigin, nextRayOrigin, float2(0,0) ).xy );
 
     // // stop any further bounces
     // not needed anymore - this is the default
@@ -317,58 +318,80 @@ void PSWriteToOutput( const in float4 position : SV_Position, out float4 outColo
     // }
 
     float4 pixelData = g_radianceAccumulationSRV[ pixCoord ];
-    float viewspaceDepth = g_viewspaceDepthSRV[ pixCoord ];
+    float viewspaceDepth = pixelData.w; //g_viewspaceDepthSRV[ pixCoord ];
 
     float accumFrameCount = min( g_pathTracerConsts.AccumFrameCount+1, g_pathTracerConsts.AccumFrameTargetCount );
-    /*float4*/ outColor = (pixelData / accumFrameCount) * g_globals.PreExposureMultiplier;
+    /*float4*/ outColor.rgb = (pixelData.rgb / accumFrameCount) * g_globals.PreExposureMultiplier;
+    outColor.a = 1.0;
 
 //    if( underMouseCursor )
 //        DebugDraw2DText( pixCoord + float2( 10, 75 ), float4( 1, 0, 1, 1 ), outColor );
 
-    if( g_pathTracerConsts.DebugViewType != ShaderDebugViewType::None )
+    if( g_pathTracerConsts.DebugViewType != PathTracerDebugViewType::None )
     {
-        if( g_pathTracerConsts.DebugViewType == ShaderDebugViewType::BounceIndex )
+        if( g_pathTracerConsts.DebugViewType == PathTracerDebugViewType::BounceIndex )
         {
             int bounceIndex = g_radianceAccumulationSRV[ pixCoord ].x;
             outColor.rgb = GradientHeatMap( /*sqrt*/( bounceIndex / (float)g_pathTracerConsts.MaxBounces ) );
             if( underMouseCursor )
                 DebugDraw2DText( pixCoord + float2( 10, -16 ), float4( 1, 0, 1, 1 ), bounceIndex );
         }
-        else if( g_pathTracerConsts.DebugViewType == ShaderDebugViewType::ViewspaceDepth )
+        else if( g_pathTracerConsts.DebugViewType == PathTracerDebugViewType::ViewspaceDepth )
         {
             outColor.rgb = frac( viewspaceDepth );
             if( underMouseCursor )
                 DebugDraw2DText( pixCoord + float2( 10, -16 ), float4( 1, 0, 1, 1 ), viewspaceDepth );
         }
-        else if( g_pathTracerConsts.DebugViewType == ShaderDebugViewType::MaterialID || g_pathTracerConsts.DebugViewType == ShaderDebugViewType::ShaderID )
+        else if( g_pathTracerConsts.DebugViewType == PathTracerDebugViewType::MaterialID || g_pathTracerConsts.DebugViewType == PathTracerDebugViewType::ShaderID )
         {
             uint val = asuint(g_radianceAccumulationSRV[ pixCoord ].x);
             outColor.rgb = GradientRainbow( Hash32ToFloat( Hash32(val) ) );
             if( underMouseCursor )
                 DebugDraw2DText( pixCoord + float2( 10, -16 ), float4( 1, 0, 1, 1 ), val );
         }
-        else if( (uint)g_pathTracerConsts.DebugViewType >= (uint)ShaderDebugViewType::SurfacePropsBegin && (uint)g_pathTracerConsts.DebugViewType <= (uint)ShaderDebugViewType::SurfacePropsEnd )
+        else if( (uint)g_pathTracerConsts.DebugViewType >= (uint)PathTracerDebugViewType::SurfacePropsBegin && (uint)g_pathTracerConsts.DebugViewType <= (uint)PathTracerDebugViewType::SurfacePropsEnd )
         {
             outColor.rgb = g_radianceAccumulationSRV[ pixCoord ].rgb;
             outColor.a = 0;
             if( underMouseCursor )
                 DebugDraw2DText( pixCoord + float2( 10, -16 ), float4( 1, 0, 1, 1 ), outColor );
         }
-        else if( (uint)g_pathTracerConsts.DebugViewType == (uint)ShaderDebugViewType::DenoiserAuxAlbedo )
+        else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::DenoiserAuxAlbedo )
         {
             outColor.rgb = g_denoiserAuxAlbedoSRV[ pixCoord ].rgb;
             outColor.a = 0;
             if( underMouseCursor )
                 DebugDraw2DText( pixCoord + float2( 10, -16 ), float4( 1, 0, 1, 1 ), outColor );
         }
-        else if( (uint)g_pathTracerConsts.DebugViewType >= (uint)ShaderDebugViewType::DenoiserAuxNormals )
+        else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::DenoiserAuxNormals )
         {
             outColor.rgb = g_denoiserAuxNormalsSRV[ pixCoord ].rgb;
             outColor.a = 0;
             if( underMouseCursor )
                 DebugDraw2DText( pixCoord + float2( 10, -16 ), float4( 1, 0, 1, 1 ), outColor );
             outColor.rgb = DisplayNormalSRGB( outColor.rgb );
+        } 
+        else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::DenoiserAuxMotionVectors )
+        {
+            float3 velocity = float3( g_denoiserAuxMotionVectorsSRV[ pixCoord ].rg, 0 );
+            outColor.rgb = velocity;
+            outColor.a = 0;
+            if( underMouseCursor )
+                DebugDraw2DText( pixCoord + float2( 10, -16 ), float4( 1, 0, 1, 1 ), outColor );
+            outColor.rgb = DisplayNormalSRGB( saturate( sqrt( outColor.rgb / 16.0 ) ) );
+
+            bool dbg1 = all( (pixCoord.xy+1) % 100 == 0.xx );
+            bool dbg2 = all( (pixCoord.xy+49) % 100 == 0.xx );
+            if( dbg1 || dbg2 )
+            {
+                float2 clipXY   = pixCoord + 0.5f;
+                DebugDraw2DLine( clipXY, clipXY + velocity.xy, float4( dbg1, dbg2, 0, 1 ) );
+
+                //if( all( (pixCoord.xy+1) % 400 == 0 ) )
+                //    DebugDraw2DText( clipXY, float4( 1, 0.5, 1, 1 ), float4( velocity, g_depthBuffer.Load( uint3( pixCoord, 0 ) ) ) );
+            }
         }
+
     }
 
     //if( g_pathTracerConsts.EnableCrosshairDebugViz )
@@ -394,7 +417,109 @@ void CSPrepareDenoiserInputs( const uint2 pixelPos : SV_DispatchThreadID )
 {
     g_denoiserAuxAlbedo [pixelPos].xyz /= (float)g_genericRootConst;
     g_denoiserAuxNormals[pixelPos].xyz = normalize( g_denoiserAuxNormals[pixelPos].xyz );
+    g_denoiserAuxMotionVectors[pixelPos].xy /= (float)g_genericRootConst;
 }
+
+
+#ifdef VA_OPTIX_DENOISER
+
+RWBuffer<float>     g_denoiserSharedAlbedo              : register( u0 );   // these are buffers shared with CUDA/OptiX
+RWBuffer<float>     g_denoiserSharedNormals             : register( u1 );   // these are buffers shared with CUDA/OptiX
+RWBuffer<float>     g_denoiserSharedMotionVectors       : register( u2 );   // these are buffers shared with CUDA/OptiX
+RWBuffer<float>     g_denoiserSharedInput               : register( u3 );   // these are buffers shared with CUDA/OptiX
+RWBuffer<float>     g_denoiserSharedPreviousOutput      : register( u4 );   // these are buffers shared with CUDA/OptiX
+RWBuffer<float>     g_denoiserSharedOutput              : register( u5 );   // these are buffers shared with CUDA/OptiX
+RWTexture2D<float4> g_denoiserVanillaOutput             : register( u6 );
+
+// see 'vaDenoiserOptiX::AllocateStagingBuffer' for details
+int ComputeAddr( const uint2 pixelPos, const uint elemCount )
+{
+    const uint width = g_genericRootConst;
+    return elemCount * ( pixelPos.x + pixelPos.y * width );
+}
+
+void WriteVec2( RWBuffer<float> output, const uint2 pixelPos, const float2 vec )
+{
+    const uint address = ComputeAddr(pixelPos, 2);
+    output[address+0] = vec.x;
+    output[address+1] = vec.y;
+}
+void WriteVec3( RWBuffer<float> output, const uint2 pixelPos, const float3 vec )
+{
+    const uint address = ComputeAddr(pixelPos, 3);
+    output[address+0] = vec.x;
+    output[address+1] = vec.y;
+    output[address+2] = vec.z;
+}
+void WriteVec4( RWBuffer<float> output, const uint2 pixelPos, const float4 vec )
+{
+    const uint address = ComputeAddr(pixelPos, 4);
+    output[address+0] = vec.x;
+    output[address+1] = vec.y;
+    output[address+2] = vec.z;
+    output[address+3] = vec.w;
+}
+float4 ReadVec4( RWBuffer<float> input, const uint2 pixelPos )
+{
+    const uint address = ComputeAddr(pixelPos, 4);
+    return float4( input[address+0], input[address+1], input[address+2], input[address+3] );
+}
+float3 ReadVec3( RWBuffer<float> input, const uint2 pixelPos )
+{
+    const uint address = ComputeAddr(pixelPos, 3);
+    return float3( input[address+0], input[address+1], input[address+2] );
+}
+float2 ReadVec2( RWBuffer<float> input, const uint2 pixelPos )
+{
+    const uint address = ComputeAddr(pixelPos, 2);
+    return float2( input[address+0], input[address+1] );
+}
+
+[numthreads(8, 8, 1)]
+void CSVanillaToOptiX( const uint2 pixelPos : SV_DispatchThreadID )
+{
+//    g_radianceAccumulationSRV    
+//    g_denoiserAuxAlbedoSRV       
+//    g_denoiserAuxNormalsSRV      
+//    g_denoiserAuxMotionVectorsSRV
+
+    WriteVec3( g_denoiserSharedAlbedo,  pixelPos,   g_denoiserAuxAlbedoSRV.Load( int3(pixelPos,0) ).xyz );
+    WriteVec3( g_denoiserSharedNormals, pixelPos,   g_denoiserAuxNormalsSRV.Load( int3(pixelPos,0) ).xyz );
+    WriteVec3( g_denoiserSharedInput,   pixelPos,   g_radianceAccumulationSRV.Load( int3(pixelPos,0) ).xyz );
+
+    // temporal part
+    float2 motionVector = g_denoiserAuxMotionVectorsSRV.Load( int3(pixelPos, 0) );
+    motionVector = -motionVector; // OptiX standard is inverted from Vanilla's
+    WriteVec2( g_denoiserSharedMotionVectors, pixelPos, motionVector );
+
+//    float4 prevOutput = ReadVec4( g_denoiserSharedOutput, pixelPos );
+//
+//    //prevOutput.xy = ((pixelPos.xy / 10) % 2);
+//    //prevOutput.z = 0;
+//
+//    WriteVec4( g_denoiserSharedPreviousOutput, pixelPos, prevOutput );
+}
+
+[numthreads(8, 8, 1)]
+void CSOptiXToVanilla( const uint2 pixelPos : SV_DispatchThreadID )
+{
+    // debug view
+    // g_denoiserVanillaOutput[ pixelPos ].xyzw = ReadVec4( g_denoiserSharedPreviousOutput, pixelPos );
+    // // g_denoiserVanillaOutput[ pixelPos ].xyzw = ReadVec4( g_denoiserSharedAlbedo, pixelPos );
+    // // g_denoiserVanillaOutput[ pixelPos ].xyz = ReadVec3( g_denoiserSharedNormals, pixelPos );
+    // // g_denoiserVanillaOutput[ pixelPos ].xy = ReadVec2( g_denoiserSharedMotionVectors, pixelPos );
+    // // g_denoiserVanillaOutput[ pixelPos ].z = 0;
+    // return;
+
+    float3 outColor = ReadVec3( g_denoiserSharedOutput, pixelPos );
+
+    // not correct but solves some temporal issues for now
+    outColor = clamp( outColor, 0, 15 );
+
+    g_denoiserVanillaOutput[ pixelPos ] = float4( outColor, 1 );
+}
+
+#endif // #ifdef VA_OPTIX_DENOISER
 
 //[numthreads(8, 8, 1)]
 //void CSDebugDisplayDenoiser( const uint2 pixCoord : SV_DispatchThreadID )

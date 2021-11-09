@@ -38,170 +38,9 @@
 
 #include "Rendering/vaGPUSort.h"
 
-namespace Vanilla
-{
-#ifdef VA_OIDN_INTEGRATION_ENABLED
-    struct OIDNData
-    {
-        OIDNDevice                  Device              = nullptr;
-        OIDNFilter                  Filter              = nullptr;
-
-        OIDNBuffer                  Beauty              = nullptr;
-        OIDNBuffer                  Output              = nullptr;
-        OIDNBuffer                  AuxAlbedo           = nullptr;
-        OIDNBuffer                  AuxNormals          = nullptr;
-
-        shared_ptr<vaTexture>       BeautyGPU;
-        shared_ptr<vaTexture>       BeautyCPU;
-
-        shared_ptr<vaTexture>       DenoisedGPU;
-        shared_ptr<vaTexture>       DenoisedCPU;
-
-        shared_ptr<vaTexture>       AuxAlbedoGPU;
-        shared_ptr<vaTexture>       AuxAlbedoCPU;
-        shared_ptr<vaTexture>       AuxNormalsGPU;
-        shared_ptr<vaTexture>       AuxNormalsCPU;
-
-        shared_ptr<vaComputeShader> CSPrepareDenoiserInputs;
-        //shared_ptr<vaComputeShader> CSDebugDisplayDenoiser;
-
-        int                         Width               = 0;
-        int                         Height              = 0;
-        int                         BytesPerPixel       = 0;
-        size_t                      BufferSize          = 0;
-
-        OIDNData( )
-        {
-            Device = oidnNewDevice( OIDN_DEVICE_TYPE_DEFAULT );
-            //oidnSetDevice1b( Device, "setAffinity", false );
-            //oidnSetDevice1i( Device, "numThreads", vaThreading::GetCPULogicalCores() );
-            oidnCommitDevice( Device );
-            // Create a filter for denoising a beauty (color) image using optional auxiliary images too
-            Filter = oidnNewFilter( Device, "RT" ); // generic ray tracing filter
-            
-        }
-        ~OIDNData( )
-        {
-            oidnReleaseBuffer(Beauty);
-            oidnReleaseBuffer(Output);
-            oidnReleaseBuffer(AuxAlbedo );
-            oidnReleaseBuffer(AuxNormals);
-            oidnReleaseFilter(Filter);
-            oidnReleaseDevice(Device);
-        }
-
-        void UpdateTextures( vaRenderDevice & device, int width, int height )
-        {
-            if( BeautyGPU == nullptr || Width != width || Height != height )
-            {
-                Width  = width;
-                Height = height;
-
-                if( Beauty      != nullptr ) oidnReleaseBuffer(Beauty);
-                if( Output      != nullptr ) oidnReleaseBuffer(Output);
-                if( AuxAlbedo   != nullptr ) oidnReleaseBuffer(AuxAlbedo);
-                if( AuxNormals  != nullptr ) oidnReleaseBuffer(AuxNormals);
-
-                BeautyGPU = vaTexture::Create2D( device, vaResourceFormat::R32G32B32A32_FLOAT, width, height, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::RenderTarget | vaResourceBindSupportFlags::UnorderedAccess );
-                BeautyCPU = vaTexture::Create2D( device, vaResourceFormat::R32G32B32A32_FLOAT, width, height, 1, 1, 1, vaResourceBindSupportFlags::None, vaResourceAccessFlags::CPURead );
-
-                DenoisedGPU = vaTexture::Create2D( device, vaResourceFormat::R32G32B32A32_FLOAT, width, height, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::RenderTarget | vaResourceBindSupportFlags::UnorderedAccess );
-                DenoisedCPU = vaTexture::Create2D( device, vaResourceFormat::R32G32B32A32_FLOAT, width, height, 1, 1, 1, vaResourceBindSupportFlags::None, vaResourceAccessFlags::CPUWrite );
-
-                AuxNormalsGPU = vaTexture::Create2D( device, vaResourceFormat::R32G32B32A32_FLOAT, width, height, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::RenderTarget | vaResourceBindSupportFlags::UnorderedAccess );
-                AuxNormalsCPU = vaTexture::Create2D( device, vaResourceFormat::R32G32B32A32_FLOAT, width, height, 1, 1, 1, vaResourceBindSupportFlags::None, vaResourceAccessFlags::CPURead );
-                AuxAlbedoGPU = vaTexture::Create2D( device, vaResourceFormat::R32G32B32A32_FLOAT, width, height, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::RenderTarget | vaResourceBindSupportFlags::UnorderedAccess );
-                AuxAlbedoCPU = vaTexture::Create2D( device, vaResourceFormat::R32G32B32A32_FLOAT, width, height, 1, 1, 1, vaResourceBindSupportFlags::None, vaResourceAccessFlags::CPURead );
-
-                BytesPerPixel = 4*4;
-                BufferSize    = Width * Height * BytesPerPixel;
-
-                Beauty      = oidnNewBuffer( Device, BufferSize );
-                Output      = oidnNewBuffer( Device, BufferSize );
-                AuxAlbedo   = oidnNewBuffer( Device, BufferSize );
-                AuxNormals  = oidnNewBuffer( Device, BufferSize );
-
-                oidnSetFilterImage( Filter, "color",    Beauty, OIDN_FORMAT_FLOAT3, Width, Height, 0, BytesPerPixel, BytesPerPixel * Width );
-                oidnSetFilterImage( Filter, "output",   Output, OIDN_FORMAT_FLOAT3, Width, Height, 0, BytesPerPixel, BytesPerPixel * Width );
-                oidnSetFilterImage( Filter, "albedo",   AuxAlbedo, OIDN_FORMAT_FLOAT3, Width, Height, 0, BytesPerPixel, BytesPerPixel * Width );
-                oidnSetFilterImage( Filter, "normal",   AuxNormals, OIDN_FORMAT_FLOAT3, Width, Height, 0, BytesPerPixel, BytesPerPixel * Width );
-                oidnSetFilter1b( Filter, "hdr", true );         // beauty image is HDR
-                oidnSetFilter1b( Filter, "cleanAux", true );    // auxiliary images are not noisy
-                oidnCommitFilter( Filter );
-            }
-        }
-
-        static void CopyContents( vaRenderDeviceContext & renderContext, OIDNBuffer destination, const shared_ptr<vaTexture> & source, size_t bufferSize )
-        {
-            // map CPU buffer Vanilla side
-            if( !source->TryMap( renderContext, vaResourceMapType::Read ) )
-            { assert( false ); return; }
-            // map CPU buffer OIDN side
-            void * dst = oidnMapBuffer( destination, OIDN_ACCESS_WRITE_DISCARD, 0, bufferSize );
-            // copy CPU Vanilla -> CPU OIDN 
-            memcpy( dst, source->GetMappedData()[0].Buffer, bufferSize );
-            // unmap OIDN side
-            oidnUnmapBuffer( destination, dst );
-            // unmap Vanilla side
-            source->Unmap( renderContext );
-        }
-
-        static void CopyContents( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & destination, OIDNBuffer source, size_t bufferSize )
-        {
-            // map Vanilla-side
-            if( !destination->TryMap( renderContext, vaResourceMapType::Write ) )
-            { assert( false ); return; }
-            // map OIDN-side
-            void * src = oidnMapBuffer( source, OIDN_ACCESS_READ, 0, bufferSize );
-            // copy CPU OIDN -> CPU Vanilla
-            memcpy( destination->GetMappedData()[0].Buffer, src, bufferSize );
-            oidnUnmapBuffer( source, src );
-            destination->Unmap( renderContext );
-        }
-
-        void VanillaToDenoiser( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & beautySrc )
-        {
-            VA_TRACE_CPU_SCOPE( VanillaToDenoiser );
-
-            // copy GPU any-color-format -> GPU R32G32B32A32_FLOAT
-            renderContext.CopySRVToRTV( BeautyGPU, beautySrc );
-            // copy GPU -> CPU Vanilla side
-            BeautyCPU->CopyFrom( renderContext, BeautyGPU );
-            CopyContents( renderContext, Beauty, BeautyCPU, BufferSize );
-            AuxAlbedoCPU->CopyFrom( renderContext, AuxAlbedoGPU );
-            CopyContents( renderContext, AuxAlbedo, AuxAlbedoCPU, BufferSize );
-            AuxNormalsCPU->CopyFrom( renderContext, AuxNormalsGPU );
-            CopyContents( renderContext, AuxNormals, AuxNormalsCPU, BufferSize );
-        }
-
-        void Denoise( )
-        {
-            VA_TRACE_CPU_SCOPE( Denoise );
-
-            oidnExecuteFilter( Filter );
-
-            // Check for errors
-            const char* errorMessage;
-            if( oidnGetDeviceError( Device, &errorMessage) != OIDN_ERROR_NONE )
-                VA_WARN("Error: %s\n", errorMessage );
-        }
-
-        void DenoiserToVanilla( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & output )
-        {
-            VA_TRACE_CPU_SCOPE( DenoiserToVanilla );
-
-            CopyContents( renderContext, DenoisedCPU, Output, BufferSize );
-            // copy CPU Vanilla -> GPU Vanilla
-            DenoisedGPU->CopyFrom( renderContext, DenoisedCPU );
-            // GPU R32G32B32A32_FLOAT - > copy GPU any-color-format
-            renderContext.CopySRVToRTV( output, DenoisedGPU );
-        }
-    };
-    #endif // VA_OIDN_INTEGRATION_ENABLED
-}
+#include "Rendering/vaPathTracerDenoisers.h"
 
 using namespace Vanilla;
-
 
 vaPathTracer::vaPathTracer( const vaRenderingModuleParams & params ) : 
     vaRenderingModule( params )
@@ -240,31 +79,56 @@ void vaPathTracer::UITick( vaApplicationBase & )
 
         if( m_mode == vaPathTracer::Mode::StaticAccumulate )
         {
+            VA_GENERIC_RAII_SCOPE( ImGui::Indent();, ImGui::Unindent(); );
             ImGui::Text( "Accumulated frames: %d (out of %d target)", m_accumSampleIndex, m_accumSampleTarget );
-
-            if( ImGui::Checkbox( "Anti-aliasing", &m_enableAA ) )
-                m_accumSampleIndex = 0;
-            if( ImGui::IsItemHovered( ) ) ImGui::SetTooltip( "Enables subpixel jitter (not completely functional yet)" );
 
             if( ImGui::InputInt( "Accumulation target count", &m_staticAccumSampleTarget ) )
                 m_accumSampleIndex = 0;
             m_staticAccumSampleTarget = vaMath::Clamp( m_staticAccumSampleTarget, 1, 1048576 );
             if( ImGui::IsItemHovered( ) ) ImGui::SetTooltip( "How many samples to collect before stopping (one sample per frame, will restart on camera/system changes)" );
+
+            if( ImGui::Checkbox( "Anti-aliasing", &m_staticEnableAA ) )
+                m_accumSampleIndex = 0;
+            if( ImGui::IsItemHovered( ) ) ImGui::SetTooltip( "Enables subpixel jitter (box filter only)" );
         }
         else if ( m_mode == vaPathTracer::Mode::RealTime )
         {
+            VA_GENERIC_RAII_SCOPE( ImGui::Indent();, ImGui::Unindent(); );
             if( ImGui::InputInt( "Accumulation target count", &m_realtimeAccumSampleTarget ) )
                 m_accumSampleIndex = 0;
             m_realtimeAccumSampleTarget = vaMath::Clamp( m_realtimeAccumSampleTarget, 1, 64 );
             if( ImGui::IsItemHovered( ) ) ImGui::SetTooltip( "How many samples to collect each frame" );
 
-#ifdef VA_OIDN_INTEGRATION_ENABLED
-            if( ImGui::Checkbox( "OIDN denoiser", &m_realtimeAccumDenoise) )
+            if( ImGui::Checkbox( "Anti-aliasing", &m_realtimeEnableAA ) )
                 m_accumSampleIndex = 0;
+            if( ImGui::IsItemHovered( ) ) ImGui::SetTooltip( "Enables subpixel jitter (box filter only)" );
+            if( ImGui::Checkbox( "Temporal noise", &m_realtimeEnableTemporalNoise ) )
+                m_accumSampleIndex = 0;
+            if( ImGui::IsItemHovered( ) ) ImGui::SetTooltip( "Enable temporal (between frames) noise" );
+
+            std::vector<string> denoiserTypes = { "None" };
+#ifdef VA_OIDN_INTEGRATION_ENABLED
+            denoiserTypes.push_back( "OIDN" );
 #else
-            ImGui::Text( "VA_OIDN_INTEGRATION_ENABLED not set - no denoising enabled" );
-            m_realtimeAccumDenoise = false;
-#endif // #ifdef VA_OIDN_INTEGRATION_ENABLED
+            denoiserTypes.push_back( "OIDN (unsupported)" );
+#endif
+#ifdef VA_OPTIX_DENOISER_ENABLED
+            denoiserTypes.push_back( "OptiX" );
+            denoiserTypes.push_back( "OptiX Temporal" );
+#else
+            denoiserTypes.push_back( "OptiX (unsupported)" );
+            denoiserTypes.push_back( "OptiX Temporal (unsupported)" );
+#endif
+
+            if( ImGuiEx_Combo( "Denoiser", m_realtimeAccumDenoiseType, denoiserTypes ) )
+                m_accumSampleIndex = 0;
+
+#ifndef VA_OIDN_INTEGRATION_ENABLED
+            if( m_realtimeAccumDenoiseType == 1 ) m_realtimeAccumDenoiseType = 0;
+#endif
+#ifndef VA_OPTIX_DENOISER_ENABLED
+            if( m_realtimeAccumDenoiseType == 2 || m_realtimeAccumDenoiseType == 3 ) m_realtimeAccumDenoiseType = 0;
+#endif
 
         }
 
@@ -301,11 +165,11 @@ void vaPathTracer::UITick( vaApplicationBase & )
         //ImGui::Separator();
         if( ImGui::CollapsingHeader( "Debugging", 0 ) )
         {
-            m_debugViz = vaMath::Clamp( m_debugViz, ShaderDebugViewType::None, ShaderDebugViewType((uint)ShaderDebugViewType::MaxValue-(uint)1) );
+            m_debugViz = vaMath::Clamp( m_debugViz, PathTracerDebugViewType::None, PathTracerDebugViewType((uint)PathTracerDebugViewType::MaxValue-(uint)1) );
             if( ImGuiEx_Combo( "Debug view", (int&)m_debugViz, { "None", "Bounce heatmap", "Viewspace depth", "GeometryTexcoord0",
                 "GeometryNormalNonInterpolated", "GeometryNormalInterpolated", "GeometryTangentInterpolated", "GeometryBitangentInterpolated", "ShadingNormal", 
                 "MaterialBaseColor", "MaterialBaseColorAlpha", "MaterialEmissive", "MaterialMetalness", "MaterialRoughness", "MaterialReflectance", "MaterialAmbientOcclusion", 
-                "ReflectivityEstimate", "MaterialID", "ShaderID", "DenoiserAuxAlbedo", "DenoiserAuxNormals" } ) )
+                "ReflectivityEstimate", "MaterialID", "ShaderID", "DenoiserAuxAlbedo", "DenoiserAuxNormals", "DenoiserAuxMotionVectors" } ) )
                 m_accumSampleIndex = 0;
 
             ImGui::Checkbox( "Show ray path under cursor", &m_debugPathUnderCursor );
@@ -441,14 +305,25 @@ vaDrawResultFlags vaPathTracer::InnerPass( vaRenderDeviceContext & renderContext
         constants.AccumFrameCount           = m_accumSampleIndex;
         constants.AccumFrameTargetCount     = m_accumSampleTarget;
         constants.MaxBounces                = m_maxBounces;
-        if( (uint)m_debugViz >= (uint)ShaderDebugViewType::SurfacePropsBegin && (uint)m_debugViz <= (uint)ShaderDebugViewType::SurfacePropsEnd )
+        if( (uint)m_debugViz >= (uint)PathTracerDebugViewType::SurfacePropsBegin && (uint)m_debugViz <= (uint)PathTracerDebugViewType::SurfacePropsEnd )
             constants.MaxBounces            = 0;
-        constants.EnableAA                  = m_enableAA?1:0;
+
+        if( m_mode == Mode::StaticAccumulate )
+            constants.EnableAA              = m_staticEnableAA?1:0;
+        else
+            constants.EnableAA              = m_realtimeEnableAA?1:0;
 
         const float defaultFireflyClampThreshold = 8.0f; // maybe expose through UI?
         constants.FireflyClampThreshold     = m_enableFireflyClamp?defaultFireflyClampThreshold:1e20f;
-        constants.DummyParam1               = 0;
-        constants.DummyParam2               = 0;
+
+        constants.TemporalNoiseStep         = 1;
+        constants.TemporalNoiseIndex        = 0;
+
+        if( m_mode == Mode::RealTime && m_realtimeEnableTemporalNoise )
+        {
+            constants.TemporalNoiseStep     = 16;
+            constants.TemporalNoiseIndex    = GetRenderDevice().GetCurrentFrameIndex()%constants.TemporalNoiseStep;
+        }
 
         constants.ViewportX                 = m_radianceAccumulation->GetWidth( );
         constants.ViewportY                 = m_radianceAccumulation->GetHeight( );
@@ -460,9 +335,9 @@ vaDrawResultFlags vaPathTracer::InnerPass( vaRenderDeviceContext & renderContext
 
         constants.DebugViewType             = m_debugViz;
         constants.Flags                     = 0;
-        constants.Flags                     |= (m_enablePathRegularization)?(VA_RAYTRACING_FLAG_PATH_REGULARIZATION):(0);
-        constants.Flags                     |= (m_debugPathUnderCursor)?(VA_RAYTRACING_FLAG_SHOW_DEBUG_PATH_VIZ):(0);
-        constants.Flags                     |= (m_debugLightsForPathUnderCursor)?(VA_RAYTRACING_FLAG_SHOW_DEBUG_LIGHT_VIZ):(0);
+        constants.Flags                     |= (m_enablePathRegularization)?(VA_PATH_TRACER_FLAG_PATH_REGULARIZATION):(0);
+        constants.Flags                     |= (m_debugPathUnderCursor)?(VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_VIZ):(0);
+        constants.Flags                     |= (m_debugLightsForPathUnderCursor)?(VA_PATH_TRACER_FLAG_SHOW_DEBUG_LIGHT_VIZ):(0);
 
         constants.DebugDivergenceTest       = m_debugForcedDispatchDivergence;
 
@@ -563,12 +438,6 @@ vaDrawResultFlags vaPathTracer::Draw( vaRenderDeviceContext & renderContext, vaD
     // we should have never reached this point if raytracing isn't supported!
     assert( m_renderDevice.GetCapabilities().Raytracing.Supported );
 
-    // create denoiser stuff
-#ifdef VA_OIDN_INTEGRATION_ENABLED
-    if( m_oidn == nullptr )
-        m_oidn = std::make_shared<OIDNData>();
-#endif // VA_OIDN_INTEGRATION_ENABLED
-
     // one-time init
     if( m_shaderLibrary == nullptr )
     {
@@ -582,10 +451,8 @@ vaDrawResultFlags vaPathTracer::Draw( vaRenderDeviceContext & renderContext, vaD
 
         allShaders.push_back( m_CSKickoff       = vaComputeShader::CreateFromFile(  GetRenderDevice(), "vaPathTracer.hlsl", "CSKickoff", macros, false ) );
 
-#ifdef VA_OIDN_INTEGRATION_ENABLED
-        allShaders.push_back( m_oidn->CSPrepareDenoiserInputs   = vaComputeShader::CreateFromFile( GetRenderDevice( ), "vaPathTracer.hlsl", "CSPrepareDenoiserInputs", {}, false ) );
+        allShaders.push_back( m_CSPrepareDenoiserInputs = vaComputeShader::CreateFromFile( GetRenderDevice( ), "vaPathTracer.hlsl", "CSPrepareDenoiserInputs", {}, false ) );
         //allShaders.push_back( m_oidn->CSDebugDisplayDenoiser    = vaComputeShader::CreateFromFile( GetRenderDevice( ), "vaPathTracer.hlsl", "CSDebugDisplayDenoiser", {}, false ) );
-#endif // VA_OIDN_INTEGRATION_ENABLED
                                                                                                                     
 
         // wait until shaders are compiled! this allows for parallel compilation but ensures all are compiled after this point
@@ -606,8 +473,9 @@ vaDrawResultFlags vaPathTracer::Draw( vaRenderDeviceContext & renderContext, vaD
     // per-framebuffer-resize init
     if( m_radianceAccumulation == nullptr || m_radianceAccumulation->GetSize( ) != outputColor->GetSize( ) )
     {
+        // there's also viewspace depth stored in .w so keep the precision!
         m_radianceAccumulation  = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R32G32B32A32_FLOAT, outputColor->GetWidth(), outputColor->GetHeight(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
-        m_viewspaceDepth        = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R32_FLOAT, outputColor->GetWidth(), outputColor->GetHeight(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
+        //m_viewspaceDepth        = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R32_FLOAT, outputColor->GetWidth(), outputColor->GetHeight(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
         m_accumSampleIndex       = 0;    // restart accumulation (if any)
 
         m_pathGeometryHitInfoPayloads   = vaRenderBuffer::Create<ShaderGeometryHitPayload>( GetRenderDevice(), totalPathCount, vaRenderBufferFlags::None, "PathGeometryHitInfoPayloads" );
@@ -629,30 +497,51 @@ vaDrawResultFlags vaPathTracer::Draw( vaRenderDeviceContext & renderContext, vaD
         m_accumLastShadersID    = vaShader::GetLastUniqueShaderContentsID( );
     }
 
-#ifdef VA_OIDN_INTEGRATION_ENABLED
-    bool denoisingEnabled = drawResults == vaDrawResultFlags::None && m_mode == Mode::RealTime && m_realtimeAccumDenoise;
-#else
-    bool denoisingEnabled = false;
-#endif
+    bool denoisingEnabled = drawResults == vaDrawResultFlags::None && m_mode == Mode::RealTime && (m_realtimeAccumDenoiseType != 0);
     
     // these are shared with all raytrace and compute passes for now for simplicity
     vaRenderOutputs uavInputsOutputs;
     {
         uavInputsOutputs.UnorderedAccessViews[0] = m_radianceAccumulation;
-        uavInputsOutputs.UnorderedAccessViews[1] = m_viewspaceDepth;
-        uavInputsOutputs.UnorderedAccessViews[2] = m_pathGeometryHitInfoPayloads;
-        uavInputsOutputs.UnorderedAccessViews[3] = m_pathPayloads;
-        //uavInputsOutputs.UnorderedAccessViews[4] = m_pathTracerControl;
-        uavInputsOutputs.UnorderedAccessViews[4] = m_pathListSorted;                // this could/should be a SRV
-        uavInputsOutputs.UnorderedAccessViews[5] = m_pathSortKeys;
+        //uavInputsOutputs.UnorderedAccessViews[1] = m_viewspaceDepth;
+        uavInputsOutputs.UnorderedAccessViews[1] = m_pathGeometryHitInfoPayloads;
+        uavInputsOutputs.UnorderedAccessViews[2] = m_pathPayloads;
+        //uavInputsOutputs.UnorderedAccessViews[3] = m_pathTracerControl;
+        uavInputsOutputs.UnorderedAccessViews[3] = m_pathListSorted;                // this could/should be a SRV
+        uavInputsOutputs.UnorderedAccessViews[4] = m_pathSortKeys;
         if( denoisingEnabled )
         {
-#ifdef VA_OIDN_INTEGRATION_ENABLED
-            m_oidn->UpdateTextures( GetRenderDevice(), m_radianceAccumulation->GetWidth(), m_radianceAccumulation->GetHeight() );
+            if( m_denoiserAuxAlbedoGPU == nullptr || m_denoiserAuxAlbedoGPU->GetWidth() != m_radianceAccumulation->GetWidth() || m_denoiserAuxAlbedoGPU->GetHeight() != m_radianceAccumulation->GetHeight() )
+            {
+                m_denoiserAuxNormalsGPU = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R32G32B32A32_FLOAT, m_radianceAccumulation->GetWidth(), m_radianceAccumulation->GetHeight(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
+                m_denoiserAuxAlbedoGPU  = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R32G32B32A32_FLOAT, m_radianceAccumulation->GetWidth(), m_radianceAccumulation->GetHeight(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
+                m_denoiserAuxMotionVectorsGPU = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R32G32_FLOAT, m_radianceAccumulation->GetWidth(), m_radianceAccumulation->GetHeight(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
+            }
 
-            uavInputsOutputs.UnorderedAccessViews[6] = m_oidn->AuxAlbedoGPU;
-            uavInputsOutputs.UnorderedAccessViews[7] = m_oidn->AuxNormalsGPU;
+#ifdef VA_OIDN_INTEGRATION_ENABLED
+            if( m_realtimeAccumDenoiseType == 1 )
+            {
+                // create denoiser stuff
+                if( m_oidn == nullptr )
+                    m_oidn = std::make_shared<vaDenoiserOIDN>();
+                m_oidn->UpdateTextures( GetRenderDevice(), m_radianceAccumulation->GetWidth(), m_radianceAccumulation->GetHeight() );
+            }
+            else
+                m_oidn = nullptr;
 #endif
+#ifdef VA_OPTIX_DENOISER_ENABLED
+            if( m_realtimeAccumDenoiseType == 2 || m_realtimeAccumDenoiseType == 3 )
+            {
+                if( m_optix == nullptr )
+                    m_optix = std::make_shared<vaDenoiserOptiX>( GetRenderDevice() );
+                m_optix->Prepare( GetRenderDevice(), m_radianceAccumulation->GetWidth(), m_radianceAccumulation->GetHeight(), m_realtimeAccumDenoiseType == 3 );
+            }
+            else
+                m_optix = nullptr;
+#endif
+            uavInputsOutputs.UnorderedAccessViews[5] = m_denoiserAuxAlbedoGPU;
+            uavInputsOutputs.UnorderedAccessViews[6] = m_denoiserAuxNormalsGPU;
+            uavInputsOutputs.UnorderedAccessViews[7] = m_denoiserAuxMotionVectorsGPU;
         }
     }
 
@@ -675,14 +564,12 @@ vaDrawResultFlags vaPathTracer::Draw( vaRenderDeviceContext & renderContext, vaD
 
         if( denoisingEnabled )
         {
-#ifdef VA_OIDN_INTEGRATION_ENABLED
             VA_TRACE_CPUGPU_SCOPE( PrepareDenoiserInputs, renderContext );
             vaComputeItem computeItem;
-            computeItem.ComputeShader = m_oidn->CSPrepareDenoiserInputs;
+            computeItem.ComputeShader = m_CSPrepareDenoiserInputs;
             computeItem.SetDispatch( (outputColor->GetWidth()+7)/8, (outputColor->GetWidth()+7)/8 );
             computeItem.GenericRootConst = m_accumSampleTarget;
             drawResults |= renderContext.ExecuteSingleItem( computeItem, uavInputsOutputs, nullptr );
-#endif // VA_OIDN_INTEGRATION_ENABLED
         }
 
     } else { assert( false ); }
@@ -698,18 +585,15 @@ vaDrawResultFlags vaPathTracer::Draw( vaRenderDeviceContext & renderContext, vaD
         GetRenderDevice().FillFullscreenPassGraphicsItem( graphicsItem );
         graphicsItem.ConstantBuffers[VA_PATH_TRACER_CONSTANTBUFFER_SLOT] = m_constantBuffer;
         graphicsItem.ShaderResourceViews[VA_PATH_TRACER_RADIANCE_SRV_SLOT] = m_radianceAccumulation;
-        graphicsItem.ShaderResourceViews[VA_PATH_TRACER_VIEWSPACE_DEPTH_SRV_SLOT] = m_viewspaceDepth;
+        //graphicsItem.ShaderResourceViews[VA_PATH_TRACER_VIEWSPACE_DEPTH_SRV_SLOT] = m_viewspaceDepth;
 
         if( denoisingEnabled )
         {
-#ifdef VA_OIDN_INTEGRATION_ENABLED
-            graphicsItem.ShaderResourceViews[VA_PATH_TRACER_DENOISE_AUX_ALBEDO_SRV_SLOT ] = m_oidn->AuxAlbedoGPU;
-            graphicsItem.ShaderResourceViews[VA_PATH_TRACER_DENOISE_AUX_NORMALS_SRV_SLOT] = m_oidn->AuxNormalsGPU;
-#endif // VA_OIDN_INTEGRATION_ENABLED
+            graphicsItem.ShaderResourceViews[VA_PATH_TRACER_DENOISE_AUX_ALBEDO_SRV_SLOT ]   = m_denoiserAuxAlbedoGPU;
+            graphicsItem.ShaderResourceViews[VA_PATH_TRACER_DENOISE_AUX_NORMALS_SRV_SLOT]   = m_denoiserAuxNormalsGPU;
+            graphicsItem.ShaderResourceViews[VA_PATH_TRACER_DENOISE_AUX_MOTIONVEC_SRV_SLOT] = m_denoiserAuxMotionVectorsGPU;
         }
 
-        graphicsItem.ShaderResourceViews[VA_PATH_TRACER_RADIANCE_SRV_SLOT] = m_radianceAccumulation;
-        graphicsItem.ShaderResourceViews[VA_PATH_TRACER_VIEWSPACE_DEPTH_SRV_SLOT] = m_viewspaceDepth;
         graphicsItem.PixelShader        = m_PSWriteToOutput;
         //graphicsItem.SetDispatch( (outputColor->GetWidth( ) + 7) / 8, (outputColor->GetHeight( ) + 7) / 8, 1 );
         graphicsItem.BlendMode          = vaBlendMode::Opaque;
@@ -731,25 +615,37 @@ vaDrawResultFlags vaPathTracer::Draw( vaRenderDeviceContext & renderContext, vaD
     if( m_accumLastShadersID != shaderContentsID )
         m_accumSampleIndex = 0;      // restart accumulation (if any)
 
-    if( denoisingEnabled && m_debugViz == ShaderDebugViewType::None )
+    if( denoisingEnabled && m_debugViz == PathTracerDebugViewType::None )
     {
-        drawResults |= Denoise( renderContext, outputColor, outputDepth );
+        drawResults |= Denoise( renderContext, nonRTAttrs, outputColor, outputDepth );
     }
 
     return drawResults;
 }
 
-vaDrawResultFlags vaPathTracer::Denoise( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & outputColor, const shared_ptr<vaTexture> & outputDepth )
+vaDrawResultFlags vaPathTracer::Denoise( vaRenderDeviceContext & renderContext, vaDrawAttributes & drawAttributes, const shared_ptr<vaTexture> & outputColor, const shared_ptr<vaTexture> & outputDepth )
 {
-    outputColor; outputDepth;
+    drawAttributes; outputColor; outputDepth;
     VA_TRACE_CPUGPU_SCOPE( Denoise, renderContext );
     vaDrawResultFlags drawResults = vaDrawResultFlags::None; 
 
 #ifdef VA_OIDN_INTEGRATION_ENABLED
-    m_oidn->VanillaToDenoiser( renderContext, outputColor );
-    m_oidn->Denoise( );
-    m_oidn->DenoiserToVanilla( renderContext, outputColor );
+    if( m_realtimeAccumDenoiseType == 1 )
+    {
+        m_oidn->VanillaToDenoiser( renderContext, outputColor, m_denoiserAuxAlbedoGPU, m_denoiserAuxNormalsGPU );
+        m_oidn->Denoise( );
+        m_oidn->DenoiserToVanilla( renderContext, outputColor );
+    }
 #endif // #ifdef VA_OIDN_INTEGRATION_ENABLED
+
+#ifdef VA_OPTIX_DENOISER_ENABLED
+    if( m_realtimeAccumDenoiseType == 2 || m_realtimeAccumDenoiseType == 3 )
+    {
+        m_optix->VanillaToDenoiser( renderContext, drawAttributes, outputColor, m_denoiserAuxAlbedoGPU, m_denoiserAuxNormalsGPU, m_denoiserAuxMotionVectorsGPU );
+        m_optix->Denoise( renderContext );
+        m_optix->DenoiserToVanilla( renderContext, outputColor );
+    }
+#endif // #ifdef VA_OPTIX_DENOISER_ENABLED
 
     return drawResults;
 }

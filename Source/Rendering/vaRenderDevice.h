@@ -106,6 +106,12 @@ namespace Vanilla
             ret.SetRenderTarget( renderTarget, depthStencil, updateViewport );
             return ret;
         }
+        static vaRenderOutputs              FromRTDepth( const std::vector< std::shared_ptr<vaTexture> > renderTargets, const std::shared_ptr<vaTexture> & depthStencil = nullptr, bool updateViewport = true )
+        {
+            vaRenderOutputs ret; assert( renderTargets.size() <= vaRenderOutputs::c_maxRTs ); uint32 RTCount = std::min( vaRenderOutputs::c_maxRTs, (uint32)renderTargets.size() );
+            ret.SetRenderTargets( RTCount, renderTargets.data(), depthStencil, updateViewport );
+            return ret;
+        }
         //template < typename _Container >
         //static vaRenderOutputs              FromUAVs( const _Container & UAVs )
         //{
@@ -245,6 +251,8 @@ namespace Vanilla
         string                                  m_adapterNameShort;
         uint                                    m_adapterVendorID;
         string                                  m_adapterNameID;             // adapterNameID is a mix of .Description and [.SubSysId] that uniquely identifies the current graphics device on the system
+        int32                                   m_adapterLUIDHigh           = 0;
+        uint32                                  m_adapterLUIDLow            = 0;
 
 
         double                                  m_totalTime                 = 0.0;
@@ -340,6 +348,8 @@ namespace Vanilla
         const string &                      GetAdapterNameID( ) const                                                   { return m_adapterNameID; }
         uint                                GetAdapterVendorID( ) const                                                 { return m_adapterVendorID; }
         virtual string                      GetAPIName( ) const                                                         = 0;
+
+        const void                          GetAdapterLUID( int32 & highPart, uint32 & lowPart )                        { highPart = m_adapterLUIDHigh; lowPart = m_adapterLUIDLow; }
 
         // Fullscreen 
         const shared_ptr<vaVertexShader> &  GetFSVertexShader( ) const                                                  { return m_fsVertexShader;   }

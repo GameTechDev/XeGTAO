@@ -24,6 +24,7 @@
 
 #include "IntegratedExternals/vaImguiIntegration.h"
 
+#include "vaSceneMainRenderView.h"
 
 using namespace Vanilla;
 

@@ -67,7 +67,7 @@ namespace
 #else
     const uint32                                c_DefaultSwapChainFlags         = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING; 
 #endif
-    const D3D_FEATURE_LEVEL                     c_RequiredFeatureLevel          = D3D_FEATURE_LEVEL_12_0;
+    const D3D_FEATURE_LEVEL                     c_RequiredFeatureLevel          = D3D_FEATURE_LEVEL_12_1;
 
     typedef HRESULT( WINAPI * LPCREATEDXGIFACTORY2 )( UINT Flags, REFIID, void ** );
 
@@ -611,8 +611,12 @@ bool vaRenderDeviceDX12::Initialize( const std::vector<wstring> & shaderSearchPa
         m_adapterNameID     = FormatAdapterID(adapterDesc3); //vaStringTools::Format( L"%s-%08X_%08X", name.c_str( ), adapterDesc1.DeviceId, adapterDesc1.Revision );
         m_adapterVendorID   = adapterDesc3.VendorId;
 
+
         if( (adapterDesc3.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE) != 0 )
             m_adapterNameID = "WARP";
+
+        m_adapterLUIDLow    = adapterDesc3.AdapterLuid.LowPart;
+        m_adapterLUIDHigh   = adapterDesc3.AdapterLuid.HighPart;
 
         VA_LOG( "vaRenderDeviceDX12::Initialize - created adapter %s - %s", m_adapterNameShort.c_str(), m_adapterNameID.c_str() );
     }

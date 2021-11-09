@@ -249,6 +249,8 @@ namespace Vanilla
         // this resets LODs to 1, resets AABBs
         void                                            MeshSet( const std::vector<StandardVertex> & vertices, const std::vector<uint32> & indices );
         void                                            MeshGenerateNormals( vaWindingOrder windingOrder, int indexFrom, int indexCount, float mergeSharedMaxAngle = 0.0f );
+        
+        // don't forget to "std::unique_lock lock( m_mutex ); m_gpuDataDirty = true;"!
         template< typename CompareCallableType >
         inline void                                     MeshAddTriangleMergeDuplicates( const StandardVertex & v0, const StandardVertex & v1, const StandardVertex & v2, CompareCallableType && isDuplicate, int searchBackRange = -1 );
         //
@@ -403,8 +405,10 @@ namespace Vanilla
         assert( GetRenderDevice( ).IsRenderThread( ) );
         int lookFrom = ( searchBackRange == -1 ) ? ( 0 ) : ( std::max( 0, (int)Vertices( ).size( ) - searchBackRange ) );
         vaTriangleMeshTools::AddTriangle_MergeDuplicates( Vertices( ), Indices( ), v0, v1, v2, isDuplicate, lookFrom );
-        std::unique_lock lock( m_mutex );
-        m_gpuDataDirty = true;
+        
+        // removed - now responsibility of the caller
+        // std::unique_lock lock( m_mutex );
+        // m_gpuDataDirty = true;
     }
 
 }

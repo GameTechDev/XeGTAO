@@ -134,6 +134,7 @@ namespace Vanilla
 
     };
 
+
     struct DirtyBoundsUpdateWorkNode : vaSceneAsync::WorkNode
     {
         vaScene &               Scene;
@@ -175,12 +176,53 @@ namespace Vanilla
                 for( uint32 index = itemBegin; index < itemEnd; index++ )
                 {
                     auto entity = Scene.m_listDirtyBounds[index];
-                    if( !Scene.Registry().get<Scene::WorldBounds>( entity ).Update( Scene.Registry(), entity ) )
+                    Scene::WorldBounds * bounds = Scene.Registry().try_get<Scene::WorldBounds>( entity );
+                    if( bounds == nullptr )
+                    {
+                        // TODO: 
+                        // this is a scenario where child can have bounds but a parent might not; think it through; do we want to propagate bounds to parents? possibly?
+                        // in that case, perhaps do it in the previous pass: anything with bounds adds bounds to its parents? But it might be wasteful - unclear on what to do here.
+                        int dbg = 0; dbg++;
+                    }
+                    if( bounds != nullptr && !bounds->Update( Scene.Registry(), entity ) )
                         Scene.m_listDirtyBoundsUpdatesFailed.Append( entity );
+
                 }
             }
             else
             { assert ( false );}
+        }
+    };
+
+    struct PreviousTransformWorldUpdateWorkNode : vaSceneAsync::WorkNode
+    {
+        vaScene &               Scene;
+        entt::basic_view< entt::entity, entt::exclude_t<>, const Scene::TransformWorld>
+                                View;
+
+        PreviousTransformWorldUpdateWorkNode( const string & name, vaScene & scene, const std::vector<string> & predecessors, const std::vector<string> & successors ) 
+            : Scene( scene ), View( scene.Registry().view<std::add_const_t<Scene::TransformWorld>>( ) ),
+            vaSceneAsync::WorkNode( name, predecessors, successors, Scene::AccessPermissions::ExportPairLists<
+                const Scene::TransformWorld, Scene::PreviousTransformWorld >() ) { }
+
+        // Asynchronous narrow processing; called after ExecuteWide, returned std::pair<uint, uint> will be used to immediately repeat ExecuteWide if non-zero
+        virtual std::pair<uint, uint>   ExecuteNarrow( const uint32 pass, vaSceneAsync::ConcurrencyContext & ) override
+        {
+            if( pass == 0 ) // first and only pass
+                return std::make_pair( (uint32)View.size(), VA_GOOD_PARALLEL_FOR_CHUNK_SIZE * 2 );    // <- is this safe use of the entt View?
+            return {0,0};
+        }
+        //
+        // Asynchronous wide processing; items run in chunks to minimize various overheads
+        virtual void                    ExecuteWide( const uint32 pass, const uint32 itemBegin, const uint32 itemEnd, vaSceneAsync::ConcurrencyContext & ) override
+        {
+            assert( pass == 0 ); pass;
+            for( uint32 index = itemBegin; index < itemEnd; index++ )
+            {
+                entt::entity entity = View[index];  assert( Scene.Registry().valid( entity ) ); // if this fires, you've corrupted the data somehow - possibly destroying elements outside of DestroyTag path?
+                Scene::PreviousTransformWorld & transformPrevious = Scene.Registry().get<Scene::PreviousTransformWorld>( entity );
+                transformPrevious = Scene.CRegistry().get<Scene::TransformWorld>( entity );
+            }
         }
     };
 
@@ -193,18 +235,14 @@ namespace Vanilla
         EmissiveMaterialDriverUpdateWorkNode( const string & name, vaScene & scene, const std::vector<string> & predecessors, const std::vector<string> & successors ) 
             : Scene( scene ), View( scene.Registry().view<std::add_const_t<Scene::EmissiveMaterialDriver>>( ) ),
             vaSceneAsync::WorkNode( name, predecessors, successors, Scene::AccessPermissions::ExportPairLists<
-                const Scene::TransformWorld, const Scene::LightPoint, Scene::EmissiveMaterialDriver >() )
-        { 
-        }
+                const Scene::TransformWorld, const Scene::LightPoint, Scene::EmissiveMaterialDriver >() ) { }
 
         // Asynchronous narrow processing; called after ExecuteWide, returned std::pair<uint, uint> will be used to immediately repeat ExecuteWide if non-zero
         virtual std::pair<uint, uint>   ExecuteNarrow( const uint32 pass, vaSceneAsync::ConcurrencyContext & ) override
         {
-            if( pass == 0 )
-            {   // first pass: start
-                return std::make_pair( (uint32)View.size(), VA_GOOD_PARALLEL_FOR_CHUNK_SIZE * 4 );    // <- is this safe use of the entt View?
-            }
-            else return {0,0};
+            if( pass == 0 ) // first and only pass
+                return std::make_pair( (uint32)View.size(), VA_GOOD_PARALLEL_FOR_CHUNK_SIZE * 2 );    // <- is this safe use of the entt View?
+            return {0,0};
         }
         //
         // Asynchronous wide processing; items run in chunks to minimize various overheads
@@ -283,25 +321,35 @@ vaScene::vaScene( const string & name, const vaGUID UID )
     //m_registry.on_construct<Scene::TransformLocal>().connect< &Scene::InitTransformLocalToIdentity >( );
     // m_registry.on_update<Scene::TransformLocal>().connect<&vaScene::OnTransformLocalChanged>( this );
 
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  //
+    //
+    // Replace most (all?) of these "reactive" (callback-based) things with a multi-threaded pre-process passes
+    // instead because this has shown to be tricky to maintain and debug in practice
+    //    
     // automatic dirty flag on TransformLocalIsWorldTag - note, this could be source of performance issue
-    m_registry.on_construct<Scene::TransformLocalIsWorldTag>().connect<&Scene::SetTransformDirtyRecursiveSafe>();
-    m_registry.on_destroy<Scene::TransformLocalIsWorldTag>().connect<&Scene::SetTransformDirtyRecursiveSafe>();
-
+    m_registry.on_construct<Scene::TransformLocalIsWorldTag>().connect<&Scene::SetTransformDirtyRecursive>();
+    m_registry.on_destroy<Scene::TransformLocalIsWorldTag>().connect<&Scene::SetTransformDirtyRecursive>();
+    //
     // automatic dirty flag on TransformLocal change - note, this isn't used because it can be too slow sometimes
     // m_registry.on_construct<Scene::TransformLocal>( ).connect<&Scene::SetTransformDirtyRecursiveSafe>( );
     // m_registry.on_destroy<Scene::TransformLocal>( ).connect<&Scene::SetTransformDirtyRecursiveSafe>( );
 
     // m_transformWorldObserver.connect( m_registry, entt::collector.update<Scene::TransformWorld>() );
-
+    //
     m_registry.on_destroy<Scene::Relationship>( ).connect<&vaScene::OnRelationshipDestroy>( this );
     m_registry.on_update<Scene::Relationship>( ).connect<&vaScene::OnDisallowedOperation>( this );
     m_registry.on_construct<Scene::Relationship>( ).connect<&vaScene::OnRelationshipEmplace>( this );
-
-    // automatic assignment of BoundsDirtyTag for some cases
-    m_registry.on_construct<Scene::CustomBoundingBox>( ).connect< &Scene::AutoEmplaceDestroy<Scene::WorldBounds> >( );
-    m_registry.on_destroy<Scene::CustomBoundingBox>( ).connect< &Scene::AutoEmplaceDestroy<Scene::WorldBounds> >( );
-    m_registry.on_construct<Scene::RenderMesh>( ).connect< &Scene::AutoEmplaceDestroy<Scene::WorldBounds> >( );
-    m_registry.on_destroy<Scene::RenderMesh>( ).connect< &Scene::AutoEmplaceDestroy<Scene::WorldBounds> >( );
+    //
+    // automatic creation of WorldBounds
+    m_registry.on_construct<Scene::CustomBoundingBox>( ).connect< &Scene::AutoEmplaceDestroyWorldBounds >( );
+    m_registry.on_destroy<Scene::CustomBoundingBox>( ).connect< &Scene::AutoEmplaceDestroyWorldBounds >( );
+    m_registry.on_construct<Scene::RenderMesh>( ).connect< &Scene::AutoEmplaceDestroyWorldBounds >( );
+    m_registry.on_destroy<Scene::RenderMesh>( ).connect< &Scene::AutoEmplaceDestroyWorldBounds >( );
+    m_registry.on_construct<Scene::TransformWorld>( ).connect< &Scene::AutoEmplaceDestroyPreviousTransformWorld >( );
+    m_registry.on_destroy<Scene::TransformWorld>( ).connect< &Scene::AutoEmplaceDestroyPreviousTransformWorld >( );
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
 #ifdef _DEBUG
     m_registry.on_construct<Scene::TransformDirtyTag>( ).connect<&vaScene::OnTransformDirtyFlagEmplace>( this );
@@ -325,11 +373,14 @@ vaScene::vaScene( const string & name, const vaGUID UID )
 
     typedef std::vector<std::string> strvec;
 
+    // this one can start as early as it wants but must finish before new world transforms are updated, which happens in TransformsUpdate
+    m_asyncWorkNodes.push_back( std::make_shared<PreviousTransformWorldUpdateWorkNode>( "PreviousTransformWorldUpdate", *this, strvec{ }, strvec{ "TransformsUpdate" } ) );
+
     m_asyncWorkNodes.push_back( std::make_shared<TransformsUpdateWorkNode>( "TransformsUpdate", *this, strvec{ "motion_done_marker" }, strvec{ "transforms_done_marker" } ) );
 
     m_asyncWorkNodes.push_back( std::make_shared<DirtyBoundsUpdateWorkNode>( "DirtyBoundsUpdate", *this, strvec{ "transforms_done_marker" }, strvec{ "bounds_done_marker" } ) );
 
-    // no reason why this can't run in parallel with 'DirtyBoundsUpdate'?
+    // no reason why these can't run in parallel with 'DirtyBoundsUpdate'?
     m_asyncWorkNodes.push_back( std::make_shared<EmissiveMaterialDriverUpdateWorkNode>( "EmissiveMaterialDriverUpdate", *this, strvec{ "transforms_done_marker" }, strvec{ "bounds_done_marker" } ) );
 
     for( auto & workNodes : m_asyncWorkNodes )
@@ -373,12 +424,16 @@ vaScene::~vaScene( )
     if( IsTicking( ) )
         TickEnd( );
 
-    m_registry.on_destroy<Scene::TransformLocalIsWorldTag>( ).disconnect<&Scene::SetTransformDirtyRecursiveSafe>( );
-    m_registry.on_destroy<Scene::TransformLocalIsWorldTag>( ).disconnect<&Scene::SetTransformDirtyRecursiveSafe>( );
+    m_registry.on_construct<Scene::TransformLocalIsWorldTag>( ).disconnect<&Scene::SetTransformDirtyRecursive>( );
+    m_registry.on_destroy<Scene::TransformLocalIsWorldTag>( ).disconnect<&Scene::SetTransformDirtyRecursive>( );
 
-    m_registry.on_destroy<Scene::CustomBoundingBox>( ).disconnect< &Scene::AutoEmplaceDestroy<Scene::WorldBounds> >( );
-    m_registry.on_destroy<Scene::RenderMesh>().disconnect< &Scene::AutoEmplaceDestroy<Scene::WorldBounds> >();
-   
+    m_registry.on_construct<Scene::CustomBoundingBox>( ).disconnect< &Scene::AutoEmplaceDestroyWorldBounds >( );
+    m_registry.on_destroy<Scene::CustomBoundingBox>( ).disconnect< &Scene::AutoEmplaceDestroyWorldBounds >( );
+    m_registry.on_construct<Scene::RenderMesh>( ).disconnect< &Scene::AutoEmplaceDestroyWorldBounds >( );
+    m_registry.on_destroy<Scene::RenderMesh>( ).disconnect< &Scene::AutoEmplaceDestroyWorldBounds >( );
+    m_registry.on_construct<Scene::TransformWorld>( ).disconnect< &Scene::AutoEmplaceDestroyPreviousTransformWorld >( );
+    m_registry.on_destroy<Scene::TransformWorld>( ).disconnect< &Scene::AutoEmplaceDestroyPreviousTransformWorld >( );
+
     // remove all entities
     ClearAll();
 

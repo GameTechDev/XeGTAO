@@ -70,7 +70,7 @@ void ReportCursorInfo( const in ShaderInstanceConstants instance, const in int2 
             
             // used to compute it all from NDC z, but switched to getting worldspace pos as input now
             //float4 pos;
-            //pos.xy = ClipSpaceToNDCPositionXY( g_globals.CursorViewportPosition.xy );
+            //pos.xy = ScreenToNDCSpaceXY( g_globals.CursorViewportPosition.xy );
             //pos.z = svPosition.z;
             //pos.w = 1.0;
             //pos = mul( g_globals.ViewProjInv, pos );

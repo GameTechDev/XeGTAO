@@ -41,6 +41,7 @@ namespace Vanilla
     struct vaRenderInstance
     {
         vaMatrix4x4                     Transform;
+        vaMatrix4x4                     PreviousTransform;
         vaVector4                       EmissiveAdd;            // vaVector4( 0.0f, 0.0f, 0.0f, 1.0f );  // for debugging visualization (default means "do not override"); used for highlights, wireframe, lights, etc; rgb is added, alpha multiplies the original; for ex: " finalColor.rgb = finalColor.rgb * g_instance.EmissiveAdd.a + g_instance.EmissiveAdd.rgb; "
         DrawOriginInfo                  OriginInfo;
         vaFramePtr<vaRenderMesh>        Mesh;
@@ -56,16 +57,6 @@ namespace Vanilla
         }                               Flags;
 
         void WriteToShaderConstants( ShaderInstanceConstants & outConstants ) const;
-    };
-
-    // This is a version of vaRenderInstance for manual use - this path is not yet finished.
-    struct vaRenderInstanceSimple : public vaRenderInstance
-    {
-        vaShadingRate                   ShadingRate         = vaShadingRate::ShadingRate1X1;        // per-draw-call shading rate
-
-        vaRenderInstanceSimple( const shared_ptr<vaRenderMesh> & mesh, const vaMatrix4x4 & transform );
-        vaRenderInstanceSimple( const shared_ptr<vaRenderMesh> & mesh,const vaMatrix4x4 & transform, const shared_ptr<vaRenderMaterial> & overrideMaterial, vaShadingRate shadingRate, const vaVector4 & emissiveAdd, const vaVector3 & emissiveMul, float meshLOD );
-        void SetDefaults( );
     };
 
     // Contains per-frame selection of mainly vaRenderMesh/vaRenderMaterial items (see 'struct Item') but it can be 

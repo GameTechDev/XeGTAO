@@ -86,7 +86,7 @@ void DisconnectParent( entt::registry& registry, entt::entity child, Scene::Rela
 
     Scene::UpdateRelationshipDepthsRecursive( registry, child );
 
-    Scene::SetTransformDirtyRecursive( registry, child );
+    Scene::SetTransformDirtyRecursiveUnsafe( registry, child );
 }
 
 void Scene::DisconnectChildren( entt::registry & registry, entt::entity parent )
@@ -112,7 +112,7 @@ void Scene::DisconnectChildren( entt::registry & registry, entt::entity parent )
             childInfo.PrevSibling   = entt::null;
             childInfo.Depth         = 0;
             Scene::UpdateRelationshipDepthsRecursive( registry, child );
-            SetTransformDirtyRecursive( registry, child );
+            SetTransformDirtyRecursiveUnsafe( registry, child );
 
             // move to next
             child = nextChild;
@@ -262,7 +262,7 @@ bool Scene::SetParent( entt::registry & registry, entt::entity child, entt::enti
 
     if( parent == entt::null )  // if new parent is null then just disconnect current and we're done here
     {
-        SetTransformDirtyRecursive( registry, child );
+        SetTransformDirtyRecursiveUnsafe( registry, child );
         return true;
     }
 
@@ -296,7 +296,7 @@ bool Scene::SetParent( entt::registry & registry, entt::entity child, entt::enti
         Scene::UpdateRelationshipDepthsRecursive( registry, child );
     }
 
-    SetTransformDirtyRecursive( registry, child );
+    SetTransformDirtyRecursiveUnsafe( registry, child );
     assert( parentInfo.ChildrenCount > 0 );
     assert( childInfo.Depth <= Scene::Relationship::c_MaxDepthValue );
     return true;
@@ -370,7 +370,7 @@ int Scene::UpdateRelationshipDepthsRecursive( entt::registry& registry, entt::en
     return maxDepth;
 }
 
-void Scene::SetTransformDirtyRecursive( entt::registry & registry, entt::entity entity )
+void Scene::SetTransformDirtyRecursiveUnsafe( entt::registry & registry, entt::entity entity )
 {
     if( registry.any_of<Scene::TransformDirtyTag>( entity ) )      // early out
         return;
@@ -397,8 +397,8 @@ void Scene::UpdateTransforms( entt::registry & registry, entt::entity entity, Un
     const auto & cregistry = std::as_const(registry);
     assert( cregistry.valid( entity ) );
     
-    const Scene::TransformLocal &   localTransform = cregistry.get<Scene::TransformLocal>( entity );
-    Scene::TransformWorld &         worldTransform = registry.get<Scene::TransformWorld>( entity );
+    const Scene::TransformLocal &   localTransform      = cregistry.get<Scene::TransformLocal>( entity );
+    Scene::TransformWorld &         worldTransform      = registry.get<Scene::TransformWorld>( entity );
 
     const Scene::Relationship & relationship = cregistry.get< Scene::Relationship >( entity );
     vaMatrix4x4 newWorldTransform;
@@ -419,6 +419,50 @@ void Scene::UpdateTransforms( entt::registry & registry, entt::entity entity, Un
         if( cregistry.any_of<Scene::WorldBounds>( entity ) )
             outBoundsDirtyList.Append( entity );
     }
+}
+
+void Scene::ListReferences( const entt::registry & registry, entt::entity entity, std::vector<Scene::EntityReference*> & referenceList )
+{
+    // go through all component types
+    for( int typeIndex = 0; typeIndex < Scene::Components::TypeCount( ); typeIndex++ )
+    {
+        if( Scene::Components::HasListReferences( typeIndex ) && Scene::Components::Has( typeIndex, const_cast<entt::registry&>(registry), entity ) )
+            Scene::Components::ListReferences( typeIndex, const_cast<entt::registry&>(registry), entity, referenceList );
+    }
+}
+
+entt::entity Scene::Copy( entt::registry & dstRegistry, const entt::registry & srcRegistry, entt::entity srcEntity, bool recursive )
+{
+    // all of this will get reworked
+
+    assert( &dstRegistry != &srcRegistry );
+    dstRegistry;
+
+    // collect all entities to copy
+    std::vector<entt::entity> allEntities;
+    allEntities.push_back( srcEntity );
+    if( recursive )
+        Scene::VisitChildren( srcRegistry, srcEntity, [&]( entt::entity child ) { allEntities.push_back(child); } );
+    
+    // make a list of all references so we can update or reset them
+    std::vector<Scene::EntityReference*> referenceList;
+    for( entt::entity entityIt : allEntities )
+        ListReferences( srcRegistry, entityIt, referenceList );
+    assert( false );
+
+    // copy to destination while saving a 'old->new' entity ID remap
+    assert( false );
+    // we must not copy IDs!
+    assert( false );
+
+    // we must generate new UIDs for all copied entities
+    assert( false ); 
+//     for( entt::entity entityIt : allEntities )
+//     {
+//         if( Scene::Components::Has( s ) )
+//     }
+
+    return entt::null;
 }
 
 bool Scene::UniqueStaticAppendConsumeList::StartAppending( uint32 maxCount ) noexcept
@@ -502,7 +546,7 @@ struct EntitySerializeHelper
                 Registry->emplace<Scene::Relationship>( Entity );
                 for( int i = 0; i < childEntities.size( ); i++ )
                     Scene::SetParent( *Registry, childEntities[i].Entity, Entity );
-                Scene::SetTransformDirtyRecursive( *Registry, Entity );
+                Scene::SetTransformDirtyRecursiveUnsafe( *Registry, Entity );
             }
         }
         else if( serializer.IsWriting( ) )
@@ -599,6 +643,28 @@ bool Scene::LoadJSON( entt::registry & registry, const string & filePath )
     // connect references
     for( int i = 0; i < serializeArgs.LoadedReferences.size( ); i++ )
         (*serializeArgs.LoadedReferences[i].first) = Scene::EntityReference( serializeArgs.UIDRegistry, serializeArgs.LoadedReferences[i].second );
+
+#ifdef _DEBUG
+    // validate 'ListReferences' coverage
+    std::unordered_set<Scene::EntityReference*> referenceSet;
+    // go through all entities
+    registry.each( [ & ]( entt::entity entity ) 
+    { 
+        std::vector<Scene::EntityReference*> referenceList;
+        Scene::ListReferences( registry, entity, referenceList );
+        for( Scene::EntityReference * ref : referenceList )
+        {
+            auto ret = referenceSet.emplace( ref );
+            assert( ret.second );   // if this fires, 
+        }
+    } );
+    // now we should have a list of all EntityReference-s used by our components, let's make sure the ones we just serialized are in
+    for( std::pair<class EntityReference *, UID> & loadedRef : serializeArgs.LoadedReferences )
+    {
+        // this most likely means you forgot to add ListReferences to your component that uses EntityReference
+        assert( referenceSet.find( loadedRef.first ) != referenceSet.end() );
+    }
+#endif
     
     assert( retVal );
     

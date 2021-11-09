@@ -25,61 +25,7 @@ cbuffer TAAConstantsBuffer : register( B_CONCATENATER( TAA_CONSTANTSBUFFERSLOT )
 
 Texture2D<float>            g_sourceDepth           : register( t0 );   // source (clip space) depth (in our case NDC too?)
 
-RWTexture2D<float4>         g_outputMotionVectors   : register( u0 );
-RWTexture2D<float4>         g_outputDepths          : register( u1 );
 RWTexture2D<float4>         g_outputDbgImage        : register( u2 );
-
-float ViewspaceDepthToTAACompDepthFunction( float viewspaceDepth )
-{
-    // better utilizes FP16 precision
-    return viewspaceDepth / 100.0;
-}
-
-[numthreads(MOTIONVECTORS_BLOCK_SIZE_X, MOTIONVECTORS_BLOCK_SIZE_Y, 1)]
-void CSGenerateMotionVectors( uint2 dispatchThreadID : SV_DispatchThreadID )
-{
-    uint2 pixCoord = dispatchThreadID.xy;
-
-    float depthNDC              = g_sourceDepth.Load( int3(pixCoord, 0)/*, offset*/).x;
-    
-    float depth     = NDCToViewDepth( depthNDC );
-
-    float2 clipXY   = pixCoord + 0.5f;
-    float2 ndcXY    = ClipSpaceToNDCPositionXY( clipXY ); //, depthNDC );
-
-    float4 reprojectedPos = mul( g_TAAConstants.ReprojectionMatrix, float4( ndcXY.xy, depthNDC, 1 ) );
-    reprojectedPos.xyz /= reprojectedPos.w;
-    float reprojectedDepth = NDCToViewDepth( reprojectedPos.z );
-
-    depth               = ViewspaceDepthToTAACompDepthFunction( depth );
-    reprojectedDepth    = ViewspaceDepthToTAACompDepthFunction( reprojectedDepth );
-
-    // reduce 16bit precision issues - push the older frame ever so slightly into foreground
-    reprojectedDepth *= 0.999;
-
-    float3 delta;
-    delta.xy = NDCToClipSpacePositionXY( reprojectedPos.xy ) - clipXY;
-    delta.z = reprojectedDepth - depth;
-
-    //[branch] if( IsUnderCursorRange(pixCoord, int2(1, 1)) )
-    //{
-    //    DebugDraw2DText( pixCoord + float2(0, -40), float4( 1, 1, 1,   1 ), float4( ndcXY, depthNDC, 0 ) );
-    //    DebugDraw2DText( pixCoord + float2(0, -20), float4( 1, 1, 0.5, 1 ), reprojectedPos );
-    //}
-//
-//    bool dbg1 = all( pixCoord.xy % 100 == 0.xx );
-//    bool dbg2 = all( (pixCoord.xy+50) % 100 == 0.xx );
-//    if( dbg1 || dbg2 )
-//    {
-//        DebugDraw2DLine( ndcXY, ndcXY + delta.xy, float4( dbg1, dbg2, 0, 1 ) );
-//    }
-
-    // de-jitter! not sure if this is the best way to do it for everything, but it's required for TAA
-    delta.xy -= g_TAAConstants.Consts.Jitter;
-
-    g_outputDepths[ pixCoord ]          = depth;
-    g_outputMotionVectors[ pixCoord ]   = float4( delta.xyz, 0 ); //(uint)(frac( clip ) * 10000);
-}
 
 //RWTexture2D<float4>         g_outputFinal           : register( u0 );
 //Texture2D<float4>           g_sourceMotionVectors   : register( t2 );
@@ -131,7 +77,7 @@ void CSTAA( uint3 inDispatchIdx : SV_DispatchThreadID, uint3 inGroupID : SV_Grou
         DebugDraw2DLine( clipXY, clipXY + velocity.xy, float4( dbg1, dbg2, 0, 1 ) );
 
         if( all( (pixCoord.xy+1) % 400 == 0 ) )
-            DebugDraw2DText( clipXY, float4( 1, 0.5, 1, 1 ), float4( velocity, 0 ) );
+            DebugDraw2DText( clipXY, float4( 1, 0.5, 1, 1 ), float4( velocity, g_depthBuffer.Load( uint3( pixCoord, 0 ) ) ) );
     }
 #endif
     //    g_outTexture[ pixCoord ] = depth - depthPrev;

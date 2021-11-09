@@ -32,7 +32,6 @@ using namespace Vanilla;
 vaTAA::vaTAA( const vaRenderingModuleParams & params ) : 
     vaRenderingModule( params ),
     vaUIPanel( "TAA", 10, !VA_MINIMAL_UI_BOOL, vaUIPanel::DockLocation::DockedLeftBottom ),
-    m_CSGenerateMotionVectors( params ),
     m_CSTAA( params ),
     m_CSFinalApply( params ),
     m_constantBuffer( vaConstantBuffer::Create<TAAConstants>( params.RenderDevice, "TAAConstants" ) )
@@ -88,11 +87,9 @@ bool vaTAA::UpdateTexturesAndShaders( int width, int height )
 
         // to allow parallel background compilation but still ensure they're all compiled after this function
         std::vector<shared_ptr<vaShader>> allShaders;
-        allShaders.push_back( m_CSGenerateMotionVectors.get() );
         allShaders.push_back( m_CSTAA.get() );
         allShaders.push_back( m_CSFinalApply.get() );
 
-        m_CSGenerateMotionVectors->CompileFromFile( shaderFileToUse, "CSGenerateMotionVectors", m_staticShaderMacros, false );
         m_CSTAA->CompileFromFile( shaderFileToUse, "CSTAA", m_staticShaderMacros, false );
         m_CSFinalApply->CompileFromFile( shaderFileToUse, "CSFinalApply", m_staticShaderMacros, false );
 
@@ -119,12 +116,8 @@ bool vaTAA::UpdateTexturesAndShaders( int width, int height )
         m_debugImage        = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R11G11B10_FLOAT, m_size.x, m_size.y, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
         m_debugImage        ->SetName( "TAA_DebugImage" );
         //m_workingVisibility = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R16_UNORM, m_size.x, m_size.y, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
-        m_motionVectors     = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R16G16B16A16_FLOAT, m_size.x, m_size.y, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
-        m_motionVectors     ->SetName( "TAA_MotionVectors" );
-        m_depth             = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R16_FLOAT, m_size.x, m_size.y, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
-        m_depth             ->SetName( "TAA_DepthA" );
-        m_depthPrevious     = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R16_FLOAT, m_size.x, m_size.y, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
-        m_depthPrevious     ->SetName( "TAA_DepthB" );
+        m_depthPrevious     = vaTexture::Create2D( GetRenderDevice(), vaResourceFormat::R32_FLOAT, m_size.x, m_size.y, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
+        m_depthPrevious     ->SetName( "TAA_DepthPrevious" );
         m_history           = vaTexture::Create2D( GetRenderDevice(), colorFormat, m_size.x, m_size.y, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
         m_history           ->SetName( "TAA_DepthHistoryA" );
         m_historyPrevious   = vaTexture::Create2D( GetRenderDevice(), colorFormat, m_size.x, m_size.y, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
@@ -168,14 +161,16 @@ vaVector2 vaTAA::ComputeJitter( int64 frameIndex )
     return m_currentJitter;
 }
 
-void vaTAA::UpdateConstants( vaRenderDeviceContext & renderContext, const vaCameraBase & cameraBase, const vaMatrix4x4 & reprojectionMatrix )
+void vaTAA::UpdateConstants( vaRenderDeviceContext & renderContext, const vaCameraBase & cameraBase, const vaMatrix4x4 & reprojectionMatrix, const vaVector2 & cameraJitterDelta )
 {
     TAAConstants consts;
 
     // the scene should have been rendered with the current jitter - if not, there's a mismatch somewhere
     assert( cameraBase.GetSubpixelOffset( ) == m_currentJitter ); cameraBase;
 
+    // TODO: remove local jitter delta computation? since we're getting it from outside anyhow
     vaVector2 jitterDelta           = m_previousJitter - m_currentJitter;
+    assert( jitterDelta == cameraJitterDelta ); cameraJitterDelta;
 
     consts.ReprojectionMatrix       = reprojectionMatrix;
     consts.Consts.Resolution        = { (float)m_size.x, (float)m_size.y, 1.0f / (float)m_size.x, 1.0f / (float)m_size.y };
@@ -197,16 +192,17 @@ void vaTAA::UpdateConstants( vaRenderDeviceContext & renderContext, const vaCame
     m_constantBuffer->Upload( renderContext, consts );
 }
 
-vaDrawResultFlags vaTAA::Apply( vaRenderDeviceContext & renderContext, const vaCameraBase & cameraBase, const shared_ptr<vaTexture> & inoutColor, const shared_ptr<vaTexture> & inputDepth, const vaMatrix4x4 & reprojectionMatrix )
+vaDrawResultFlags vaTAA::Apply( vaRenderDeviceContext & renderContext, const vaCameraBase & cameraBase, const shared_ptr<vaTexture> & motionVectors, const shared_ptr<vaTexture> & viewspaceDepth, const shared_ptr<vaTexture> & inoutColor, const vaMatrix4x4 & reprojectionMatrix, const vaVector2 & cameraJitterDelta )
 {
-    assert( inoutColor->GetSize( ) == inputDepth->GetSize( ) );
-    assert( inputDepth->GetSampleCount( ) == 1 ); // MSAA no longer supported!
+    assert( inoutColor->GetSize( ) == viewspaceDepth->GetSize( ) );
+    assert( viewspaceDepth->GetSampleCount( ) == 1 ); // MSAA no longer supported!
 
-    UpdateTexturesAndShaders( inputDepth->GetSizeX( ), inputDepth->GetSizeY( ) );
+    UpdateTexturesAndShaders( viewspaceDepth->GetSizeX( ), viewspaceDepth->GetSizeY( ) );
 
     assert( !m_shadersDirty ); if( m_shadersDirty ) return vaDrawResultFlags::UnspecifiedError;
 
-    UpdateConstants( renderContext, cameraBase, reprojectionMatrix );
+    // TODO: reprojection matrix is now part of global attributes - no need to pass it as local constants
+    UpdateConstants( renderContext, cameraBase, reprojectionMatrix, cameraJitterDelta );
 
     if( m_resetHistory )
     {
@@ -228,20 +224,7 @@ vaDrawResultFlags vaTAA::Apply( vaRenderDeviceContext & renderContext, const vaC
 
     // needed only for shader debugging viz
     vaDrawAttributes drawAttributes(cameraBase); 
-
-    {
-        VA_TRACE_CPUGPU_SCOPE( GenerateMotionVectors, renderContext );
-
-        vaComputeItem computeItem = computeItemBase;
-        computeItem.ComputeShader = m_CSGenerateMotionVectors;
-
-        // input SRVs
-        computeItem.ShaderResourceViews[0] = inputDepth;
-
-        computeItem.SetDispatch( (m_size.x + MOTIONVECTORS_BLOCK_SIZE_X-1) / MOTIONVECTORS_BLOCK_SIZE_X, (m_size.y + MOTIONVECTORS_BLOCK_SIZE_Y-1) / MOTIONVECTORS_BLOCK_SIZE_Y, 1 );
-
-        renderContext.ExecuteSingleItem( computeItem, vaRenderOutputs::FromUAVs( m_motionVectors, m_depth, m_debugImage ), &drawAttributes );
-    }
+    drawAttributes.Settings.ReprojectionMatrix = reprojectionMatrix;
 
     {
         VA_TRACE_CPUGPU_SCOPE( MainTAA, renderContext );
@@ -250,10 +233,10 @@ vaDrawResultFlags vaTAA::Apply( vaRenderDeviceContext & renderContext, const vaC
         computeItem.ComputeShader = m_CSTAA;
 
         // input SRVs
-        computeItem.ShaderResourceViews[0] = m_motionVectors;   // a.k.a. velocity buffer
+        computeItem.ShaderResourceViews[0] = motionVectors;   // a.k.a. velocity buffer
         computeItem.ShaderResourceViews[1] = inoutColor;
         computeItem.ShaderResourceViews[2] = m_historyPrevious;
-        computeItem.ShaderResourceViews[3] = m_depth;
+        computeItem.ShaderResourceViews[3] = viewspaceDepth;
         computeItem.ShaderResourceViews[4] = m_depthPrevious;
 
         computeItem.SetDispatch( (m_size.x + INTEL_TAA_NUM_THREADS_X-1) / INTEL_TAA_NUM_THREADS_X, (m_size.y + INTEL_TAA_NUM_THREADS_Y-1) / INTEL_TAA_NUM_THREADS_Y, 1 );
@@ -275,7 +258,9 @@ vaDrawResultFlags vaTAA::Apply( vaRenderDeviceContext & renderContext, const vaC
         renderContext.ExecuteSingleItem( computeItem, vaRenderOutputs::FromUAVs( inoutColor, nullptr, m_debugImage ), &drawAttributes );
     }
 
-    std::swap( m_depthPrevious, m_depth );
+    m_depthPrevious->CopyFrom( renderContext, viewspaceDepth );
+
+    //std::swap( m_depthPrevious, m_depth );
     std::swap( m_historyPrevious, m_history );
 
     m_historyPreviousPreExposureMul = cameraBase.GetPreExposureMultiplier( true );

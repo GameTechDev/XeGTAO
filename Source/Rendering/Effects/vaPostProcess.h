@@ -78,7 +78,10 @@ namespace Vanilla
         bool                                        m_shadersDirty = true;
         std::vector< pair< string, string > >       m_staticShaderMacros;
 
-        
+        shared_ptr<vaComputeShader>                 m_CSGenerateMotionVectors;
+
+        shared_ptr<void>                            m_CPUProcessContext;
+
     public:
         virtual ~vaPostProcess( );
 
@@ -129,6 +132,12 @@ namespace Vanilla
         virtual vaDrawResultFlags                   GenerateMIPs( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & inoutTexture );
 
         virtual vaDrawResultFlags                   CopySliceToTexture3D( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & dstTexture, uint32 dstSlice, const shared_ptr<vaTexture> & srcTexture );
+
+        vaDrawResultFlags                           GenerateMotionVectors( vaRenderDeviceContext & renderContext, const vaDrawAttributes & drawAttributes, const shared_ptr<vaTexture> & inputDepth, const shared_ptr<vaTexture> & outMotionVectors, const shared_ptr<vaTexture> & outViewspaceDepth );
+
+        // will convert to R8G8B8A8, 'download' the texture to CPU, 
+        vaDrawResultFlags                           GenericCPUImageProcess( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & inoutTexture );
+
     };
 
 }

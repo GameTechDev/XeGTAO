@@ -151,6 +151,7 @@ namespace Vanilla
         RenderTarget                = (1 << 4),
         DepthStencil                = (1 << 5),
         UnorderedAccess             = (1 << 6),
+        Shared                      = (1 << 7),     // for sharing with non-D3D12 APIs
     };
     BITFLAG_ENUM_CLASS_HELPER( vaResourceBindSupportFlags );
 

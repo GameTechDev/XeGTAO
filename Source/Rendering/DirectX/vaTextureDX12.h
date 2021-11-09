@@ -27,7 +27,10 @@ namespace Vanilla
     private:
         ComPtr<ID3D12Resource>              m_resource;
         vaResourceStateTransitionHelperDX12 m_rsth;
-        
+
+        wstring                             m_wname;
+        HANDLE                              m_sharedApiHandle   = 0;        
+
         vaShaderResourceViewDX12            m_srv;
         vaRenderTargetViewDX12              m_rtv;
         vaDepthStencilViewDX12              m_dsv;
@@ -117,6 +120,8 @@ namespace Vanilla
         // virtual bool                        SaveToPNGBuffer( vaRenderDeviceContext & renderContext, const wstring & path ) override; // not yet implemented but should be trivial
 
         virtual vaResourceBindSupportFlags  GetBindSupportFlags( ) const override                           { return m_bindSupportFlags; }
+
+        //virtual bool                        GetCUDAShared( void * & outPointer, size_t & outSize )  override;
 
         static void                         Copy( vaRenderDeviceContextDX12 & apiContext, vaTextureDX12 & dstTexture, vaTextureDX12 & srcTexture );
 

@@ -117,6 +117,12 @@ namespace Vanilla
             bool                            Serialize( vaSerializer & serializer );
         };
 
+        // this contains the values of the TransformWorld after the previous Scene update - used for computing motion vectors
+        struct PreviousTransformWorld : public vaMatrix4x4
+        { 
+            const PreviousTransformWorld & operator =( const vaMatrix4x4 & copy )   { static_cast<vaMatrix4x4&>(*this) = copy; return *this; }
+        };
+
         // Automatically set on WorldBounds creation and every TransformWorld change and needs to be set by components that
         // WorldBounds captures.
         // Does not need to get serialized.
@@ -286,6 +292,8 @@ namespace Vanilla
             void                            Validate( entt::registry & registry, entt::entity entity );
 
             bool                            Serialize( SerializeArgs & args, vaSerializer & serializer );
+
+            void                            ListReferences( std::vector<Scene::EntityReference*> & referenceList ) { referenceList.push_back( &ReferenceLightEntity ); }
         };
 
         // simple list of renderable mesh-es attached to this entity - there's no LODding or anything fancy-schmancy for now

@@ -14,7 +14,7 @@
 
 #include "vaRendering.h"
 
-#include "Rendering/vaSceneRenderViews.h"
+//#include "Rendering/vaSceneMainRenderView.h"
 
 #include "Rendering/vaSceneLighting.h"
 
@@ -23,6 +23,10 @@
 namespace Vanilla
 {
     class vaSceneRaytracing;
+    class vaSceneRenderViewBase;
+    class vaSceneMainRenderView;
+    class vaPointShadowRV;
+    class vaLightProbeRV;
 
     class vaSceneRenderer : public vaRenderingModule, public vaUIPanel, public std::enable_shared_from_this<vaSceneRenderer>
     {

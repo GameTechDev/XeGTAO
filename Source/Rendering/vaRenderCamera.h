@@ -29,7 +29,7 @@ namespace Vanilla
             float   ExposureMin                     = -20.0f;           // [ -20.0, +20.0   ]   - danger, the UI expect these to be consecutive in memory 
             float   ExposureMax                     = 20.0f;            // [ -20.0, +20.0   ]   - danger, the UI expect these to be consecutive in memory 
             bool    UseAutoExposure                 = true;             // 
-            float   AutoExposureAdaptationSpeed     = 15.0f;            // [   0.1, FLT_MAX ]   - use std::numeric_limits<float>::infinity() for instantenious; // 
+            float   AutoExposureAdaptationSpeed     = 8.0f;             // [   0.1, FLT_MAX ]   - use std::numeric_limits<float>::infinity() for instantenious; // 
             float   AutoExposureKeyValue            = 0.5f;             // [   0.0, 2.0     ]
             bool    UseAutoAutoExposureKeyValue     = true;             // 
 

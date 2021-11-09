@@ -453,20 +453,21 @@ float ViewToNDCDepth( float viewDepth )
 }
 
 // from [0, width], [0, height] to [-1, 1], [-1, 1]
-float2 NDCToClipSpacePositionXY( float2 ndcPos )
+float2 NDCToScreenSpaceXY( float2 ndcPos )
 {
     return (ndcPos - float2( -1.0f, 1.0f )) / float2( g_globals.ViewportPixel2xSize.x, -g_globals.ViewportPixel2xSize.y );
 }
 
 // from [0, width], [0, height] to [-1, 1], [-1, 1]
-float2 ClipSpaceToNDCPositionXY( float2 svPos )
+float2 ScreenToNDCSpaceXY( float2 svPos )
 {
     return svPos * float2( g_globals.ViewportPixel2xSize.x, -g_globals.ViewportPixel2xSize.y ) + float2( -1.0f, 1.0f );
 }
 
-float3 NDCToViewspacePosition( float2 SVPos, float viewspaceDepth )
+// Inputs are screen XY and viewspace depth, output is viewspace position
+float3 ComputeViewspacePosition( float2 SVPos, float viewspaceDepth )
 {
-    return float3( g_globals.CameraTanHalfFOV.xy * viewspaceDepth * ClipSpaceToNDCPositionXY( SVPos ), viewspaceDepth );
+    return float3( g_globals.CameraTanHalfFOV.xy * viewspaceDepth * ScreenToNDCSpaceXY( SVPos ), viewspaceDepth );
 }
 
 float3 ClipSpaceToViewspacePosition( float2 clipPos, float viewspaceDepth )

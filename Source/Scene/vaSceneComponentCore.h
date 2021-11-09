@@ -110,6 +110,7 @@ namespace Vanilla
         };
 
         // Reference to another entity that persists through serialization (via the use of UID or another approach)
+        // NOTE: Any component using EntityReference must implement 'ListReferences' functionality; this is essential and gets validated on serialization
         class EntityReference
         {
             entt::entity                    m_entity = entt::null;
@@ -248,6 +249,9 @@ namespace Vanilla
             static bool             HasUIDraw( int typeIndex );
             static void             UIDraw( int typeIndex, entt::registry & registry, entt::entity entity, vaDebugCanvas2D & canvas2D, vaDebugCanvas3D & canvas3D );
 
+            static bool             HasListReferences( int typeIndex );
+            static void             ListReferences( int typeIndex, entt::registry & registry, entt::entity entity, std::vector<Scene::EntityReference*> & referenceList );
+
             static void             Reset( int typeIndex, entt::registry & registry, entt::entity entity );
 
             // templated versions of HasXXX/XXX pairs, add as needed
@@ -306,6 +310,8 @@ namespace Vanilla
                         ResetCallback               = {};
             std::function<void( entt::registry & registry, entt::entity entity )>
                         ValidateCallback            = {};
+            std::function<void( entt::registry & registry, entt::entity entity, std::vector<Scene::EntityReference*> & referenceList )>
+                        ListReferencesCallback      = {};
         };
 
         std::vector<ComponentTypeInfo>   m_components;
@@ -423,6 +429,22 @@ namespace Vanilla
         static constexpr auto check( T* ) -> typename std::is_same<
             decltype( std::declval<T>( ).Validate( std::declval< entt::registry& >( ), std::declval< entt::entity >( ) ) ), void
             //                           ^name^                ^^^^^^^^^^^^^^^^^^^^^^arguments^^^^^^^^^^^^^^^^^^^^^^^      ^retval^
+        >::type;  // attempt to call it and see if the return type is correct
+
+        template<typename>  static constexpr std::false_type check( ... );
+        typedef decltype( check<C>( 0 ) ) type;
+    public:
+        static constexpr bool value = type::value;
+    };
+    //
+    template<typename C>
+    struct component_has_list_references
+    {
+    private:
+        template<typename T>
+        static constexpr auto check( T* ) -> typename std::is_same<
+            decltype( std::declval<T>( ).ListReferences( std::declval< std::vector<Scene::EntityReference*> & >( ) ) ), void
+            //                           ^^^^^name^^^^^  ^^^^^^^^^^^^^^^^^^^^^^arguments^^^^^^^^^^^^^^^^^^^^^^^        ^retval^
         >::type;  // attempt to call it and see if the return type is correct
 
         template<typename>  static constexpr std::false_type check( ... );
@@ -554,6 +576,12 @@ namespace Vanilla
             { registry.get<ComponentType>( entity ).Validate( registry, entity ); };
             logInfo += "has Validate handler; ";
         }
+        if constexpr( component_has_list_references<ComponentType>::value )
+        {
+            typeInfo.ListReferencesCallback = [ ]( entt::registry & registry, entt::entity entity, std::vector<Scene::EntityReference*> & referenceList ) -> void
+            { registry.get<ComponentType>( entity ).ListReferences( referenceList ); };
+            logInfo += "has ListReferences handler; ";
+        }
         if constexpr( component_has_uidraw<ComponentType>::value )
         {
             typeInfo.UIDrawCallback = [ ]( entt::registry& registry, entt::entity entity, vaDebugCanvas2D & canvas2D, vaDebugCanvas3D & canvas3D ) -> void
@@ -631,7 +659,8 @@ namespace Vanilla
         {
             return retVal && CanAccessComponent<First>( ) && CanAccessComponent<Second>( ) && CanAccessComponent<Rest...>( );
         }
-        return retVal;
+        else
+            return retVal;
     }
 
     template< typename ComponentType >

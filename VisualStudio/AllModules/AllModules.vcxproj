@@ -88,6 +88,7 @@
     <ClCompile Include="..\..\Source\Rendering\vaGPUTimer.cpp" />
     <ClCompile Include="..\..\Source\Rendering\vaIBL.cpp" />
     <ClCompile Include="..\..\Source\Rendering\vaPathTracer.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaPathTracerDenoisers.cpp" />
     <ClCompile Include="..\..\Source\Rendering\vaRenderBuffers.cpp" />
     <ClCompile Include="..\..\Source\Rendering\vaRenderCamera.cpp" />
     <ClCompile Include="..\..\Source\Rendering\vaRenderDevice.cpp" />
@@ -98,6 +99,7 @@
     <ClCompile Include="..\..\Source\Rendering\vaRenderMaterial.cpp" />
     <ClCompile Include="..\..\Source\Rendering\vaRenderMesh.cpp" />
     <ClCompile Include="..\..\Source\Rendering\vaSceneLighting.cpp" />
+    <ClCompile Include="..\..\Source\Rendering\vaSceneMainRenderView.cpp" />
     <ClCompile Include="..\..\Source\Rendering\vaSceneRaytracing.cpp" />
     <ClCompile Include="..\..\Source\Rendering\vaSceneRenderer.cpp" />
     <ClCompile Include="..\..\Source\Rendering\vaSceneRenderInstanceProcessor.cpp" />
@@ -220,6 +222,7 @@
     <ClInclude Include="..\..\Source\Rendering\vaGPUTimer.h" />
     <ClInclude Include="..\..\Source\Rendering\vaIBL.h" />
     <ClInclude Include="..\..\Source\Rendering\vaPathTracer.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaPathTracerDenoisers.h" />
     <ClInclude Include="..\..\Source\Rendering\vaRenderBuffers.h" />
     <ClInclude Include="..\..\Source\Rendering\vaRenderCamera.h" />
     <ClInclude Include="..\..\Source\Rendering\vaRenderDevice.h" />
@@ -231,6 +234,7 @@
     <ClInclude Include="..\..\Source\Rendering\vaRenderMaterial.h" />
     <ClInclude Include="..\..\Source\Rendering\vaRenderMesh.h" />
     <ClInclude Include="..\..\Source\Rendering\vaSceneLighting.h" />
+    <ClInclude Include="..\..\Source\Rendering\vaSceneMainRenderView.h" />
     <ClInclude Include="..\..\Source\Rendering\vaSceneRaytracing.h" />
     <ClInclude Include="..\..\Source\Rendering\vaSceneRenderer.h" />
     <ClInclude Include="..\..\Source\Rendering\vaSceneRenderInstanceProcessor.h" />
@@ -444,15 +448,15 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetExt>.lib</TargetExt>
-    <IncludePath>$(ProjectDir)..\..\Source;$(ProjectDir)..\..\Source\Core\Platform\WindowsPC;$(VC_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\code\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\zlib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\rapidjson\include;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\unzip\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\irrXML\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\openddlparser\include\;$(WindowsSDK_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\Include\WinPixEventRuntime</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\bin\x64;$(ProjectDir)..\..\Source\IntegratedExternals\OpenImageDenoise</LibraryPath>
+    <IncludePath>$(ProjectDir)..\..\Source;$(ProjectDir)..\..\Source\Core\Platform\WindowsPC;$(VC_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\code\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\zlib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\rapidjson\include;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\unzip\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\irrXML\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\openddlparser\include\;$(WindowsSDK_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\Include\WinPixEventRuntime;$(CUDA_PATH)\include\</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\bin\x64;$(ProjectDir)..\..\Source\IntegratedExternals\OpenImageDenoise;$(CUDA_PATH)\lib\x64</LibraryPath>
     <OutDir>$(SolutionDir).intermediate\.lib\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir).intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetExt>.lib</TargetExt>
-    <IncludePath>$(ProjectDir)..\..\Source;$(ProjectDir)..\..\Source\Core\Platform\WindowsPC;$(VC_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\code\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\zlib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\rapidjson\include;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\unzip\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\irrXML\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\openddlparser\include\;$(WindowsSDK_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\Include\WinPixEventRuntime</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\bin\x64;$(ProjectDir)..\..\Source\IntegratedExternals\OpenImageDenoise</LibraryPath>
+    <IncludePath>$(ProjectDir)..\..\Source;$(ProjectDir)..\..\Source\Core\Platform\WindowsPC;$(VC_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\code\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\zlib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\rapidjson\include;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\unzip\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\irrXML\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\openddlparser\include\;$(WindowsSDK_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\Include\WinPixEventRuntime;$(CUDA_PATH)\include\</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\bin\x64;$(ProjectDir)..\..\Source\IntegratedExternals\OpenImageDenoise;$(CUDA_PATH)\lib\x64</LibraryPath>
     <OutDir>$(SolutionDir).intermediate\.lib\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir).intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>

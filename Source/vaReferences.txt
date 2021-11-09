@@ -30,6 +30,7 @@ IBLs / GI (global illumination) / near field far field GI:
  * 2018: Horizon-Based Indirect Lighting (HBIL) https://github.com/Patapom/GodComplex/blob/master/Tests/TestHBIL/2018%20Mayaux%20-%20Horizon-Based%20Indirect%20Lighting%20(HBIL).pdf - https://drive.google.com/file/d/1fmceYuM5J2s8puNHZ9o4OF3YjqzIvmRR/view
 
 Lighting (SH, etc.):
+ * 2021: Learning to Cluster for Rendering with Many Lights, Siggraph 2021: https://bulbaberry.xyz/publications/lcr-sa-2021/
  * 2015: Manifold Next Event Estimation: https://www.ics.uci.edu/~yug10/projects/translucent/papers/Hanika_et_al-2015-Computer_Graphics_Forum.pdf
  * 2019: Next Event Estimation in Quake II RTX, short but sweet: https://developer.nvidia.com/blog/conquering-noisy-images-in-ray-tracing-with-next-event-estimation/
  * 2019: GI - Lighting Grid Hierarchy http://www.cemyuksel.com/research/lgh/real-time_rendering_with_lgh_i3d2019.pdf
@@ -115,63 +116,65 @@ Spherical harmonics:
  * ELI5: https://www.reddit.com/r/GraphicsProgramming/comments/m19ith/explain_to_me_like_i_am_5_using_spherical/ :D
 
 Denoising:
- * 2020: "An overview of ray tracing denoising, reviewing filtering, spatiotemporal, sampling and AI techniques to improve convergence and temporal coherency in real time ray traced applications." https://alain.xyz/blog/ray-tracing-denoising
- * Nvidia's denoisers: https://developer.nvidia.com/nvidia-rt-denoiser
- * 2017: Spatiotemporal Variance-Guided Filtering: Real-Time Reconstruction for Path-Traced Global Illumination, https://research.nvidia.com/sites/default/files/pubs/2017-07_Spatiotemporal-Variance-Guided-Filtering%3A//svgf_preprint.pdf
- * 2018: "Gradient Estimation for Real-Time Adaptive Temporal Filtering", https://cg.ivd.kit.edu/publications/2018/adaptive_temporal_filtering/adaptive_temporal_filtering.pdf
- * 2019: Real Time Path-Tracing and Denoising in Quake II RTX, https://developer.nvidia.com/blog/real-time-path-tracing-and-denoising-in-quake-ii-rtx/
- * 2020: Fast Denoising With Self Stabilizing Recurrent Blurs, https://www.gdcvault.com/play/1026701/Fast-Denoising-With-Self-Stabilizing
-
+ * (2020) "An overview of ray tracing denoising, reviewing filtering, spatiotemporal, sampling and AI techniques to improve convergence and temporal coherency in real time ray traced applications." https://alain.xyz/blog/ray-tracing-denoising
+ * (    ) Nvidia's denoisers: https://developer.nvidia.com/nvidia-rt-denoiser
+ * (2017) An Efficient Denoising Algorithm for Global Illumination : https://cs.dartmouth.edu/wjarosz/publications/mara17towards.pdf
+ * (2017) Spatiotemporal Variance-Guided Filtering: Real-Time Reconstruction for Path-Traced Global Illumination, https://research.nvidia.com/sites/default/files/pubs/2017-07_Spatiotemporal-Variance-Guided-Filtering%3A//svgf_preprint.pdf
+ * (2018) "Gradient Estimation for Real-Time Adaptive Temporal Filtering", https://cg.ivd.kit.edu/publications/2018/adaptive_temporal_filtering/adaptive_temporal_filtering.pdf
+ * (2019) Real Time Path-Tracing and Denoising in Quake II RTX, https://developer.nvidia.com/blog/real-time-path-tracing-and-denoising-in-quake-ii-rtx/
+ * (2020) Fast Denoising With Self Stabilizing Recurrent Blurs, https://www.gdcvault.com/play/1026701/Fast-Denoising-With-Self-Stabilizing
+ * (2021) Article: "How to reconstruct an image if you see only a few pixels" : https://towardsdatascience.com/how-to-reconstruct-an-image-if-you-see-only-a-few-pixels-e3899d038bf9#4218-42d96b4589ee
+ 
 TAA:
- * 2021: Fast temporal reprojection without motion vectors, https://jcgt.org/published/0010/03/02/
- * 2021: READ THIS FIRST: "Temporal Antialiasing Starter Pack" http://alextardif.com/TAA.html
- * 2016: An Excursion in Temporal Supersampling http://developer.download.nvidia.com/gameworks/events/GDC2016/msalvi_temporal_supersampling.pdf
- * 2010: Real-time Frame Rate Up-conversion for Video Games, http://and.intercon.ru/rtfrucvg_html_slides/
- * http://behindthepixels.io/assets/files/TemporalAA.pdf
- * Temporally Reliable Motion Vectors for Real-time Ray Tracing https://sites.cs.ucsb.edu/~lingqi/publications/paper_trmv.pdf
+ * (2021) Fast temporal reprojection without motion vectors, https://jcgt.org/published/0010/03/02/
+ * (2021) READ THIS FIRST: "Temporal Antialiasing Starter Pack" http://alextardif.com/TAA.html
+ * (2016) An Excursion in Temporal Supersampling http://developer.download.nvidia.com/gameworks/events/GDC2016/msalvi_temporal_supersampling.pdf
+ * (2010) Real-time Frame Rate Up-conversion for Video Games, http://and.intercon.ru/rtfrucvg_html_slides/
+ * (    ) http://behindthepixels.io/assets/files/TemporalAA.pdf
+ * (    ) Temporally Reliable Motion Vectors for Real-time Ray Tracing https://sites.cs.ucsb.edu/~lingqi/publications/paper_trmv.pdf
 
 
 Order independent transparency:
- * 2010: Fourier Opacity Mapping, https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.154.4016&rep=rep1&type=pdf
- * 2011: Stochastic Transparency, https://luebke.us/publications/StochasticTransparency_I3D2010.pdf
- * 2011: Adaptive Transparency, https://software.intel.com/content/www/us/en/develop/articles/adaptive-transparency.html
- * 2013: Hybrid Transparency, https://dl.acm.org/doi/10.1145/2448196.2448212
- * 2013: Weighted Blended OIT, http://jcgt.org/published/0002/02/09/paper.pdf
- * 2014: Multi-layer alpha blending, https://software.intel.com/content/www/us/en/develop/articles/multi-layer-alpha-blending.html
- * 2017: Phenomenological Transparency, https://research.nvidia.com/sites/default/files/pubs/2017-03_Phenomenological-Transparency/McGuire2017Transparency.pdf
- * 2018: Moment-Based Order-Independent Transparency, https://momentsingraphics.de/I3D2018.html
- * 2018: Moment Transparency, https://briansharpe.files.wordpress.com/2018/07/moment-transparency-av.pdf
+ * (2010) Fourier Opacity Mapping, https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.154.4016&rep=rep1&type=pdf
+ * (2011) Stochastic Transparency, https://luebke.us/publications/StochasticTransparency_I3D2010.pdf
+ * (2011) Adaptive Transparency, https://software.intel.com/content/www/us/en/develop/articles/adaptive-transparency.html
+ * (2013) Hybrid Transparency, https://dl.acm.org/doi/10.1145/2448196.2448212
+ * (2013) Weighted Blended OIT, http://jcgt.org/published/0002/02/09/paper.pdf
+ * (2014) Multi-layer alpha blending, https://software.intel.com/content/www/us/en/develop/articles/multi-layer-alpha-blending.html
+ * (2017) Phenomenological Transparency, https://research.nvidia.com/sites/default/files/pubs/2017-03_Phenomenological-Transparency/McGuire2017Transparency.pdf
+ * (2018) Moment-Based Order-Independent Transparency, https://momentsingraphics.de/I3D2018.html
+ * (2018) Moment Transparency, https://briansharpe.files.wordpress.com/2018/07/moment-transparency-av.pdf
 
 Water:
- * Foam bubbles spray: https://youtu.be/O-52enqUSNw "Is a Realistic Water Bubble Simulation Possible?" - bunch of links/resources
- * http://alextardif.com/Water.html
+ * (    ) Foam bubbles spray: https://youtu.be/O-52enqUSNw "Is a Realistic Water Bubble Simulation Possible?" - bunch of links/resources
+ * (    ) http://alextardif.com/Water.html
 
 Grass:
- * https://giordi91.github.io/post/grass/
- * https://roystan.net/articles/grass-shader.html
+ * (    ) https://giordi91.github.io/post/grass/
+ * (    ) https://roystan.net/articles/grass-shader.html
 
 Vulkan:
- * https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/
+ * (    ) https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/
 
 Animation:
- * simple: https://realitymultiplied.wordpress.com/ complex: http://guillaumeblanc.github.io/ozz-animation/
+ * (    ) simple: https://realitymultiplied.wordpress.com/ complex: http://guillaumeblanc.github.io/ozz-animation/
 
 Physics:
- * general & network: https://gafferongames.com/categories/game-physics/
+ * (    ) general & network: https://gafferongames.com/categories/game-physics/
 
 Math:
-  * Realtime Math lib (MIT) https://github.com/nfrechette/rtm
-  * A small collection of fast math for sqrt, acos, atan, etc.: https://github.com/Patapom/GodComplex/blob/master/Tests/TestHBIL/Shaders/FastMath.hlsl
+ * (    ) Realtime Math lib (MIT) https://github.com/nfrechette/rtm
+ * (    ) A small collection of fast math for sqrt, acos, atan, etc.: https://github.com/Patapom/GodComplex/blob/master/Tests/TestHBIL/Shaders/FastMath.hlsl
 
 Algorithms:
-  * BVH - using Embree trees for raytracing: https://interplayoflight.wordpress.com/2020/07/21/using-embree-generated-bvh-trees-for-gpu-raytracing/
-  * A Survey on Bounding Volume Hierarchies for Ray Tracing https://meistdan.github.io/publications/bvh_star/paper.pdf (https://meistdan.github.io/)
-  * Parallel Locally-Ordered Clustering for Bounding Volume Hierarchy Construction (Morton codes) (find in, source included https://meistdan.github.io/)
-  * 2021: Better GPU Hash Tables, https://arxiv.org/abs/2108.07232
-  * 2009: Fast BVH construction on gpus (Morton order + radix sort combined with surface area heuristics - SAHs) https://www.researchgate.net/publication/227653438_Fast_BVH_construction_on_gpus
+ * (    ) BVH - using Embree trees for raytracing: https://interplayoflight.wordpress.com/2020/07/21/using-embree-generated-bvh-trees-for-gpu-raytracing/
+ * (    ) A Survey on Bounding Volume Hierarchies for Ray Tracing https://meistdan.github.io/publications/bvh_star/paper.pdf (https://meistdan.github.io/)
+ * (    ) Parallel Locally-Ordered Clustering for Bounding Volume Hierarchy Construction (Morton codes) (find in, source included https://meistdan.github.io/)
+ * (2021) Better GPU Hash Tables, https://arxiv.org/abs/2108.07232
+ * (2009) Fast BVH construction on gpus (Morton order + radix sort combined with surface area heuristics - SAHs) https://www.researchgate.net/publication/227653438_Fast_BVH_construction_on_gpus
 
 Machine learning:
-  * Adaptive Movement Estimation - ADAM (gradient descent): https://machinelearningmastery.com/adam-optimization-from-scratch/ (tutorial)
+ * (    ) Adaptive Movement Estimation - ADAM (gradient descent): https://machinelearningmastery.com/adam-optimization-from-scratch/ (tutorial)
 
  Particles:
   * https://www.rigzsoft.co.uk/purchase-timelinefx/
@@ -184,7 +187,7 @@ Gameplay:
  * Rocket/Missile guidance: https://en.wikipedia.org/wiki/Proportional_navigation
 
 People
- * Morten S. Mikkelsen (mikktspace fame): http://www.mikktspace.com/, https://github.com/mmikk/Papers-Graphics-3D
+ * Morten S. Mikkelsen (mikktspace fame - standard tangent space): http://www.mikktspace.com/, https://github.com/mmikk/Papers-Graphics-3D
 
 Ray tracing & path tracing
  * Visual Exploration Of Light Transport In Path Tracing (C++ visualization tool, source code provided) https://raw.githubusercontent.com/giuliom95/msc-thesis/master/martella-mscthesis.pdf

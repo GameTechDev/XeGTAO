@@ -294,3 +294,18 @@ vaShaderManager::~vaShaderManager( )
 #endif
 }
 
+shared_ptr<vaVertexShader> vaVertexShader::CreateVSAndILFromFile( vaRenderDevice & renderDevice, const string & filePath, const string & entryPoint, const std::vector<vaVertexInputElementDesc> & inputLayoutElements, const vaShaderMacroContaner & macros, bool forceImmediateCompile ) 
+{ 
+    shared_ptr<vaVertexShader> ret = renderDevice.CreateModule<vaVertexShader>( );
+    if( ret == nullptr ) { assert( false ); return ret; }
+    ret->CompileVSAndILFromFile( filePath, entryPoint, inputLayoutElements, macros, forceImmediateCompile );
+    return ret;
+}
+
+shared_ptr<vaVertexShader> vaVertexShader::CreateVSAndILFromBuffer( vaRenderDevice & renderDevice, const string & shaderCode, const string & entryPoint, const std::vector<vaVertexInputElementDesc> & inputLayoutElements, const vaShaderMacroContaner & macros, bool forceImmediateCompile ) 
+{ 
+    shared_ptr<vaVertexShader> ret = renderDevice.CreateModule<vaVertexShader>( );
+    if( ret == nullptr ) { assert( false ); return ret; }
+    ret->CompileVSAndILFromFile( shaderCode, entryPoint, inputLayoutElements, macros, forceImmediateCompile );
+    return ret;
+}

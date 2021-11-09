@@ -191,7 +191,7 @@ void SamplePointLightsDirectRT( const GeometryInteraction geometrySurface, const
     const int treeBottomLevelSize   = g_lighting.LightTreeBottomLevelSize;
     const int treeBottomLevelOffset = g_lighting.LightTreeBottomLevelOffset;
 
-    //uint hashLocal = Hash32Combine( pathHashSeed, VA_RAYTRACING_HASH_SEED_LIGHTING_SPEC );
+    //uint hashLocal = Hash32Combine( pathHashSeed, VA_PATH_TRACER_HASH_SEED_LIGHTING_SPEC );
     //float localRand = LDSample1D( sampleIndex, hashLocal );
 
 #if 0 // uniform monte carlo integration (best case performance)

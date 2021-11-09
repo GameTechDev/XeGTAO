@@ -413,3 +413,51 @@ void CSCopySliceTo3DTexture( const uint2 pixCoord : SV_DispatchThreadID )
     g_dstTexture[ int3(pixCoord, g_postProcessConsts.Param1.z) ] = g_sourceTexture0.Load( int3(pixCoord, 0) );
 }
 #endif
+
+#ifdef VA_POSTPROCESS_MOTIONVECTORS
+
+Texture2D<float>            g_sourceDepth           : register( t0 );   // source (clip space) depth (in our case NDC too?)
+RWTexture2D<float4>         g_outputMotionVectors   : register( u0 );
+RWTexture2D<float>          g_outputDepths          : register( u1 );
+
+//float ViewspaceDepthToTAACompDepthFunction( float viewspaceDepth )
+//{
+//    // better utilizes FP16 precision
+//    return viewspaceDepth / 100.0;
+//}
+
+[numthreads(MOTIONVECTORS_BLOCK_SIZE_X, MOTIONVECTORS_BLOCK_SIZE_Y, 1)]
+void CSGenerateMotionVectors( uint2 dispatchThreadID : SV_DispatchThreadID )
+{
+    uint2 pixCoord  = dispatchThreadID.xy;
+
+    // already filled
+    if( g_outputDepths[ pixCoord ] != 0 )
+        return;
+
+    float depthNDC  = g_sourceDepth.Load( int3(pixCoord, 0)/*, offset*/).x;
+
+    float depth     = NDCToViewDepth( depthNDC );
+
+    float2 screenXY = pixCoord + 0.5f;
+    float2 ndcXY    = ScreenToNDCSpaceXY( screenXY ); //, depthNDC );
+
+    float4 reprojectedPos = mul( g_globals.ReprojectionMatrix, float4( ndcXY.xy, depthNDC, 1 ) );
+    reprojectedPos.xyz /= reprojectedPos.w;
+    float reprojectedDepth = NDCToViewDepth( reprojectedPos.z );
+
+    // reduce 16bit precision issues - push the older frame ever so slightly into foreground
+    reprojectedDepth *= 0.99999;
+
+    float3 delta;
+    delta.xy = NDCToScreenSpaceXY( reprojectedPos.xy ) - screenXY;
+    delta.z = reprojectedDepth - depth;
+
+    // de-jitter! not sure if this is the best way to do it for everything, but it's required for TAA
+    delta.xy -= g_globals.CameraJitterDelta;
+
+    g_outputDepths[ pixCoord ]          = depth;
+    g_outputMotionVectors[ pixCoord ]   = float4( delta.xyz, 0 ); //(uint)(frac( clip ) * 10000);
+}
+
+#endif

@@ -310,6 +310,7 @@ namespace Vanilla
         vaAssetType                         GetAssetType( ) const override                          { return vaAssetType::Texture; }
         virtual void                        SetParentAsset( vaAsset * asset ) override;
 
+        //virtual bool                        GetCUDAShared( void * & outPointer, size_t & outSize )  { return false; outPointer; outSize; }
     };
 
     inline string vaTextureContentsTypeToUIName( vaTextureContentsType value )

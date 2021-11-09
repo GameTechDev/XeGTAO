@@ -109,7 +109,7 @@ void vaSceneRenderInstanceProcessor::SelectionProc( MainWorkNode & workNode, uin
             entt::entity entity = registryView[index];
 
             // in theory this shouldn't happen; in practice it does and until the reason is found let's just assert and not crash
-            if( !cregistry.all_of<Scene::WorldBounds, Scene::TransformWorld>( entity ) )
+            if( !cregistry.all_of<Scene::WorldBounds, Scene::TransformWorld, Scene::PreviousTransformWorld>( entity ) )
             {
                 assert( false );
                 continue;
@@ -205,8 +205,10 @@ void vaSceneRenderInstanceProcessor::SelectionProc( MainWorkNode & workNode, uin
         m_uniqueMaterials.Insert( item.Material );
         
         const Scene::TransformWorld & worldTransform = cregistry.get<Scene::TransformWorld>( item.Entity );
+        const Scene::PreviousTransformWorld & previousWorldTransform = cregistry.get<Scene::PreviousTransformWorld>( item.Entity );
 
         renderInstance.Transform        = worldTransform;
+        renderInstance.PreviousTransform= previousWorldTransform;
         renderInstance.EmissiveAdd      = vaVector4( 0.0f, 0.0f, 0.0f, 1.0f );
         renderInstance.Mesh             = item.Mesh;
         renderInstance.Material         = item.Material;
@@ -356,7 +358,7 @@ vaSceneRenderInstanceProcessor::MainWorkNode::MainWorkNode( vaSceneRenderInstanc
     : Processor( processor ), Scene( scene ), BoundsView( scene.Registry().view<const Scene::WorldBounds>( ) ),
     vaSceneAsync::WorkNode( "CreateRenderLists", {"bounds_done_marker"}, {"renderlists_done_marker"},
         Scene::AccessPermissions::ExportPairLists<
-            const Scene::WorldBounds, const Scene::TransformWorld, const Scene::RenderMesh, const Scene::EmissiveMaterialDriver, 
+            const Scene::WorldBounds, const Scene::TransformWorld, const Scene::PreviousTransformWorld, const Scene::RenderMesh, const Scene::EmissiveMaterialDriver, 
             const Scene::LightPoint, const Scene::Name, const Scene::Relationship, const Scene::IgnoreByIBLTag> () )
 { 
 }

@@ -177,11 +177,11 @@ float4 DebugDrawNormalsFromDepthPS( in float4 inPos : SV_Position ) : SV_Target0
 
     float4 edgesLRTB = ComputeEdgesFromDepth( viewspaceDepthC, viewspaceDepthL, viewspaceDepthR, viewspaceDepthT, viewspaceDepthB );
 
-    float3 viewspacePosC  = NDCToViewspacePosition( inPos.xy + float2(  0.0,  0.0 ), viewspaceDepthC );
-    float3 viewspacePosL  = NDCToViewspacePosition( inPos.xy + float2( -1.0,  0.0 ), viewspaceDepthL );
-    float3 viewspacePosR  = NDCToViewspacePosition( inPos.xy + float2(  1.0,  0.0 ), viewspaceDepthR );
-    float3 viewspacePosT  = NDCToViewspacePosition( inPos.xy + float2(  0.0, -1.0 ), viewspaceDepthT );
-    float3 viewspacePosB  = NDCToViewspacePosition( inPos.xy + float2(  0.0,  1.0 ), viewspaceDepthB );
+    float3 viewspacePosC  = ComputeViewspacePosition( inPos.xy + float2(  0.0,  0.0 ), viewspaceDepthC );
+    float3 viewspacePosL  = ComputeViewspacePosition( inPos.xy + float2( -1.0,  0.0 ), viewspaceDepthL );
+    float3 viewspacePosR  = ComputeViewspacePosition( inPos.xy + float2(  1.0,  0.0 ), viewspaceDepthR );
+    float3 viewspacePosT  = ComputeViewspacePosition( inPos.xy + float2(  0.0, -1.0 ), viewspaceDepthT );
+    float3 viewspacePosB  = ComputeViewspacePosition( inPos.xy + float2(  0.0,  1.0 ), viewspaceDepthB );
 
     float3 normal = ComputeNormal( edgesLRTB, viewspacePosC, viewspacePosL, viewspacePosR, viewspacePosT, viewspacePosB );
 

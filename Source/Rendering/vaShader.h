@@ -156,7 +156,10 @@ namespace Vanilla
         template< typename ShaderType >
         static shared_ptr<ShaderType>   CreateFromFile( vaRenderDevice & renderDevice, const string & filePath, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile );
 
-        // you'll need this if casting directly from vaShader to any of the platform-dependent ones - but it's slow.
+        template< typename ShaderType >
+        static shared_ptr<ShaderType>   CreateFromBuffer( vaRenderDevice & renderDevice, const string & shaderCode, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile );
+
+        // you might need this if casting directly from vaShader to any of the platform-dependent ones - but it's slow (as in, measurable when doing it few times for each of the 50,000 draw calls per frame)
         // template< typename CastToType >
         // CastToType                      SafeCast( )                                                                 
         // {
@@ -180,7 +183,8 @@ namespace Vanilla
 
         virtual const char *                GetSMPrefix( ) override             { return "ps"; };
 
-        static shared_ptr<vaPixelShader>    CreateFromFile( vaRenderDevice & renderDevice, const string & filePath, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile )   { return vaShader::CreateFromFile<vaPixelShader>( renderDevice, filePath, entryPoint, macros, forceImmediateCompile ); }
+        static shared_ptr<vaPixelShader>    CreateFromFile( vaRenderDevice & renderDevice, const string & filePath, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile )       { return vaShader::CreateFromFile<vaPixelShader>( renderDevice, filePath, entryPoint, macros, forceImmediateCompile ); }
+        static shared_ptr<vaPixelShader>    CreateFromBuffer( vaRenderDevice & renderDevice, const string & shaderCode, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile )   { return vaShader::CreateFromBuffer<vaPixelShader>( renderDevice, shaderCode, entryPoint, macros, forceImmediateCompile ); }
     };
 
     class vaComputeShader : public virtual vaShader
@@ -196,7 +200,8 @@ namespace Vanilla
 
        virtual const char *                 GetSMPrefix( ) override             { return "cs"; };
 
-       static shared_ptr<vaComputeShader>   CreateFromFile( vaRenderDevice & renderDevice, const string & filePath, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile )   { return vaShader::CreateFromFile<vaComputeShader>( renderDevice, filePath, entryPoint, macros, forceImmediateCompile ); }
+       static shared_ptr<vaComputeShader>   CreateFromFile( vaRenderDevice & renderDevice, const string & filePath, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile )       { return vaShader::CreateFromFile<vaComputeShader>( renderDevice, filePath, entryPoint, macros, forceImmediateCompile ); }
+       static shared_ptr<vaComputeShader>   CreateFromBuffer( vaRenderDevice & renderDevice, const string & shaderCode, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile )   { return vaShader::CreateFromBuffer<vaComputeShader>( renderDevice, shaderCode, entryPoint, macros, forceImmediateCompile ); }
     };
 
     class vaShaderLibrary : public virtual vaShader
@@ -212,7 +217,8 @@ namespace Vanilla
 
        virtual const char *                 GetSMPrefix( ) override             { return "lib"; };
 
-       static shared_ptr<vaShaderLibrary>   CreateFromFile( vaRenderDevice & renderDevice, const string & filePath, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile )   { return vaShader::CreateFromFile<vaShaderLibrary>( renderDevice, filePath, entryPoint, macros, forceImmediateCompile ); }
+       static shared_ptr<vaShaderLibrary>   CreateFromFile( vaRenderDevice & renderDevice, const string & filePath, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile )       { return vaShader::CreateFromFile<vaShaderLibrary>( renderDevice, filePath, entryPoint, macros, forceImmediateCompile ); }
+       static shared_ptr<vaShaderLibrary>   CreateFromBuffer( vaRenderDevice & renderDevice, const string & shaderCode, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile )   { return vaShader::CreateFromBuffer<vaShaderLibrary>( renderDevice, shaderCode, entryPoint, macros, forceImmediateCompile ); }
     };
 
     class vaHullShader : public virtual vaShader
@@ -335,6 +341,9 @@ namespace Vanilla
        template< typename OutType > OutType SafeCast( ) { return vaCachedDynamicCast<OutType>( this, m_cachedPlatformPtr ); }
 
        virtual const char *         GetSMPrefix( ) override             { return "vs"; };
+
+       static shared_ptr<vaVertexShader> CreateVSAndILFromFile( vaRenderDevice & renderDevice, const string & filePath, const string & entryPoint, const std::vector<vaVertexInputElementDesc> & inputLayoutElements, const vaShaderMacroContaner & macros, bool forceImmediateCompile );
+       static shared_ptr<vaVertexShader> CreateVSAndILFromBuffer( vaRenderDevice & renderDevice, const string & shaderCode, const string & entryPoint, const std::vector<vaVertexInputElementDesc> & inputLayoutElements, const vaShaderMacroContaner & macros, bool forceImmediateCompile );
     };
 
     // Singleton utility class for handling shaders
@@ -382,5 +391,15 @@ namespace Vanilla
         ret->CompileFromFile( filePath, entryPoint, macros, forceImmediateCompile );
         return ret;
     }
+
+    template< typename ShaderType >
+    static shared_ptr<ShaderType> vaShader::CreateFromBuffer( vaRenderDevice & renderDevice, const string & shaderCode, const string & entryPoint, const vaShaderMacroContaner & macros, bool forceImmediateCompile )
+    {
+        shared_ptr<ShaderType> ret = renderDevice.CreateModule<ShaderType>( );
+        if( ret == nullptr ) { assert( false ); return ret; }
+        ret->CompileFromBuffer( shaderCode, entryPoint, macros, forceImmediateCompile );
+        return ret;
+    }
+
 
 }

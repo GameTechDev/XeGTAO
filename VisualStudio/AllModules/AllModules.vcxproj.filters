@@ -366,6 +366,12 @@
     <ClCompile Include="..\..\Source\Rendering\vaGPUSort.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Rendering\vaSceneMainRenderView.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Rendering\vaPathTracerDenoisers.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Source\Core\vaCore.h">
@@ -857,6 +863,12 @@
     </ClInclude>
     <ClInclude Include="..\..\Source\Rendering\Shaders\Lighting\vaLighting.hlsl">
       <Filter>Rendering\Shaders\Lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\vaSceneMainRenderView.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\vaPathTracerDenoisers.h">
+      <Filter>Rendering</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -391,9 +391,10 @@ namespace Vanilla
             // This will enable collecting cursor hover info (there's a small cost to it). See vaRenderGlobals::DigestCursorHoverInfo / GetCursorHoverInfo 
             bool                        CursorHoverInfoCollect  = true;
             vaVector2i                  CursorViewportPos       = {-1, -1};                         // for ex. = vaInputMouseBase::GetCurrent()->GetCursorClientPosDirect()
+            vaMatrix4x4                 ReprojectionMatrix      = vaMatrix4x4::Identity;            // if using TAA or equivalent, transform from this RenderTick's clip space to prev RenderTick's clip space
+            vaVector2                   CameraJitterDelta       = {0, 0};                           // if using TAA or equivalent, previous camera jitter - current camera jitter
 
-                                                                                                    // This will enable collecting generic float arrays - there's a non-trivial cost to enabling it. See vaRenderGlobals::DigestGenericDataCapture / GetLastGenericDataCaptured
-            bool                        GenericDataCollect      = false;
+            bool                        GenericDataCollect      = false;                            // This will enable collecting generic float arrays - there's a non-trivial cost to enabling it. See vaRenderGlobals::DigestGenericDataCapture / GetLastGenericDataCaptured
         };
 
         vaDrawAttributes( const vaCameraBase & camera, vaDrawAttributes::RenderFlags renderFlags = vaDrawAttributes::RenderFlags::None, vaSceneLighting * lighting = nullptr, vaSceneRaytracing * raytracing = nullptr, const GlobalSettings & settings = GlobalSettings() )

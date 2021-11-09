@@ -50,8 +50,11 @@ ShadedVertex RenderMeshVertexShader( const RenderMeshVertex input, const ShaderI
     ret.WorldspacePos.xyz    = mul( instanceConstants.World, float4( input.Position.xyz, 1 ) );
     ret.WorldspaceNormal.xyz = normalize( mul( (float3x3)instanceConstants.NormalWorld, input.Normal.xyz ).xyz );
 
+    ret.PreviousWorldspacePos.xyz = mul( instanceConstants.PreviousWorld, float4( input.Position.xyz, 1 ) );
+
     // do all the subsequent shading math with the WorldBase for precision purposes
     ret.WorldspacePos.xyz -= g_globals.WorldBase.xyz;
+    ret.PreviousWorldspacePos.xyz -= g_globals.PreviousWorldBase.xyz;
 
     // hijack this for highlighting and similar stuff
     ret.Color               = input.Color;

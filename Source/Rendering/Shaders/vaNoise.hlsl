@@ -364,13 +364,13 @@ void Noise3D( float3 worldCoord, out float noise, out float noiseAttenuation )
 // http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
 // https://www.shadertoy.com/view/4lVcRm, https://www.shadertoy.com/view/MtVBRw, 
 // https://www.shadertoy.com/view/3ltSzS
-float R1seq(int n)
+float R1seq(int index, float offset)
 {
-    return frac(float(n) * 0.618033988749894848204586834365641218413556121186522017520);
+    return frac(offset + float(index) * 0.618033988749894848204586834365641218413556121186522017520);
 }
-float2 R2seq(int n)
+float2 R2seq(int index, float offset)
 {
-    return frac(float2(n.xx) * float2(0.754877666246692760049508896358532874940835564978799543103, 0.569840290998053265911399958119574964216147658520394151385));
+    return frac(offset.xx + float2(index.xx) * float2(0.754877666246692760049508896358532874940835564978799543103, 0.569840290998053265911399958119574964216147658520394151385));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -463,11 +463,14 @@ float2 burley_shuffled_scrambled_sobol_pt( uint index, uint seed )
 //  * 'hashSeed' needs to be advanced (seed = Hash32(seed)) for every bounce and every effect to decorrelate sampling
 //  * define VA_LDS_RANDOM_FALLBACK to switch to hash based uncorrelated noisy sampler
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//#define VA_LDS_RANDOM_FALLBACK
+//#define VA_LDS_RANDOM_FALLBACK            // just pure (quasi)-random 
+//#define VA_LDS_R1R2_SEQUENCE_FALLBACK     // R* sequences are fastest but not as good as Burley's Hash-based Owen Sobol scrambling, especially not at high sample count
 float LDSample1D( uint index, uint seed )
 {
-#ifdef VA_LDS_RANDOM_FALLBACK
+#if defined( VA_LDS_RANDOM_FALLBACK )
     return Hash32ToFloat( Hash32( Hash32Combine( seed, index ) ) );
+#elif defined( VA_LDS_R1R2_SEQUENCE_FALLBACK )
+    return R1seq(index, Hash32ToFloat(seed));
 #else
     uint shuffle_seed = Hash32Combine( seed, 0 );
     uint x_seed = Hash32Combine( seed, 1 );
@@ -479,11 +482,13 @@ float LDSample1D( uint index, uint seed )
 }
 float2 LDSample2D( uint index, uint seed )
 {
-#ifdef VA_LDS_RANDOM_FALLBACK
+#if defined( VA_LDS_RANDOM_FALLBACK )
     seed = Hash32Combine( seed, index );
     uint x = Hash32( seed );
     uint y = Hash32( x );
     return float2( Hash32ToFloat( x ), Hash32ToFloat( y ) );
+#elif defined( VA_LDS_R1R2_SEQUENCE_FALLBACK )
+    return R2seq(index, Hash32ToFloat(seed));
 #else
     return burley_shuffled_scrambled_sobol_pt( index, seed );
 #endif

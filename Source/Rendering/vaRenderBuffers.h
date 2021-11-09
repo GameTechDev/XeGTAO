@@ -185,7 +185,8 @@ namespace Vanilla
         Upload                          = (1 << 1),     // write-only, with limited SRV/UAV support
         RaytracingAccelerationStructure = (1 << 2),
         VertexIndexBuffer               = (1 << 3),
-        ForceByteAddressBufferViews     = (1 << 4)
+        ForceByteAddressBufferViews     = (1 << 4),
+        Shared                          = (1 << 5),     // same as vaResourceBindSupportFlags::Shared
     };
     BITFLAG_ENUM_CLASS_HELPER( vaRenderBufferFlags );
 
@@ -266,6 +267,9 @@ namespace Vanilla
         virtual vaResourceBindSupportFlags  GetBindSupportFlags( ) const override                                   { return vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess; }
 
         void                                ClearUAV( vaRenderDeviceContext & renderContext, uint32 clearValue )    { ClearUAV( renderContext, vaVector4ui(clearValue, clearValue, clearValue, clearValue) ); }
+
+        virtual bool                        GetCUDAShared( void * & outPointer, size_t & outSize )                  { return false; outPointer; outSize; }
+
 
     public:
         // static helpers

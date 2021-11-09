@@ -145,6 +145,18 @@ void Components::Validate( int typeIndex, entt::registry & registry, entt::entit
     return vaSceneComponentRegistry::GetInstance( ).m_components[typeIndex].ValidateCallback( registry, entity );
 }
 
+bool Components::HasListReferences( int typeIndex )
+{
+    assert( typeIndex >= 0 && typeIndex < TypeCount( ) );
+    return vaSceneComponentRegistry::GetInstance( ).m_components[typeIndex].ListReferencesCallback != nullptr;
+}
+
+void Components::ListReferences( int typeIndex, entt::registry & registry, entt::entity entity, std::vector<Scene::EntityReference*> & referenceList )
+{
+    assert( HasValidate( typeIndex ) );
+    return vaSceneComponentRegistry::GetInstance( ).m_components[typeIndex].ListReferencesCallback( registry, entity, referenceList );
+}
+
 bool Components::HasUIDraw( int typeIndex )
 {
     assert( typeIndex >= 0 && typeIndex < TypeCount( ) );
@@ -393,6 +405,7 @@ vaSceneComponentRegistry::vaSceneComponentRegistry( )
     RegisterComponent< TransformDirtyTag >( );
     RegisterComponent< TransformLocal >( );
     RegisterComponent< TransformWorld >( );
+    RegisterComponent< PreviousTransformWorld >( );
     RegisterComponent< WorldBounds >( );
     RegisterComponent< RenderMesh >( );
     RegisterComponent< LocalIBLProbe >( );

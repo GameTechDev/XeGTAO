@@ -732,11 +732,8 @@ namespace Vanilla
 #else
     #define VA_TRACE_CPU_SCOPE( name )                             
     #define VA_TRACE_CPUGPU_SCOPE( name, apiContext )              
-    #define VA_TRACE_CPUGPU_SCOPE_CUSTOMNAME( nameVar, customName )
     #define VA_TRACE_CPUGPU_SCOPE_SELECT_BY_DEFAULT( name, apiContext )
-
-    // _CUSTOMNAME versions are slower due to string management
-    #define VA_TRACE_CPU_SCOPE_CUSTOMNAME( nameVar, customName )   
+    #define VA_TRACE_CPU_SCOPE_CUSTOMNAME( nameVar, customName )
     #define VA_TRACE_CPUGPU_SCOPE_CUSTOMNAME( nameVar, customName, apiContext )
 #endif
 

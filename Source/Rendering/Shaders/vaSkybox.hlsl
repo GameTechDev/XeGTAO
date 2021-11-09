@@ -35,7 +35,7 @@ VSOutput SkyboxVS( const float4 inPos : SV_Position )
 {
    VSOutput ret;
 
-   ret.Position = inPos;
+   ret.Position     = inPos;
    ret.PositionProj = inPos; //-mul( ProjToWorld, xOut.m_xPosition ).xyz;	
 
    return ret;

@@ -13,6 +13,8 @@
 #include "Rendering/vaRenderingIncludes.h"
 #include "Rendering/Shaders/vaSharedTypes.h"
 
+#include "IntegratedExternals/vaImguiIntegration.h"
+
 using namespace Vanilla;
 
 vaPostProcess::vaPostProcess( const vaRenderingModuleParams & params ) : 
@@ -64,6 +66,8 @@ vaPostProcess::vaPostProcess( const vaRenderingModuleParams & params ) :
     m_pixelShaderDepthToViewspaceLinearDS4x4LinAvg->CompileFromFile( "vaPostProcess.hlsl", "PSDepthToViewspaceLinearDS4x4", linAvgMacros, false );
 
     m_pixelShaderSmartOffscreenUpsampleComposite->CompileFromFile( "vaPostProcess.hlsl", "PSSmartOffscreenUpsampleComposite", m_staticShaderMacros, false );
+
+    m_CSGenerateMotionVectors = vaComputeShader::CreateFromFile( GetRenderDevice(), "vaPostProcess.hlsl", "CSGenerateMotionVectors", { {"VA_POSTPROCESS_MOTIONVECTORS", ""} }, false );
     
     // this still lets the 3 compile in parallel
     m_vertexShaderStretchRect->WaitFinishIfBackgroundCreateActive( );
@@ -695,4 +699,223 @@ vaDrawResultFlags vaPostProcess::CopySliceToTexture3D( vaRenderDeviceContext & r
     auto retVal = renderContext.ExecuteSingleItem( computeItem, vaRenderOutputs::FromUAVs(dstTexture), nullptr );
 
     return retVal;
+}
+
+vaDrawResultFlags vaPostProcess::GenerateMotionVectors( vaRenderDeviceContext & renderContext, const vaDrawAttributes & drawAttributes, const shared_ptr<vaTexture> & inputDepth, const shared_ptr<vaTexture> & outMotionVectors, const shared_ptr<vaTexture> & outViewspaceDepth )
+{
+    m_CSGenerateMotionVectors->WaitFinishIfBackgroundCreateActive(); // make sure it's compiled
+
+    assert( inputDepth->GetSize() == outMotionVectors->GetSize() );
+    assert( inputDepth->GetSizeX() == drawAttributes.Camera.GetViewportWidth() && inputDepth->GetSizeY() == drawAttributes.Camera.GetViewportHeight() );
+
+    {
+        VA_TRACE_CPUGPU_SCOPE( GenerateMotionVectors, renderContext );
+
+        vaComputeItem computeItem;// = computeItemBase;
+        computeItem.ComputeShader = m_CSGenerateMotionVectors;
+
+        // input SRVs
+        computeItem.ShaderResourceViews[0] = inputDepth;
+
+        computeItem.SetDispatch( (outMotionVectors->GetSizeX() + MOTIONVECTORS_BLOCK_SIZE_X-1) / MOTIONVECTORS_BLOCK_SIZE_X, (outMotionVectors->GetSizeY() + MOTIONVECTORS_BLOCK_SIZE_Y-1) / MOTIONVECTORS_BLOCK_SIZE_Y, 1 );
+
+        return renderContext.ExecuteSingleItem( computeItem, vaRenderOutputs::FromUAVs( outMotionVectors, outViewspaceDepth ), &drawAttributes );
+    }
+}
+
+#if 0 // what's all this for, can't remember
+
+#pragma warning ( disable: 4505 ) 
+
+// Foley & van Dam p593 / http://lolengine.net/blog/2013/01/13/fast-rgb-to-hsv
+static void RGB2HSV(float r, float g, float b, float &h, float &s, float &v)
+{
+    float rgb_max = std::max(r, std::max(g, b));
+    float rgb_min = std::min(r, std::min(g, b));
+    float delta = rgb_max - rgb_min;
+    s = delta / (rgb_max + 1e-20f);
+    v = rgb_max;
+
+    float hue;
+    if (r == rgb_max)
+        hue = (g - b) / (delta + 1e-20f);
+    else if (g == rgb_max)
+        hue = 2 + (b - r) / (delta + 1e-20f);
+    else
+        hue = 4 + (r - g) / (delta + 1e-20f);
+    if (hue < 0)
+        hue += 6.f;
+    h = hue * (1.f / 6.f);
+}
+
+// Foley & van Dam p593 / http://en.wikipedia.org/wiki/HSL_and_HSV
+void HSVtoRGB(float h, float s, float v, float& out_r, float& out_g, float& out_b)
+{
+    if (s == 0.0f)
+    {
+        // gray
+        out_r = out_g = out_b = v;
+        return;
+    }
+
+    h = fmodf(h, 1.0f) / (60.0f / 360.0f);
+    int   i = (int)h;
+    float f = h - (float)i;
+    float p = v * (1.0f - s);
+    float q = v * (1.0f - s * f);
+    float t = v * (1.0f - s * (1.0f - f));
+
+    switch (i)
+    {
+    case 0: out_r = v; out_g = t; out_b = p; break;
+    case 1: out_r = q; out_g = v; out_b = p; break;
+    case 2: out_r = p; out_g = v; out_b = t; break;
+    case 3: out_r = p; out_g = q; out_b = v; break;
+    case 4: out_r = t; out_g = p; out_b = v; break;
+    case 5: default: out_r = v; out_g = p; out_b = q; break;
+    }
+}
+
+uint saturate( uint input, float saturation )
+{
+    saturation;
+    float r = ((input & 0x000000FF)      ) / 255.0f;
+    float g = ((input & 0x0000FF00) >> 8 ) / 255.0f;
+    float b = ((input & 0x00FF0000) >> 16) / 255.0f;
+
+    // assuming inputs in sRGB, very approx convert to linear - can be skipped for perf
+    r = r*r; g=g*g; b=b*b;
+
+#if 0   // faster version
+    float luminance = 0.2126f * r + 0.587f * g + 0.0722f * b; // Rec. 709
+    r = r * saturation + luminance * ( 1 - saturation );
+    g = g * saturation + luminance * ( 1 - saturation );
+    b = b * saturation + luminance * ( 1 - saturation );
+#else   // more correct but more expensive version
+    float h, s, v;
+    RGB2HSV( r, g, b, h, s, v );
+    s *= saturation;
+    HSVtoRGB( h, s, v, r, g, b );
+#endif
+
+    // clamp [0, 1] to avoid messing up encoding - can be skipped for perf if we're sure the above isn't under/overflowing - HSV path shouldn't be
+    r = std::min( 1.0f, std::max( 0.0f, r ) );
+    g = std::min( 1.0f, std::max( 0.0f, g ) );
+    b = std::min( 1.0f, std::max( 0.0f, b ) );
+
+    // approx-linear back to gamma - can be skipped for perf
+    r = std::sqrtf(r); g=std::sqrtf(g); b=std::sqrtf(b);
+
+    // preserve alpha, avoid precision drift (+0.5)
+    return (input & 0xFF000000) | uint32_t( 0.5f + r * 255.0f ) | (uint32_t( 0.5f + g * 255.0f ) << 8) | (uint32_t( 0.5f + b * 255.0f ) << 16);
+}
+
+void convert_image (uint32_t w, uint32_t h, uint32_t* p, float saturation) 
+{ 
+    for( uint y = 0; y < h/2; y++ )
+    {
+        uint oyt = y*w;
+        uint oyb = (h-y-1)*w;
+        for( uint x = 0; x < w; x++ )
+        {
+            uint & pixelTop     = p[oyt + x];
+            uint & pixelBottom  = p[oyb + x];
+            
+            // swap
+            uint temp   = saturate(pixelTop, saturation);
+            pixelTop    = saturate(pixelBottom, saturation);
+            pixelBottom = temp;
+        }
+    }
+
+    // odd height special case - we've missed to post-process the middle row
+    if( h % 2 == 1 )
+    {
+        for( uint x = 0; x < w; x++ )
+        {
+            uint & pixel = p[(h/2)*w + x];
+            pixel = saturate(pixel, saturation);
+        }
+    }
+}
+
+#endif
+
+vaDrawResultFlags vaPostProcess::GenericCPUImageProcess( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & inoutTexture )
+{
+    struct CPUImageProcessContext
+    {
+        shared_ptr<vaTexture>       ScratchImageGPU;
+        shared_ptr<vaTexture>       ScratchImageCPURead;
+
+        byte *                      MappedBuffer        = nullptr;
+        uint32                      MappedRowPitch      = 0; // in bytes!
+        int64                       MappedSize          = 0; // in bytes!
+
+        ~CPUImageProcessContext()   { if( MappedBuffer != nullptr ) delete[] MappedBuffer; }
+
+        bool                        GPUtoCPU( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & inoutTexture )
+        {
+            if( ScratchImageGPU == nullptr || inoutTexture->GetSize( ) != ScratchImageGPU->GetSize( ) )
+            {
+                vaResourceFormat format = vaResourceFormat::R8G8B8A8_UNORM_SRGB;
+                ScratchImageGPU = vaTexture::Create2D( renderContext.GetRenderDevice(),         format, inoutTexture->GetWidth(), inoutTexture->GetHeight(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::RenderTarget );
+                ScratchImageCPURead = vaTexture::Create2D( renderContext.GetRenderDevice(),     format, inoutTexture->GetWidth(), inoutTexture->GetHeight(), 1, 1, 1, vaResourceBindSupportFlags::None, vaResourceAccessFlags::CPURead );
+
+                if( MappedBuffer != nullptr )
+                {
+                    delete[] MappedBuffer;
+                    MappedBuffer = nullptr;
+                }
+            }
+            renderContext.CopySRVToRTV( ScratchImageGPU, inoutTexture );        // format conversion to R8G8B8A8_UNORM
+            ScratchImageCPURead->CopyFrom( renderContext, ScratchImageGPU );    // GPU -> CPU readback copy
+
+            if( ScratchImageCPURead->TryMap( renderContext, vaResourceMapType::Read, false ) )
+            {
+                if( MappedBuffer == nullptr )
+                {
+                    MappedRowPitch  = ScratchImageCPURead->GetMappedData()[0].RowPitch;
+                    MappedSize      = ScratchImageCPURead->GetMappedData()[0].SizeInBytes;
+                    MappedBuffer    = new byte[ScratchImageCPURead->GetMappedData()[0].SizeInBytes];
+                }
+                memcpy( MappedBuffer, ScratchImageCPURead->GetMappedData()[0].Buffer, ScratchImageCPURead->GetMappedData()[0].SizeInBytes );
+                ScratchImageCPURead->Unmap( renderContext );
+                return true;
+            }
+            return false;
+        }
+        void                        CPUtoGPU( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & inoutTexture )
+        {
+            std::vector<vaTextureSubresourceData> data(1);
+            data[0].pData      = MappedBuffer;
+            data[0].RowPitch   = MappedRowPitch;
+            data[0].SlicePitch = MappedSize;
+            ScratchImageGPU->UpdateSubresources( renderContext, 0, data );
+            renderContext.CopySRVToRTV( inoutTexture, ScratchImageGPU );        // format conversion from R8G8B8A8_UNORM
+        }
+    };
+
+    if( m_CPUProcessContext == nullptr )
+        m_CPUProcessContext = std::make_shared<CPUImageProcessContext>();
+    CPUImageProcessContext & localContext = *reinterpret_cast<CPUImageProcessContext*>( m_CPUProcessContext.get() );
+    if( localContext.GPUtoCPU( renderContext, inoutTexture ) )
+    {
+        const int width     = inoutTexture->GetWidth();
+        const int height    = inoutTexture->GetHeight();
+
+        uint * data         = reinterpret_cast<uint*>(localContext.MappedBuffer); data;
+        const uint rowPitchInUints = localContext.MappedRowPitch/4;
+        assert( (uint)width == rowPitchInUints );
+        
+        // static float saturation = 1.0f;
+        // ImGui::SliderFloat( "saturation", &saturation, 0.0f, 10.0f );
+        // convert_image( width, height, data, saturation );
+
+        localContext.CPUtoGPU( renderContext, inoutTexture );
+    }
+    else
+    { assert( false ); }
+
+    return vaDrawResultFlags::None;
 }

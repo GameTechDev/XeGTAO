@@ -377,12 +377,6 @@ namespace Vanilla
         void                                PSOCachesClearUnusedTick( );
         void                                PSOCachesClearAll( );
 
-        // will add a GPU fence, block until it is done and, optionally, execute all callbacks pooled by 'ExecuteAfterCurrentGPUFrameDone'
-        void                                SyncGPU( bool executeAfterFrameDoneCallbacks );
-
-        // will sync on previous frames; age can go from c_BackbufferCount to 0 where 0 means sync to current frame with a call SyncGPU(false)
-        void                                SyncGPUFrame( int age );
-
         friend class vaResourceViewDX12;
         friend class vaRenderDeviceContextDX12;
         friend class vaTextureDX12;
@@ -410,6 +404,11 @@ namespace Vanilla
         static string                       StaticGetAPIName( )                                                     { return "DirectX12"; }
         static void                         StaticEnumerateAdapters( std::vector<pair<string, string>> & outAdapters );
 
+    public:
+        // will add a GPU fence, block until it is done and, optionally, execute all callbacks pooled by 'ExecuteAfterCurrentGPUFrameDone'
+        void                                SyncGPU( bool executeAfterFrameDoneCallbacks );
+        // will sync on previous frames; age can go from c_BackbufferCount to 0 where 0 means sync to current frame with a call SyncGPU(false)
+        void                                SyncGPUFrame( int age );
     };
 
     //////////////////////////////////////////////////////////////////////////

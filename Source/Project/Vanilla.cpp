@@ -31,6 +31,7 @@
 #include "Core/System/vaMemoryStream.h"
 
 #include "Rendering/vaSceneRenderer.h"
+#include "Rendering/vaSceneMainRenderView.h"
 
 #include "Scene/vaCameraControllers.h"
 
@@ -1202,9 +1203,13 @@ void VanillaSample::OnTick( float deltaTime )
 
             m_sceneRenderer->SetScene( m_currentScene );
             m_presetCamerasDirty = true;
+
         }
 
+        SimpleBistroAnimStuff( deltaTime, prevScene != m_currentScene );
+
         // LOAD FROM SCENE
+
         if( m_presetCamerasDirty )  // changed, reset & reload
         {
             m_presetCamerasDirty = false;
@@ -1329,6 +1334,13 @@ vaDrawResultFlags VanillaSample::RenderTick( float deltaTime )
     const shared_ptr<vaTexture> & finalColor     = m_sceneMainView->GetOutputColor();
 //    const shared_ptr<vaTexture> & finalDepth     = m_sceneMainView->GetTextureDepth();
 
+#if 0 // just testing something
+    static bool debugPostProcessThingie = false;
+    ImGui::Checkbox( "DEBUG THINGIE!", &debugPostProcessThingie );
+    if( debugPostProcessThingie )
+        GetRenderDevice( ).GetPostProcess( ).GenericCPUImageProcess( renderContext, finalColor );
+#endif 
+
     // this is perfectly cromulent
     if( finalColor == nullptr )
     {
@@ -1416,6 +1428,19 @@ void VanillaSample::UIPanelTick( vaApplicationBase & application )
             //imguiStateStorage->SetInt( displayTypeID, displayTypeIndex );
         }
         m_settings.CurrentSceneName = m_scenesInFolder[currentSceneIndex];
+
+        if( m_simpleBistroAnimAvailable )
+        {
+            if( ImGui::CollapsingHeader( "Bistro animations" ) )
+            {
+                VA_GENERIC_RAII_SCOPE( ImGui::Indent();, ImGui::Unindent(); );
+                ImGui::Checkbox("Anim time advance", &m_simpleBistroAnimAdvanceTime );
+                ImGui::InputDouble( "Anim time", &m_simpleBistroAnimTime );
+                ImGui::Separator();
+                ImGui::Checkbox( "Move some objects", &m_simpleBistroAnimMoveObjs );
+                ImGui::Checkbox( "Swing the big light", &m_simpleBistroAnimSwingLight );
+            }
+        }
     }
     else
     {
@@ -2207,7 +2232,92 @@ void VanillaSample::ScriptedTests( vaApplicationBase & application )
 
 }
 
+void VanillaSample::SimpleBistroAnimStuff( float deltaTime, bool sceneChanged )
+{
+    if( sceneChanged )
+    {
+        m_simpleBistroAnimCeilingFan    = Scene::FindFirstByName( m_currentScene->CRegistry(), "ceiling_fan_1_rotate_pivot", entt::null, true );
+        m_simpleBistroAnimSpaceship     = Scene::FindFirstByName( m_currentScene->CRegistry(), "SpaceFighter_2_animated", entt::null, true );
+        m_simpleBistroAnimSpaceshipLL   = Scene::FindFirstByName( m_currentScene->CRegistry(), "light_left", m_simpleBistroAnimSpaceship, true );
+        m_simpleBistroAnimSpaceshipLR   = Scene::FindFirstByName( m_currentScene->CRegistry(), "light_right", m_simpleBistroAnimSpaceship, true );
+        m_simpleBistroAnimCeilingLight  = Scene::FindFirstByName( m_currentScene->CRegistry(), "ceiling_lamp_03_rotate_pivot", entt::null, true );
+    }
 
+    // very simple bistro anim - if bistro loaded :)
+    if( m_simpleBistroAnimCeilingFan == entt::null && m_simpleBistroAnimSpaceship == entt::null && m_simpleBistroAnimCeilingLight == entt::null )
+    {
+        m_simpleBistroAnimAvailable = false;
+        m_simpleBistroAnimMoveObjs = false;
+        m_simpleBistroAnimSwingLight = false;
+        m_simpleBistroAnimAdvanceTime = false;
+        return;
+    }
+    else
+        m_simpleBistroAnimAvailable = true;
+
+    if( m_simpleBistroAnimAdvanceTime )
+        m_simpleBistroAnimTime += deltaTime;
+
+    entt::registry & registry = m_currentScene->Registry( );
+
+    if( m_simpleBistroAnimMoveObjs )
+    {
+        if( m_simpleBistroAnimCeilingFan != entt::null )
+        {
+            Scene::TransformLocal * trans = registry.try_get<Scene::TransformLocal>( m_simpleBistroAnimCeilingFan );
+            if( trans != nullptr ) 
+            {
+                *trans = vaMatrix4x4::RotationZ( (float)vaMath::Frac(m_simpleBistroAnimTime*0.1f) * VA_PIf * 2.0f );
+                Scene::SetTransformDirtyRecursive( registry, m_simpleBistroAnimCeilingFan );
+            }
+        }
+        if( m_simpleBistroAnimSpaceship != entt::null )
+        {
+            Scene::TransformLocal * trans = registry.try_get<Scene::TransformLocal>( m_simpleBistroAnimSpaceship );
+            if( trans != nullptr ) 
+            {
+                const float stage1 = 6.0f;
+                const float stage2 = 8.0f;
+                const float stage3 = 14.0f;
+                float animTime = (float)fmod( m_simpleBistroAnimTime, stage3 );
+                if( animTime < stage1 )
+                {
+                    float localTime = (animTime)/stage1;
+                    *trans = vaMatrix4x4::Translation( {0, -1500.0f * localTime, 0.0f } );
+                } else if( animTime < stage2 )
+                { 
+                    float localTime = (animTime-stage1) / (stage2-stage1);
+                    *trans = vaMatrix4x4::RotationZ( localTime * VA_PIf ) * vaMatrix4x4::Translation( vaMath::Lerp( vaVector3( 0, -1500.0f, 0.0f ), vaVector3( 230, -1500.0f, -180 ), localTime ) );
+            }else if( animTime < stage3 )
+            { 
+                float localTime = (animTime-stage2) / (stage3-stage2);
+                *trans = vaMatrix4x4::RotationZ( 1.0 * VA_PIf ) * vaMatrix4x4::Translation( vaMath::Lerp( vaVector3( 230, -1500.0f, -180.0f ), vaVector3( 230, 0, -180.0f ), localTime ) );
+            }
+
+            Scene::SetTransformDirtyRecursive( registry, m_simpleBistroAnimSpaceship );
+            }
+        }
+        if( m_simpleBistroAnimSpaceshipLL != entt::null && m_simpleBistroAnimSpaceshipLR != entt::null )
+        {
+            Scene::LightPoint * lightL = registry.try_get<Scene::LightPoint>( m_simpleBistroAnimSpaceshipLL );
+            Scene::LightPoint * lightR = registry.try_get<Scene::LightPoint>( m_simpleBistroAnimSpaceshipLR );
+            if( lightL != nullptr && lightR != nullptr )
+            {
+                lightL->FadeFactor = (fmod( m_simpleBistroAnimTime, 1.0 ) > 0.8f)?(1.0f):(0.0f);
+                lightR->FadeFactor = (fmod( m_simpleBistroAnimTime, 1.0 ) > 0.8f)?(1.0f):(0.0f);
+            }
+        }
+    }
+    if( m_simpleBistroAnimSwingLight && m_simpleBistroAnimCeilingLight != entt::null )
+    {
+        Scene::TransformLocal * trans = registry.try_get<Scene::TransformLocal>( m_simpleBistroAnimCeilingLight );
+        if( trans != nullptr ) 
+        {
+            *trans = vaMatrix4x4::RotationAxis( vaVector3( 0.5f, 0.7f, 0.0f ).Normalized(), sin( (float)vaMath::Frac(m_simpleBistroAnimTime*0.15f) * VA_PIf * 2.0f ) * VA_PIf * 0.4f );
+            Scene::SetTransformDirtyRecursive( registry, m_simpleBistroAnimCeilingLight );
+        }
+    }
+}
 
 AutoBenchTool::AutoBenchTool( VanillaSample & parent, vaMiniScriptInterface & scriptInterface, bool ensureVisualDeterminism, bool writeReport ) : m_parent( parent ), m_scriptInterface( scriptInterface ), m_backupCameraStorage( (int64)0, (int64)1024 ) 
 { 

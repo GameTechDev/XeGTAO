@@ -220,7 +220,8 @@ namespace Vanilla
     class vaRenderBufferDX12 : public vaRenderBuffer, public virtual vaShaderResourceDX12
     {
         ComPtr<ID3D12Resource>              m_resource;
-        D3D12_RESOURCE_DESC                 m_desc          = {};
+        HANDLE                              m_sharedApiHandle   = 0;        
+        D3D12_RESOURCE_DESC                 m_desc              = {};
 
         vaResourceStateTransitionHelperDX12 m_rsth;
 
@@ -264,6 +265,8 @@ namespace Vanilla
         virtual UINT64                      GetSizeInBytes( ) const       override                          { return m_dataSize; }
         virtual DXGI_FORMAT                 GetFormat( ) const            override                          { return DXGIFormatFromVA( m_resourceFormat ); }
         virtual UINT                        GetStrideInBytes( ) const     override                          { return m_elementByteSize; }
+
+        virtual bool                        GetCUDAShared( void * & outPointer, size_t & outSize ) override;
 
 
     protected:

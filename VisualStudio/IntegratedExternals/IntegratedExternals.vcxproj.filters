@@ -948,6 +948,9 @@
     <ClCompile Include="..\..\Source\IntegratedExternals\imgui\imgui_tables.cpp">
       <Filter>IntegratedExternals\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\IntegratedExternals\vaOptixIntegration.cpp">
+      <Filter>IntegratedExternals</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Source\IntegratedExternals\imgui\imconfig.h">
@@ -2242,6 +2245,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Source\IntegratedExternals\OpenImageDenoise\oidn.hpp">
       <Filter>IntegratedExternals\OpenImageDenoise</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaOptixIntegration.h">
+      <Filter>IntegratedExternals</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

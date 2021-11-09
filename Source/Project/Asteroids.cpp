@@ -18,7 +18,7 @@
 #include "Scene/vaAssetImporter.h"
 #include "Scene/vaScene.h"
 #include "Rendering/vaSceneRenderer.h"
-
+#include "Rendering/vaSceneMainRenderView.h"
 #include "Rendering/vaRenderCamera.h"
 #include "Rendering/vaShader.h"
 #include "Rendering/vaRenderMesh.h"
@@ -281,7 +281,7 @@ void Workspace01_Asteroids( vaRenderDevice & renderDevice, vaApplicationBase & a
             SceneMainView   = SceneRenderer->CreateMainView( );
             SceneMainView->SetCursorHoverInfoEnabled(true);
             SceneRenderer->SetScene( Scene );
-            SceneRenderer->GeneralSettings().DepthPrepass   = false;  // we have to do it here but having no depth prepass doesn't work in some scenarios and disables ASSAO.
+            SceneRenderer->GeneralSettings().DepthPrepass   = true;  // we have to do it here but having no depth prepass doesn't work in some scenarios and disables ASSAO.
             // SceneRenderer->GeneralSettings().SortOpaque     = false;    // we're mostly CPU bound so let's avoid sort cost
 
             //AsteroidSim = std::make_shared<AsteroidsSimulation>(1337, NUM_ASTEROIDS, NUM_UNIQUE_MESHES, MESH_MAX_SUBDIV_LEVELS);
@@ -338,49 +338,6 @@ void Workspace01_Asteroids( vaRenderDevice & renderDevice, vaApplicationBase & a
                 ImageCompareTool    = std::make_shared<vaImageCompareTool>( renderDevice );
             }
 
-#if 0
-            // create asteroids material!
-            {
-                AsteroidTexture = CreateTexture( renderDevice, 0 );
-
-                AsteroidMaterial = renderDevice.GetMaterialManager( ).CreateRenderMaterial( );
-
-                AsteroidMaterial->SetupFromPreset( "FilamentStandard" );
-
-                // this is probably how textures are connected
-                AsteroidMaterial->SetTextureNode( "BaseColorTexture", AsteroidTexture, vaStandardSamplerType::PointWrap );
-                AsteroidMaterial->ConnectInputSlotWithNode( "BaseColor", "BaseColorTexture" );
-                //
-                //AsteroidMaterial->SetTextureNode( "NormalTexture", *globals->TestNormalmap, vaStandardSamplerType::AnisotropicWrap );
-                //AsteroidMaterial->ConnectInputSlotWithNode( "Normal", "NormalTexture" );
-
-                // // make them shine for now
-                // AsteroidMaterial->SetInputSlot( "EmissiveColor", vaVector3( 0.5f, 1.0f, 0.5f ), true, true );
-                // AsteroidMaterial->SetInputSlot( "EmissiveIntensity", 1.0f, false, false );
-
-                auto shaderSettings = AsteroidMaterial->GetShaderSettings();
-                shaderSettings.BaseMacros.push_back( { "ASTEROID_SHADER_HACKS", "" } );
-                AsteroidMaterial->SetShaderSettings(shaderSettings);
-            }
-#endif
-
-#if 0
-            // create asteroid meshes!
-            {
-                for( int i = 0; i < AsteroidMeshes.size(); i++ )
-                {
-                    // create mesh
-                   CreateAsteroidMesh( renderDevice, i , AsteroidMeshes[i]);
-
-                    // set material
-                   for (int iLOD = 0; iLOD < MESH_MAX_SUBDIV_LEVELS+1; iLOD++)
-                   {
-                       AsteroidMeshes[i][iLOD]->SetMaterial(AsteroidMaterial);
-                   }
-                }
-            }
-#endif
-
             assetPackManager.WaitFinishAsyncOps( ); // make sure we've stopped loading or below might not be available
             UFOMesh = assetPackManager.FindRenderMesh( "ufo_retro_toy_mesh" );
             IceAsteroidMesh = assetPackManager.FindRenderMesh( "iceasteroid_mesh" );
@@ -407,15 +364,12 @@ void Workspace01_Asteroids( vaRenderDevice & renderDevice, vaApplicationBase & a
             SetupAsteroids( *Scene, AsteroidStandardMeshes, IceAsteroidMesh, NUM_ASTEROIDS, RATIO_OF_ICE_ASTEROIDS );
 #endif
 
-            // just a random scene, TODO: remove all this
+            // just a random scene <shrug>
             {
 #if 1 // UFO in the middle
                 MovableEntity = Scene->CreateEntity( "UFOEntity", vaMatrix4x4::Identity );
                 Scene->CreateEntity( "UFOMesh", vaMatrix4x4::Scaling(3, 3, 3) * vaMatrix4x4::RotationX( VA_PIf * 1.0f ), MovableEntity, UFOMesh->UIDObject_GetUID() );
 #endif
-            
-                // this means "don't inherit transform from parent"
-                // Scene->Registry().emplace<Scene::TransformLocalIsWorldTag>(MovableEntity);
 
                 FighterEntity = Scene->CreateEntity( "FighterEntity", vaMatrix4x4::FromTranslation( { 0, 3750, 0 } ) );
                 // resize, use "gltf orientation matrix" and rotate so X is ahead
@@ -433,7 +387,7 @@ void Workspace01_Asteroids( vaRenderDevice & renderDevice, vaApplicationBase & a
 #endif
                 // Scene->CreateEntity( AsteroidStandardMeshes[5]->GetParentAsset()->Name(), vaMatrix4x4::Identity, AsteroidStandardMeshes[5], standardAsteroids ); //vaMatrix4x4::Scaling(3, 3, 3) * vaMatrix4x4::RotationX( VA_PIf * 1.0f ), UFOMesh, MovableEntity );
 
-#if 1           // bunch of random spheres in a random hierarchy
+#if 0           // bunch of random spheres in a random hierarchy
                 vaRandom rnd(0);
                 OtherEntities.push_back( entt::null );  // add one null entity for testing
                 for( int i = 0; i < 1000; i++ )
@@ -502,33 +456,7 @@ void Workspace01_Asteroids( vaRenderDevice & renderDevice, vaApplicationBase & a
 
     vaRenderDeviceContext & renderContext = *renderDevice.GetMainContext( );
 
-//     // Create/update depth
-//     if( globals->DepthBuffer == nullptr || globals->DepthBuffer->GetSize( ) != backbufferTex->GetSize( ) || globals->DepthBuffer->GetSampleCount( ) != backbufferTex->GetSampleCount( ) )
-//         globals->DepthBuffer = vaTexture::Create2D( renderDevice, vaResourceFormat::D32_FLOAT, backbufferTex->GetSizeX( ), backbufferTex->GetSizeY( ), 1, 1, 1, vaResourceBindSupportFlags::DepthStencil );
-// 
-//     // Create/update offscreen render target
-//     if( globals->PreTonemapRT == nullptr || globals->PreTonemapRT->GetSizeX( ) != backbufferTex->GetSizeX( ) || globals->PreTonemapRT->GetSizeY( ) != backbufferTex->GetSizeY( ) )
-//         globals->PreTonemapRT = vaTexture::Create2D( renderDevice, vaResourceFormat::R16G16B16A16_FLOAT, backbufferTex->GetSizeX( ), backbufferTex->GetSizeY( ), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::RenderTarget );
-//     if( globals->PostTonemapRT == nullptr || globals->PostTonemapRT->GetSizeX( ) != backbufferTex->GetSizeX( ) || globals->PostTonemapRT->GetSizeY( ) != backbufferTex->GetSizeY( ) )
-//         globals->PostTonemapRT = vaTexture::Create2D( renderDevice, vaResourceFormat::R8G8B8A8_TYPELESS, backbufferTex->GetSizeX( ), backbufferTex->GetSizeY( ), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::RenderTarget | vaResourceBindSupportFlags::UnorderedAccess,
-//             vaResourceAccessFlags::Default, vaResourceFormat::R8G8B8A8_UNORM_SRGB, vaResourceFormat::R8G8B8A8_UNORM_SRGB, vaResourceFormat::Unknown, vaResourceFormat::R8G8B8A8_UNORM );
-//     globals->SceneTick( globals->Registry, deltaTime );
-//     globals->SceneCollectMeshes( globals->Registry, globals->MeshListDynamic, globals->TestSphereMesh );
-// 
-//     // tick lighting
-//     globals->Lighting->Tick( deltaTime );
-
-#if 0
-//    This can't happen here because vaApplication ticks the NextFrame and the parallel execution would overlap it (a bug).
-//    GREAT IDEA: allow for manual vaFramePtrStatic::NextFrame & disable in-app one; just simply add vaApplicationBase::ManualFramePtrNextFrame which calls NextFrame and prevents the next automatic one (but not the full ones)
-    // Time to stop any async processing!
-    if( globals->Scene->IsTicking( ) )
-        globals->Scene->TickEnd( );
-    application.ManualFramePtrNextFrame();
-#endif
-
-    // our stuff!
-#if 0
+#if 0 // move little ship around - just for testing
     if( !application.IsMouseCaptured() )
     {
         vaInputKeyboardBase * keyboard = application.GetInputKeyboard(); keyboard;
@@ -569,21 +497,13 @@ void Workspace01_Asteroids( vaRenderDevice & renderDevice, vaApplicationBase & a
         const shared_ptr<vaTexture> & finalColor = globals->SceneMainView->GetOutputColor( );
         //    const shared_ptr<vaTexture> & finalDepth     = m_sceneMainView->GetTextureDepth();
 
-        // this is possible
+        // this can happen
         if( finalColor == nullptr )
         {
             backbufferTexture->ClearRTV( renderContext, { 0.5f, 0.5f, 0.5f, 1.0f } );
         }
         else
         {
-            // // Apply CMAA!
-            // if( m_settings.CurrentAAOption == VanillaSample::AAType::CMAA2 )
-            // {
-            //     VA_TRACE_CPUGPU_SCOPE( CMAA2, renderContext );
-            //     if( m_settings.CurrentAAOption == VanillaSample::AAType::CMAA2 )
-            //         drawResults |= m_CMAA2->Draw( renderContext, finalColor );
-            // }
-
             // various helper tools - at one point these should go and become part of the base app but for now let's just stick them in here
             {
                 if( drawResults == vaDrawResultFlags::None && globals->ImageCompareTool != nullptr )

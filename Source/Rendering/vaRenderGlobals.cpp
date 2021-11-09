@@ -140,6 +140,9 @@ void vaRenderGlobals::UpdateShaderConstants( vaRenderDeviceContext & renderConte
         consts.ViewProjInv                      = consts.ViewProj.Inversed();
 
         consts.WorldBase                        = vaVector4( drawAttributes->Settings.WorldBase, 0.0f );
+        assert( consts.WorldBase == vaVector4(0,0,0,0) ); // Nowadays for WorldBase to work it also needs PreviousWorldBase and correct fix in shaders - see below
+        consts.PreviousWorldBase                = consts.WorldBase; //vaVector4( drawAttributes->Settings.PreviousWorldBase, 0.0f );
+
         consts.CameraDirection                  = vaVector4( drawAttributes->Camera.GetDirection().Normalized(), 0.0f );
         consts.CameraRightVector                = vaVector4( drawAttributes->Camera.GetRightVector().Normalized(), 0.0f );
         consts.CameraUpVector                   = vaVector4( drawAttributes->Camera.GetUpVector().Normalized(), 0.0f );
@@ -198,6 +201,8 @@ void vaRenderGlobals::UpdateShaderConstants( vaRenderDeviceContext & renderConte
             consts.RaytracingMIPOffset          = rtSettings.MIPOffset;
             //consts.RaytracingMIPSlopeModifier   = rtSettings.MIPSlopeModifier;
         }
+        consts.ReprojectionMatrix               = drawAttributes->Settings.ReprojectionMatrix;
+        consts.CameraJitterDelta                = drawAttributes->Settings.CameraJitterDelta;
     }
     // this default is only correct if the viewport is full window
     vaVector2i cursorPos = ( drawAttributes != nullptr && drawAttributes->Settings.CursorViewportPos != vaVector2i(-1, -1) )?( drawAttributes->Settings.CursorViewportPos ):( 

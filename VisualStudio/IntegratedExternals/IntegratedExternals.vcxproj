@@ -1106,6 +1106,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\Source\IntegratedExternals\vaImguiIntegration.cpp" />
+    <ClCompile Include="..\..\Source\IntegratedExternals\vaOptixIntegration.cpp" />
     <ClCompile Include="..\..\Source\IntegratedExternals\vaTaskflowIntegration.cpp" />
     <ClCompile Include="..\..\Source\IntegratedExternals\zlib\adler32.c">
       <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vaZLIBIntegrationSpecifics.h</ForcedIncludeFiles>
@@ -1600,18 +1601,9 @@
     <ClInclude Include="..\..\Source\IntegratedExternals\imgui\stb_truetype.h" />
     <ClInclude Include="..\..\Source\IntegratedExternals\meshoptimizer\meshoptimizer.h" />
     <ClInclude Include="..\..\Source\IntegratedExternals\nlohmann-json\json.hpp" />
-    <ClInclude Include="..\..\Source\IntegratedExternals\OpenImageDenoise\config.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\OpenImageDenoise\oidn.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\IntegratedExternals\OpenImageDenoise\oidn.hpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
+    <ClInclude Include="..\..\Source\IntegratedExternals\OpenImageDenoise\config.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\OpenImageDenoise\oidn.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\OpenImageDenoise\oidn.hpp" />
     <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\algorithm\critical.hpp" />
     <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\algorithm\for_each.hpp" />
     <ClInclude Include="..\..\Source\IntegratedExternals\taskflow\core\algorithm\reduce.hpp" />
@@ -1657,6 +1649,7 @@
     <ClInclude Include="..\..\Source\IntegratedExternals\vaMeshoptimizerIntegration.h" />
     <ClInclude Include="..\..\Source\IntegratedExternals\vaNLJsonIntegration.h" />
     <ClInclude Include="..\..\Source\IntegratedExternals\vaOIDNIntegration.h" />
+    <ClInclude Include="..\..\Source\IntegratedExternals\vaOptixIntegration.h" />
     <ClInclude Include="..\..\Source\IntegratedExternals\vaTaskflowIntegration.h" />
     <ClInclude Include="..\..\Source\IntegratedExternals\vaTinyxml2Integration.h" />
     <ClInclude Include="..\..\Source\IntegratedExternals\vaZlibIntegration.h" />
@@ -1717,25 +1710,15 @@
     </CopyFileToFolders>
     <CopyFileToFolders Include="..\..\Source\IntegratedExternals\OpenImageDenoise\OpenImageDenoise.dll">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </CopyFileToFolders>
     <CopyFileToFolders Include="..\..\Source\IntegratedExternals\OpenImageDenoise\tbb12.dll">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\Source\IntegratedExternals\dxc\dxcompiler.lib" />
-    <Library Include="..\..\Source\IntegratedExternals\OpenImageDenoise\OpenImageDenoise.lib">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </Library>
-    <Library Include="..\..\Source\IntegratedExternals\OpenImageDenoise\tbb.lib">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </Library>
+    <Library Include="..\..\Source\IntegratedExternals\OpenImageDenoise\OpenImageDenoise.lib" />
+    <Library Include="..\..\Source\IntegratedExternals\OpenImageDenoise\tbb.lib" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\Source\IntegratedExternals\dxc\info.txt" />
@@ -1771,15 +1754,15 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetExt>.lib</TargetExt>
-    <IncludePath>$(ProjectDir)..\..\Source;$(ProjectDir)..\..\Source\Core\Platform\WindowsPC;$(VC_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\code\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\zlib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\rapidjson\include;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\unzip\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\irrXML\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\openddlparser\include\;$(WindowsSDK_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\Include\WinPixEventRuntime</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\bin\x64;$(ProjectDir)..\..\Source\IntegratedExternals\OpenImageDenoise</LibraryPath>
+    <IncludePath>$(ProjectDir)..\..\Source;$(ProjectDir)..\..\Source\Core\Platform\WindowsPC;$(VC_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\code\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\zlib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\rapidjson\include;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\unzip\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\irrXML\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\openddlparser\include\;$(WindowsSDK_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\Include\WinPixEventRuntime;$(CUDA_PATH)\include\</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\bin\x64;$(ProjectDir)..\..\Source\IntegratedExternals\OpenImageDenoise;$(CUDA_PATH)\lib\x64</LibraryPath>
     <OutDir>$(SolutionDir).intermediate\.lib\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir).intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetExt>.lib</TargetExt>
-    <IncludePath>$(ProjectDir)..\..\Source;$(ProjectDir)..\..\Source\Core\Platform\WindowsPC;$(VC_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\code\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\zlib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\rapidjson\include;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\unzip\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\irrXML\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\openddlparser\include\;$(WindowsSDK_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\Include\WinPixEventRuntime</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\bin\x64;$(ProjectDir)..\..\Source\IntegratedExternals\OpenImageDenoise</LibraryPath>
+    <IncludePath>$(ProjectDir)..\..\Source;$(ProjectDir)..\..\Source\Core\Platform\WindowsPC;$(VC_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\code\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\include\assimp\;$(ProjectDir)..\..\Source\IntegratedExternals\zlib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\rapidjson\include;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\unzip\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\irrXML\;$(ProjectDir)..\..\Source\IntegratedExternals\assimp\contrib\openddlparser\include\;$(WindowsSDK_IncludePath);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\Include\WinPixEventRuntime;$(CUDA_PATH)\include\</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)..\..\Source\IntegratedExternals\winpixeventruntime\bin\x64;$(ProjectDir)..\..\Source\IntegratedExternals\OpenImageDenoise;$(CUDA_PATH)\lib\x64</LibraryPath>
     <OutDir>$(SolutionDir).intermediate\.lib\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir).intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
