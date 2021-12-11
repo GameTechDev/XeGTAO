@@ -171,7 +171,7 @@ namespace Vanilla
                                             ShaderResourceViews;
 
         // CONSTANT BUFFERS - first is usually ShaderGlobalConstants, second one is usually ShaderLightingConstants and the rest is usually unused
-        std::array<vaFramePtr<vaConstantBuffer>, SHADERGLOBAL_CBV_SLOT_COUNT>
+        std::array<vaFramePtr<vaShaderResource>, SHADERGLOBAL_CBV_SLOT_COUNT>
                                             ConstantBuffers;
 
         // UAVs (this isn't fully supported for pixel shaders due to mismatch with API support)
@@ -179,6 +179,8 @@ namespace Vanilla
                                             UnorderedAccessViews;       // I did not add provision for hidden counter resets - if needed better use a different approach (InterlockedX on a separate untyped UAV)
 
         vaFramePtr<vaRenderBuffer>          RaytracingAcceleationStructSRV;
+
+        void                                Validate( ) const;    // will assert if any of the inputs are incorrect
     };
 
     // This is a platform-independent layer for -immediate- rendering of a single draw call - it's not fully featured or designed
@@ -240,7 +242,7 @@ namespace Vanilla
         // not handled by API independent layer yet but default ones set with SetStandardSamplers - see SHADERGLOBAL_SHADOWCMP_SAMPLERSLOT and SHADERGLOBAL_POINTCLAMP_SAMPLERSLOT and others
 
         // CONSTANT BUFFERS - first one is usually used for the ShaderInstanceConstants and the remaining two are usually unused
-        std::array<vaFramePtr<vaConstantBuffer>, 3>
+        std::array<vaFramePtr<vaShaderResource>, 3>
                                             ConstantBuffers;
 
         // SRVs - there's only 6 since switch to bindless; they're expensive to use for stuff like drawing 10,000 objects but totally fine for postprocess or similar
@@ -277,6 +279,8 @@ namespace Vanilla
         // Helpers
         void                                SetDrawSimple( int vertexCount, int startVertexLocation )                           { this->DrawType = DrawType::DrawSimple; DrawSimpleParams.VertexCount = vertexCount; DrawSimpleParams.StartVertexLocation = startVertexLocation; }
         void                                SetDrawIndexed( uint indexCount, uint startIndexLocation, int baseVertexLocation )  { this->DrawType = DrawType::DrawIndexed; DrawIndexedParams.IndexCount = indexCount; DrawIndexedParams.StartIndexLocation = startIndexLocation; DrawIndexedParams.BaseVertexLocation = baseVertexLocation; }
+
+        void                                Validate( ) const;    // will assert if any of the inputs are incorrect
     };
 
     struct vaComputeItem
@@ -292,7 +296,7 @@ namespace Vanilla
         vaFramePtr<vaComputeShader>         ComputeShader;
 
         // CONSTANT BUFFERS
-        std::array<vaFramePtr<vaConstantBuffer>, array_size(vaGraphicsItem::ConstantBuffers)>
+        std::array<vaFramePtr<vaShaderResource>, array_size(vaGraphicsItem::ConstantBuffers)>
                                             ConstantBuffers;                // keep the same count as in for render items for convenience and debugging safety
 
         // SRVs
@@ -322,6 +326,8 @@ namespace Vanilla
         // Helpers
         void                                SetDispatch( uint32 threadGroupCountX, uint32 threadGroupCountY = 1, uint32 threadGroupCountZ = 1 ) { this->ComputeType = Dispatch; DispatchParams.ThreadGroupCountX = threadGroupCountX; DispatchParams.ThreadGroupCountY = threadGroupCountY; DispatchParams.ThreadGroupCountZ = threadGroupCountZ; }
         void                                SetDispatchIndirect( vaFramePtr<vaShaderResource> bufferForArgs, uint32 alignedOffsetForArgs )      { this->ComputeType = DispatchIndirect; DispatchIndirectParams.BufferForArgs = bufferForArgs; DispatchIndirectParams.AlignedOffsetForArgs = alignedOffsetForArgs; }
+
+        void                                Validate( ) const;    // will assert if any of the inputs are incorrect
     };
 
     struct vaRaytraceItem
@@ -339,14 +345,14 @@ namespace Vanilla
         string                              ClosestHit;                     // max length 63 chars; leave at "" for default MaterialClosestHit to be used
 
         // Shader entry points from material's own library entry points (per-material) which are used if AnyHit and ClosestHit are not defined
-        string                              MaterialAnyHit       = "AnyHitAlphaTest";
+        string                              MaterialAnyHit;
         string                              MaterialClosestHit;
         
         string                              ShaderEntryMaterialCallable;        // Callable can be useful when for per-material custom shading; if undefined, callable table not created; only 1 per material supported for now
         string                              MaterialMissCallable;    // Miss shader-based API path to allow for callables that support TraceRay; use VA_RAYTRACING_SHADER_MISSCALLABLES_SHADE_OFFSET and null acceleration structure to invoke; see https://microsoft.github.io/DirectX-Specs/d3d/Raytracing.html#callable-shaders
 
         // CONSTANT BUFFERS
-        std::array<vaFramePtr<vaConstantBuffer>, array_size(vaGraphicsItem::ConstantBuffers)>
+        std::array<vaFramePtr<vaShaderResource>, array_size(vaGraphicsItem::ConstantBuffers)>
                                             ConstantBuffers;                // keep the same count as in for render items for convenience and debugging safety
         // SRVs
         std::array<vaFramePtr<vaShaderResource>, array_size(vaGraphicsItem::ShaderResourceViews)>
@@ -367,6 +373,8 @@ namespace Vanilla
         uint32                              GenericRootConst        = 0;            // accessible from shaders as g_genericRootConst
 
         void                                SetDispatch( uint32 width, uint32 height = 1, uint32 depth = 1 )         { this->DispatchWidth = width, this->DispatchHeight = height; this->DispatchDepth = depth; }
+
+        void                                Validate( ) const;    // will assert if any of the inputs are incorrect
     };
 
     // Used for more complex rendering when there's camera, lighting, various other settings - not needed by many systems

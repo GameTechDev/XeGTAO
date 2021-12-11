@@ -89,6 +89,19 @@ static void GetDefaultMinMax( vaRenderMaterial::ValueTypeIndex type, vaRenderMat
     }
 }
 
+static void SetToOne( vaRenderMaterial::ValueType & value )
+{
+    switch( (vaRenderMaterial::ValueTypeIndex)value.index() )
+    {
+    case( vaRenderMaterial::ValueTypeIndex::Bool ):       value = true;                                 break;
+    case( vaRenderMaterial::ValueTypeIndex::Integer ):    value = (int)1;                               break;
+    case( vaRenderMaterial::ValueTypeIndex::Scalar ):     value = (float)1.0f;                          break;
+    case( vaRenderMaterial::ValueTypeIndex::Vector3 ):    value = vaVector3( 1.0f, 1.0f, 1.0f );        break;
+    case( vaRenderMaterial::ValueTypeIndex::Vector4 ):    value = vaVector4( 1.0f, 1.0f, 1.0f, 1.0f );  break;
+    default: assert( false ); break;
+    };
+}
+
 static void UploadToConstants( const vaRenderMaterial::ValueType & value, vaVector4 & destination )
 {
     switch( (vaRenderMaterial::ValueTypeIndex)value.index() )
@@ -183,12 +196,7 @@ static string ValueTypeToString( const vaRenderMaterial::ValueType & value, int 
 
 static string TextureSlotToHLSLVariableName( int slotIndex )
 {
-#ifndef VA_MATERIAL_BINDLESS
-    return vaStringTools::Format( "g_RMTexture%02d", slotIndex );
-#else
-    //return vaStringTools::Format( "g_bindlessTex2D[g_BindlessSRVIndices[%02d]]", slotIndex );
     return vaStringTools::Format( "g_BindlessSRVIndices[%02d]", slotIndex );
-#endif
 }
 
 static bool SanitizeSwizzle( char inoutSwizzle[], vaRenderMaterial::ValueTypeIndex dstType, vaRenderMaterial::ValueTypeIndex srcType = vaRenderMaterial::ValueTypeIndex::Vector4 )
@@ -502,7 +510,7 @@ void vaRenderMaterial::UpdateShaderMacros( )
     // m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_DEPTH_PASS_EXPORTS_NORMALS",( ( exportNormals )   ? ( "1" ) : ( "0" ) ) ) );
 
     m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_TRANSPARENT",               ( ( IsTransparent() ) ? ( "1" ) : ( "0" ) ) ) );
-    m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_DECAL",                     ( ( IsDecal()       ) ? ( "1" ) : ( "0" ) ) ) );
+    //m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_DECAL",                     ( ( IsDecal()       ) ? ( "1" ) : ( "0" ) ) ) );
     m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_ALPHATEST",                 ( ( IsAlphaTested() ) ? ( "1" ) : ( "0" ) ) ) );
     //m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_ALPHATEST_THRESHOLD",       vaStringTools::Format( "(%.3f)", m_materialSettings.AlphaTestThreshold ) ) );
     m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_WIREFRAME",                 ( ( m_materialSettings.Wireframe         ) ? ( "1" ) : ( "0" ) ) ) );
@@ -514,33 +522,9 @@ void vaRenderMaterial::UpdateShaderMacros( )
     //    m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_LOCALIBL_BIAS", vaStringTools::Format( "(%.3f)", m_materialSettings.LocalIBLBasedBias ) ) );
 
     // texture declarations
-#ifndef VA_MATERIAL_BINDLESS
-    {
-        string textureDeclarations = "";
 
-        for( int slotIndex = 0; slotIndex < m_computedTextureSlotCount; slotIndex++ )
-        { 
-            string thisTextureDeclaration;
-            
-            // type
-            //thisTextureDeclaration += vaStringTools::Format( "Texture2D<%s>   ", typeName.c_str( ) );
-            thisTextureDeclaration += "Texture2D   ";
-
-            // global name
-            thisTextureDeclaration += TextureSlotToHLSLVariableName( slotIndex );
-
-            // texture register declaration
-            thisTextureDeclaration += vaStringTools::Format( " : register( t%d );", slotIndex );
-
-            textureDeclarations += thisTextureDeclaration;
-        }
-
-        m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_TEXTURE_DECLARATIONS", textureDeclarations ) );
-    }
-#else
     // no declarations for bindless! (yet - waiting for SM6.6)
     m_shaderMacros.push_back( std::pair<string, string>( "VA_RM_TEXTURE_DECLARATIONS", "" ) );
-#endif
 
     // inputs declarations
     {
@@ -585,6 +569,21 @@ void vaRenderMaterial::UpdateShaderMacros( )
             assert( inputSlot.ComputedShaderConstantsSlot >= 0 );
 
             shared_ptr<const Node> node = inputSlot.CachedConnectedInput.lock();
+
+            // the approach below is slightly less efficient but reduces shader permutation count
+            
+            // first the multiplier (which will be initialized just to 1 if no node attached)
+            inputsLoading.append( "inputs." + inputSlot.GetName() + " = " + ValueTypeToHLSL(inputSlot.Properties.Default, inputSlot.ComputedShaderConstantsSlot) + "; " );
+
+            // then the node, if any, gets multiplied on top of it
+            if( node != nullptr && node->InUse )
+            {
+                assert( inputSlot.ConnectedInput != "" );
+                inputsLoading.append( "inputs." + inputSlot.GetName() + " *= " + node->Name + "." + string(inputSlot.InputSwizzle) + "; " );
+            }
+
+            // this is the old approach; there's also swizzling for multiplier/defaults that now gets ignored, which is just a different design choice
+            /*
             if( node == nullptr || !node->InUse )
             {
                 if( node == nullptr )
@@ -605,6 +604,7 @@ void vaRenderMaterial::UpdateShaderMacros( )
                 else
                     inputsLoading.append( "inputs." + inputSlot.GetName() + " = " + node->Name + "." + string(inputSlot.InputSwizzle) + "; " );
             }
+            */
 
 
         }
@@ -698,6 +698,9 @@ bool vaRenderMaterial::SerializeUnpacked( vaXMLSerializer & serializer, const st
     /*VERIFY_TRUE_RETURN_ON_FALSE*/( serializer.Serialize<float>( "LocalIBLNormalBasedBias", m_materialSettings.LocalIBLNormalBasedBias ) );
     /*VERIFY_TRUE_RETURN_ON_FALSE*/( serializer.Serialize<float>( "LocalIBLBasedBias", m_materialSettings.LocalIBLBasedBias ) );
     VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "IndexOfRefraction",           m_materialSettings.IndexOfRefraction, 1.00029f ) );
+
+    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<bool>( "NEETranslucent",              m_materialSettings.NEETranslucent, false ) );
+    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "NEETranslucentAlpha",        m_materialSettings.NEETranslucentAlpha, 0.1f ) );
 
     // handle backward compatibility
     if( !serializer.Serialize<int32>( "LayerMode", (int32&)m_materialSettings.LayerMode ) )
@@ -1130,10 +1133,15 @@ void vaRenderMaterial::UpdateInputsDependencies( )
                 VA_WARN( "vaRenderMaterial_UpdateInputsDependencies: more used constants than available - will be overwriting previous" );
                 assert( false );
             }
-            // and we can set the values here as well
-            UploadToConstants( m_inputSlots[i].GetDefaultValue(), m_currentShaderConstants.Constants[m_inputSlots[i].ComputedShaderConstantsSlot] );
 
-            string connectedInputName = m_inputSlots[i].ConnectedInput;
+            const string & connectedInputName = m_inputSlots[i].ConnectedInput;
+
+            // and we can set the values here as well
+            ValueType defaultValue = m_inputSlots[i].GetDefaultValue();
+            if( connectedInputName != "" && !m_inputSlots[i].Properties.IsMultiplier )  // if we've got an input and default isn't marked as a multiplier, set to 1 pass-through multiplier
+                SetToOne( defaultValue );
+            UploadToConstants( defaultValue, m_currentShaderConstants.Constants[m_inputSlots[i].ComputedShaderConstantsSlot] );
+
             if( connectedInputName == "" )
             {
                 m_inputSlots[i].CachedConnectedInput.reset();
@@ -1178,6 +1186,8 @@ void vaRenderMaterial::UpdateInputsDependencies( )
             {
                 if( textureNode != nullptr && !textureNode->GetTextureUID( ).IsNull() )
                 {
+                    auto missingTexture = textureNode->GetTexture( );
+
                     // VA_LOG( "vaRenderMaterial::UpdateInputsDependencies: trying to draw material with some textures not yet loaded" );
                     SetDelayedDirty( 0.1 ); // let's wait a short while until this is sorted (texture loaded or whatever)
                 }
@@ -1235,12 +1245,13 @@ vaFramePtr<vaPixelShader> vaRenderMaterial::GetPS( vaRenderMaterialShaderType sh
     return retVal;
 }
 
-bool vaRenderMaterial::GetCallableShaderLibrary( vaFramePtr<vaShaderLibrary> & outLibrary, string & uniqueID )
+bool vaRenderMaterial::GetCallableShaderLibrary( vaFramePtr<vaShaderLibrary> & outLibrary, string & uniqueID, int & uniqueTableIndex )
 {
     if( m_shaders == nullptr || m_shaders->CAL_Library.get() == nullptr || m_shaders->CAL_Library->IsEmpty() )
         return false;
     outLibrary          = m_shaders->CAL_Library;
     uniqueID            = m_shaders->UniqueIDString;
+    uniqueTableIndex    = m_shaders->TableIndex;
     return true;
 }
 
@@ -1322,6 +1333,11 @@ void vaRenderMaterial::GetShaderState_PS_RichPrepass( vaShader::State & outState
     m_shaders->PS_RichPrepass->GetState( outState, outErrorString );
 }
 
+int vaRenderMaterial::GetCallableShaderTableIndex( ) const                            
+{ 
+    return (m_shaders==nullptr)?(-1):(m_shaders->TableIndex); 
+}
+
 bool vaRenderMaterial::PreRenderUpdate( vaRenderDeviceContext & renderContext )
 {
     std::unique_lock uniqueLock(m_mutex);
@@ -1351,10 +1367,12 @@ bool vaRenderMaterial::PreRenderUpdate( vaRenderDeviceContext & renderContext )
         shaderConstantsUpdateRequired = true;
     }
 
+    m_currentShaderConstants.ShaderTableIndex           = (m_shaders==nullptr)?(-1):(m_shaders->TableIndex);
     m_currentShaderConstants.AlphaTestThreshold         = m_materialSettings.AlphaTestThreshold;
     m_currentShaderConstants.VA_RM_LOCALIBL_NORMALBIAS  = m_materialSettings.LocalIBLNormalBasedBias;
     m_currentShaderConstants.VA_RM_LOCALIBL_BIAS        = m_materialSettings.LocalIBLBasedBias;
     m_currentShaderConstants.IndexOfRefraction          = m_materialSettings.IndexOfRefraction;
+    m_currentShaderConstants.NEETranslucentAlpha        = (m_materialSettings.NEETranslucent)?(m_materialSettings.NEETranslucentAlpha):(1.0f);
 
     // Textures might have changed, so doing it after the above pass every time
     // (frequency could be reduced if too costly but at the moment it has to be done every frame because GetSRVBindlessIndex also transitions the textures to shader readable!!)
@@ -1384,6 +1402,12 @@ bool vaRenderMaterial::PreRenderUpdate( vaRenderDeviceContext & renderContext )
                 SetDelayedDirty( 0.1 ); // let's wait a short while until this is sorted (texture loaded or whatever)
             }
         }
+    }
+
+    if( m_currentShaderConstants.ShaderTableIndex == -1 )
+    {
+        VA_LOG( "vaRenderMaterial::SetToRenderItem - shader table index not available." );
+        SetDelayedDirty( 0.1 ); // let's wait a short while until this is sorted (texture loaded or whatever)
     }
 
     // Update GPU constant buffer if required!
@@ -1716,6 +1740,12 @@ bool vaRenderMaterial::UIPropertiesDraw( vaApplicationBase & application )
             ImGui::EndPopup();
         }
         settings.IndexOfRefraction = std::max( 1.0f, settings.IndexOfRefraction );
+        ImGui::Checkbox( "NEETranslucent", &settings.NEETranslucent ); 
+        if( settings.NEETranslucent )
+        {
+            ImGui::InputFloat( "NEETranslucentAlpha", &settings.NEETranslucentAlpha ); 
+            settings.NEETranslucentAlpha = vaMath::Clamp( settings.NEETranslucentAlpha, 0.0f, 1.0f );
+        }
 
         if( GetMaterialSettings( ) != settings )
         {
@@ -1945,6 +1975,10 @@ vaRenderMaterialManager::FindOrCreateShaders( bool alphaTest, string materialCla
         }
     }
 
+    // also attempt to clear up the table (only from the back - no defrag)
+    while( m_cachedShadersTable.size() > 0 && m_cachedShadersTable.back().lock() == nullptr )
+        m_cachedShadersTable.pop_back();
+
     // not in cache
     if( it == m_cachedShaders.end() )
     {
@@ -2009,6 +2043,20 @@ vaRenderMaterialManager::FindOrCreateShaders( bool alphaTest, string materialCla
         
         // finally, add to cache
         m_cachedShaders.insert( std::make_pair( cacheKey, newShaders ) );
+
+        // and, add to table - first try to find empty slot
+        int emptySlot = -1;
+        for( int i = 0; i < m_cachedShadersTable.size(); i++ )
+            if( m_cachedShadersTable[i].lock() == nullptr )
+                emptySlot = i;
+        // if no empty slots, create new
+        if( emptySlot == -1 )
+        {
+            emptySlot = (int)m_cachedShadersTable.size();
+            m_cachedShadersTable.push_back({});
+        }
+        m_cachedShadersTable[emptySlot] = newShaders;
+        newShaders->TableIndex = emptySlot;
 
         return newShaders;
     }

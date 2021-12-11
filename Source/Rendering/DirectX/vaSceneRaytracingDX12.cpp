@@ -108,7 +108,7 @@ void vaSceneRaytracingDX12::PreRenderUpdateInternal( vaRenderDeviceContext & ren
         instanceDesc.AccelerationStructure  = AsDX12(*AsDX12(*instanceGlobal.Mesh).RT_BLASData()).GetGPUVirtualAddress();
         instanceDesc.Flags                  = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
 
-        if( !instanceGlobal.Material->IsAlphaTested( ) )
+        if( !instanceGlobal.Material->IsAlphaTested( ) && !instanceGlobal.Material->IsNEETranslucent() )
             instanceDesc.Flags |= D3D12_RAYTRACING_INSTANCE_FLAG_FORCE_OPAQUE;
 
         vaWindingOrder frontFaceWinding = instanceGlobal.Mesh->GetFrontFaceWindingOrder();
@@ -127,7 +127,9 @@ void vaSceneRaytracingDX12::PreRenderUpdateInternal( vaRenderDeviceContext & ren
 
 
         // Hit group index determined by material global index!
-        instanceDesc.InstanceContributionToHitGroupIndex = instanceGlobal.Material->GetGlobalIndex();
+        int callableShaderTableIndex = instanceGlobal.Material->GetCallableShaderTableIndex();
+        assert( callableShaderTableIndex != -1 );
+        instanceDesc.InstanceContributionToHitGroupIndex = callableShaderTableIndex;
         
         // Also exposing material global index as InstanceID here - it's used for computing callable shader index but this can be avoided if
         // needed (by reading it off instance constants - tiny bit more costly).

@@ -277,7 +277,9 @@ namespace Vanilla
         void                    DrawSphere( const vaBoundingSphere & bs, unsigned int penColor, unsigned int brushColor = 0 );
         void                    DrawPlane( const vaPlane & plane, unsigned int brushColor, float extents = 1e5f );
         //
-        void                    DrawLightViz( const vaVector3 & center, const vaVector3 & direction, float size, float range, float coneInnerAngle, float coneOuterAngle, const vaVector3 & color );
+        void                    DrawText3D( vaDebugCanvas2D & canvas2D, const vaVector3 & position3D, const vaVector2 & screenOffset, unsigned int penColor, unsigned int shadowColor, const char * text, ... );
+        //
+        void                    DrawLightViz( const vaVector3 & center, const vaVector3 & direction, float radius, float range, float coneInnerAngle, float coneOuterAngle, const vaVector3 & color );
         //
         virtual void            CleanQueued( );
         virtual void            Render( vaRenderDeviceContext & renderContext, const vaRenderOutputs & renderOutputs, const vaCameraBase & camera, bool bJustClearData = false );

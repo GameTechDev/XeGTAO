@@ -30,7 +30,7 @@
 //   * Material_AlphaTest   - with a given raw GeometryInteraction and MaterialInputs and <>, return bool alpha test 
 //                            value for the point
 //   * Material_BxDF        - compute BxDF for given outgoing (view) vector Wo, incoming (light) vector Wi and 
-//                            surface/material info
+//                            surface/material info. At the moment, result includes surface cosine (geometry) term!!
 // 
 //  Path tracing:
 //   * Material_BxDFSample  - generate a Wi sample vector and pdf, given low discrepancy sampler(s) and surface/material info
@@ -219,7 +219,9 @@ float4 PS_Forward( const in ShadedVertex inVertex, const in float4 position : SV
     // material.Normal = float3( 0, 0, 1 );
     MaterialInteraction materialSurface = Material_Surface( geometrySurface, materialInputs, (uint2)position.xy );
 
-    float4 finalColor = Material_Forward( geometrySurface, materialSurface );
+    const bool debugPixel = IsUnderCursor( (int2)position.xy );
+
+    float4 finalColor = Material_Forward( geometrySurface, materialSurface, debugPixel );
 
     finalColor.rgb = LightingApplyFog( geometrySurface.WorldspacePos.xyz, finalColor.rgb );
 
@@ -253,10 +255,9 @@ float4 PS_Forward( const in ShadedVertex inVertex, const in float4 position : SV
 
 #else // #ifndef VA_RAYTRACING
 
-#define ENABLE_DEBUG_DRAW_RAYS
-
+// used by simple AO for ex.
 [shader("anyhit")]
-void AnyHitAlphaTest( inout ShaderMultiPassRayPayload rayPayload, BuiltInTriangleIntersectionAttributes attr )
+void GenericAlphaTest( inout ShaderRayPayloadGeneric rayPayload, in BuiltInTriangleIntersectionAttributes attr )
 {
 #if VA_RM_ALPHATEST
     ShaderInstanceConstants     instanceConstants;
@@ -264,7 +265,28 @@ void AnyHitAlphaTest( inout ShaderMultiPassRayPayload rayPayload, BuiltInTriangl
     ShaderMaterialConstants     materialConstants;
     GeometryInteraction         geometrySurface;
 
-    LoadHitSurfaceInteraction( attr.barycentrics, InstanceIndex( ), PrimitiveIndex( ), WorldRayDirection( ) * RayTCurrent( ), rayPayload.ConeSpreadAngle, rayPayload.ConeWidth, instanceConstants, meshConstants, materialConstants, geometrySurface );
+    float coneSpreadAngle = rayPayload.ConeSpreadAngle; float coneWidth = rayPayload.ConeWidth;
+    LoadHitSurfaceInteraction( attr.barycentrics, InstanceIndex( ), PrimitiveIndex( ), WorldRayDirection( ) * RayTCurrent( ), coneSpreadAngle, coneWidth, instanceConstants, meshConstants, materialConstants, geometrySurface );
+
+    MaterialInputs material = Material_Load( instanceConstants, geometrySurface );
+    if( Material_AlphaTest( geometrySurface, material ) )
+        IgnoreHit( );
+#endif
+}
+
+// this is used for visibility alpha testing and 
+[shader("anyhit")]
+void PathTraceVisibility( inout ShaderMultiPassRayPayload rayPayload, BuiltInTriangleIntersectionAttributes attr )
+{
+#if VA_RM_ALPHATEST
+    ShaderInstanceConstants     instanceConstants;
+    ShaderMeshConstants         meshConstants;
+    ShaderMaterialConstants     materialConstants;
+    GeometryInteraction         geometrySurface;
+
+    //float coneWidth; float coneSpreadAngle; UnpackF2( rayPayload.PackedConeInfo, coneWidth, coneSpreadAngle );
+    float coneSpreadAngle = rayPayload.ConeSpreadAngle; float coneWidth = rayPayload.ConeWidth;
+    LoadHitSurfaceInteraction( attr.barycentrics, InstanceIndex( ), PrimitiveIndex( ), WorldRayDirection( ) * RayTCurrent( ), coneSpreadAngle, coneWidth, instanceConstants, meshConstants, materialConstants, geometrySurface );
 
     //callablePayload.Color = float4( frac( geometrySurface.WorldspacePos.xyz ), 1 );
 
@@ -276,38 +298,48 @@ void AnyHitAlphaTest( inout ShaderMultiPassRayPayload rayPayload, BuiltInTriangl
 
     MaterialInputs material = Material_Load( instanceConstants, geometrySurface );
     if( Material_AlphaTest( geometrySurface, material ) )
+    {
+        // this part is see-through, no actual geometry so skip any potential volumetric approx stuff below
         IgnoreHit( );
+        return;
+    }
+#else
+    ShaderInstanceConstants instanceConstants = LoadInstanceConstants( InstanceIndex( ) );
+    ShaderMaterialConstants materialConstants = g_materialConstants[ instanceConstants.MaterialGlobalIndex ];
 #endif    
+
+    if( (rayPayload.PathIndex & VA_PATH_TRACER_VISIBILITY_RAY_FLAG) != 0 )
+    {
+        float3 values = Unpack_R11G11B10_FLOAT( rayPayload.PackedValues );
+
+        // really simple absorption - to be upgraded to something nicer in the future
+        values *= saturate( 1-materialConstants.NEETranslucentAlpha );
+        
+        rayPayload.PackedValues = Pack_R11G11B10_FLOAT( values );
+        
+        // continue unless all absorbed
+        if( ( values.x + values.y + values.z) > 0 )
+            IgnoreHit( );
+    }
 }
 
-#if VA_USE_RAY_SORTING
+float3 NewDebugVisualization( const PathTracerDebugViewType debugViewType, const ShaderPathPayload pathPayload, const ShaderInstanceConstants instanceConstants, const ShaderMeshConstants meshConstants, const ShaderMaterialConstants materialConstants, 
+    const GeometryInteraction geometrySurface, const MaterialInputs materialInputs, const MaterialInteraction materialSurface, const bool refracted, const float bouncePDF, const float neeLightPDF );
+
 
 [shader("miss")]    // using "miss callables" hack - see vaRaytraceItem::MaterialMissCallable and 
 void PathTraceSurfaceResponse( inout ShaderMultiPassRayPayload rayPayloadLocal )
 {
     ShaderGeometryHitPayload geometryHitPayload = g_pathGeometryHitPayloads[rayPayloadLocal.PathIndex];
 
-#else
-
-[shader("closesthit")]
-void PathTraceClosestHit( inout ShaderMultiPassRayPayload rayPayloadLocal, in BuiltInTriangleIntersectionAttributes attr )
-{
-    ShaderGeometryHitPayload geometryHitPayload;
-    //geometryHitPayload.RayOrigin        = WorldRayOrigin( );
-    geometryHitPayload.InstanceIndex    = InstanceIndex( );
-    geometryHitPayload.RayDirLength     = WorldRayDirection( ) * RayTCurrent( );
-    geometryHitPayload.PrimitiveIndex   = PrimitiveIndex( );
-    geometryHitPayload.Barycentrics     = attr.barycentrics;
-    geometryHitPayload.MaterialIndex    = InstanceID( );
-    // g_pathSortKeys[rayPayloadLocal.PathIndex] = geometryHitPayload.MaterialIndex; // no sorting in this path
-
-#endif
-
 //#if VA_RM_TRANSPARENT
 //    return; //IgnoreHit( ); // for now :) THIS IS ALSO DISABLED ON THE C++ side, look for 'instanceGlobal.Material->IsTransparent()' in vaSceneRaytracingDX12.cpp
 //#endif
     
     ShaderPathPayload pathPayload = g_pathPayloads[ rayPayloadLocal.PathIndex ];
+
+    //rayPayloadLocal.PathIndex
+    const uint2 pixelPos = UnpackU2( pathPayload.PixelPosPacked ); // pathPayload.PixelPos;
 
     const uint sampleIndex = g_pathTracerConsts.SampleIndex();
 
@@ -316,22 +348,26 @@ void PathTraceClosestHit( inout ShaderMultiPassRayPayload rayPayloadLocal, in Bu
     ShaderMaterialConstants     materialConstants;
     GeometryInteraction         geometrySurface;
 
-    LoadHitSurfaceInteraction( /*pathPayload.DispatchRaysIndex.xy,*/ geometryHitPayload.Barycentrics, geometryHitPayload.InstanceIndex, geometryHitPayload.PrimitiveIndex, geometryHitPayload.RayDirLength, pathPayload.ConeSpreadAngle, pathPayload.ConeWidth, instanceConstants, meshConstants, materialConstants, geometrySurface );
-    
-    bool debugDrawRays              = false;
-    bool debugDrawDirectLighting    = false;
-    bool debugDrawRayDetails        = false;
-#ifdef ENABLE_DEBUG_DRAW_RAYS
-    debugDrawRays           = (pathPayload.Flags & VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_VIZ) != 0;
-    debugDrawDirectLighting = debugDrawRays && ((pathPayload.Flags & VA_PATH_TRACER_FLAG_SHOW_DEBUG_LIGHT_VIZ) != 0);
-    debugDrawRayDetails     = (pathPayload.Flags & VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_DETAIL_VIZ) != 0;
+    //float coneSpreadAngle; float coneWidth; UnpackF2( pathPayload.PackedConeInfo, coneSpreadAngle, coneWidth );
+    float coneSpreadAngle = pathPayload.ConeSpreadAngle; float coneWidth = pathPayload.ConeWidth;
+
+    LoadHitSurfaceInteraction( /*pathPayload.DispatchRaysIndex.xy,*/ geometryHitPayload.Barycentrics, geometryHitPayload.InstanceIndex, geometryHitPayload.PrimitiveIndex, geometryHitPayload.RayDirLength, coneSpreadAngle, coneWidth, instanceConstants, meshConstants, materialConstants, geometrySurface );
+
+#if VA_PATH_TRACER_ENABLE_VISUAL_DEBUGGING
+    const bool debugDrawRays           = (pathPayload.Flags & VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_VIZ) != 0;
+    const bool debugDrawDirectLighting = debugDrawRays && ((pathPayload.Flags & VA_PATH_TRACER_FLAG_SHOW_DEBUG_LIGHT_VIZ) != 0);
+    const bool debugDrawRayDetails     = (pathPayload.Flags & VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_DETAIL_VIZ) != 0;
+#else
+    const bool debugDrawRays              = false;
+    const bool debugDrawDirectLighting    = false;
+    const bool debugDrawRayDetails        = false;
 #endif
     if( debugDrawRays )
     {
         float3 approxRayOrigin = geometrySurface.WorldspacePos.xyz - geometryHitPayload.RayDirLength;   // can't use WorldRayOrigin in the miss shader path!
         float4 rayDebugColor = float4( GradientRainbow( pathPayload.BounceIndex / 6.0 ), 0.4 );
         DebugDraw3DCylinder( approxRayOrigin, /*callablePayload.RayOrigin + callablePayload.RayDir + callablePayload.RayLength*/ geometrySurface.WorldspacePos.xyz, 
-            pathPayload.ConeWidth * 0.5, geometrySurface.RayConeWidth * 0.5, rayDebugColor );
+            coneWidth * 0.5, geometrySurface.RayConeWidth * 0.5, rayDebugColor );
         DebugDraw3DSphere( geometrySurface.WorldspacePos.xyz, geometrySurface.RayConeWidth, float4( 0, 0, 0, 0.7 ) );
     }
     if( debugDrawRayDetails )
@@ -340,6 +376,12 @@ void PathTraceClosestHit( inout ShaderMultiPassRayPayload rayPayloadLocal, in Bu
         geometrySurface.DebugDrawTangentSpace( sqrt(geometrySurface.ViewDistance) * 0.1 );
         //DebugDraw3DText( geometrySurface.WorldspacePos.xyz, float2( -10, -16 ), lerp( rayDebugColor, float4(1,1,1,0.4), 0.5 ), rayPayload.BounceIndex );
     }
+
+    // update cone!
+    coneSpreadAngle = geometrySurface.RayConeSpreadAngle;
+    coneWidth       = geometrySurface.RayConeWidth;
+    //pathPayload.PackedConeInfo  = PackF2( coneSpreadAngle, coneWidth );
+    pathPayload.ConeSpreadAngle = coneSpreadAngle; pathPayload.ConeWidth = coneWidth;
 
     MaterialInputs      materialInputs  = Material_Load( instanceConstants, geometrySurface );
     MaterialInteraction materialSurface = Material_Surface( geometrySurface, materialInputs, uint2(0,0) );
@@ -366,8 +408,9 @@ void PathTraceClosestHit( inout ShaderMultiPassRayPayload rayPayloadLocal, in Bu
         //    DebugText( tauAlpha );
     }
 
-    // ambient lighting - totally not PBR but left in for testing purposes
-    // rayPayload.AccumulatedRadiance  += rayPayload.Beta * materialInputs.BaseColor.rgb * g_lighting.AmbientLightIntensity.rgb;
+    float3 auxAlbedo = saturate( materialSurface.DiffuseColor + materialSurface.F0 ); // the best I could do for now (effectively: lerp(albedo, float3(1,1,1), metallic ) )
+    PathTracerOutputAUX( pixelPos, pathPayload.BounceIndex, geometrySurface.WorldspacePos.xyz, auxAlbedo, materialSurface.Normal, 
+        ComputeScreenMotionVectors( pixelPos + float2(0.5, 0.5), geometrySurface.WorldspacePos, geometrySurface.PreviousWorldspacePos, float2(0,0) ).xy );
 
     // decorrelate sampling for unrelated effects
     const uint hashSeedDirectIndirect1D = Hash32Combine( pathPayload.HashSeed, VA_PATH_TRACER_HASH_SEED_DIR_INDIR_LIGHTING_1D );
@@ -377,23 +420,27 @@ void PathTraceClosestHit( inout ShaderMultiPassRayPayload rayPayloadLocal, in Bu
     const float  ldSample1D = LDSample1D( sampleIndex, hashSeedDirectIndirect1D );
     const float2 ldSample2D = LDSample2D( sampleIndex, hashSeedDirectIndirect2D );
 
-    bool lastBounce = (pathPayload.Flags & VA_PATH_TRACER_FLAG_LAST_BOUNCE) != 0;
-
-    if( debugDrawRays )
-        DebugDraw3DText( geometrySurface.WorldspacePos.xyz, float2( -10, 16 ), float4(lastBounce?1:0,1,1,1), pathPayload.BounceIndex );
-    
-    // if( !geometrySurface.IsFrontFace ) //dot( geometrySurface.TriangleNormal, geometrySurface.View ) < 0 )
-    //     pathPayload.AccumulatedRadiance.g += 0.1;
-
-    // O M G. I've been chasing this one for the whole day. Looks like a compiler bug. The + 1e-37 is a workaround for it.
-    // TODO:    report this. It's been hard to replicate in a small example though.
-    // UPDATE:  issue gone with v1.6.2104 - is it really fixed? leaving this in - we'll find out
-    const float3 prevBeta = pathPayload.Beta;// + 1e-37; 
+    const float3 prevBeta = pathPayload.Beta;
     const float prevLastSpecularness = pathPayload.LastSpecularness;
-    pathPayload.LastSpecularness = 0;
+    pathPayload.LastSpecularness = 0.0;
     bool refracted = false; // useful for a couple of things like picking the next ray offset
 
     float3 nextRayDirection     = {0,0,0};
+
+    {   // Russian Roulette
+        float RRRand = ldSample1D; //Hash32ToFloat( hashSeedDirectIndirect1D );
+        float RRHeur = 1-saturate( /*pathPayload.PathSpecularness * */ max( pathPayload.Beta.x, max( pathPayload.Beta.y, pathPayload.Beta.z ) ) );
+        float RRProb = saturate( ( (pathPayload.BounceIndex - g_pathTracerConsts.MinBounces + 1 ) / (float)(g_pathTracerConsts.MaxBounces - g_pathTracerConsts.MinBounces + 1) ) );
+        RRProb = RRHeur * pow( RRProb, 0.4 );   // constant i pow adaptively increases chances each following bounce
+        if( RRProb > RRRand )
+            pathPayload.Flags |= VA_PATH_TRACER_FLAG_LAST_BOUNCE;
+        pathPayload.Beta /= (1-RRProb);
+    }
+    const bool lastBounce = (pathPayload.Flags & VA_PATH_TRACER_FLAG_LAST_BOUNCE) != 0;
+//    if( debugDrawRays )
+//        DebugDraw3DText( geometrySurface.WorldspacePos.xyz, float2( -10, 16 ), float4(lastBounce?1:0,1,1,1), float4( pathPayload.BounceIndex, RRRand, RRProb, lastBounce)  );
+
+    float bouncePDF = 0; // used for debug view
 
     [branch]
     if( !lastBounce )
@@ -426,22 +473,32 @@ void PathTraceClosestHit( inout ShaderMultiPassRayPayload rayPayloadLocal, in Bu
 
         // update for next ray
         nextRayDirection            = bsdfSample.Wi;
-        pathPayload.ConeSpreadAngle = geometrySurface.RayConeSpreadAngle;
-        pathPayload.ConeWidth       = geometrySurface.RayConeWidth;
 
         pathPayload.Beta             *= bsdfSample.F / bsdfSample.PDF;
 
-        // this maps PDF to specularness - very rough intuition, not worked out but it looks ok-ish. Need to come back and re-evaluate. Depends on MAX_ROUGHNESS and many other things.
-        const float k = 4 * VA_PI;
-        // const float p = <- how many steradians does the pixel subtend? how to define specularity? 
-        pathPayload.LastSpecularness = saturate( bsdfSample.PDF / (k+bsdfSample.PDF) + 0.002 );
+        bouncePDF = bsdfSample.PDF; // used for debug view
 
-        if( false && debugDrawRayDetails )
+        // pathPayload.Beta = saturate( pathPayload.Beta );
+
+        // this maps PDF to specularness - very rough intuition, not worked out but it looks ok-ish. Need to come back and re-evaluate. Depends on MAX_ROUGHNESS and many other things.
+        // const float k = 4 * VA_PI;
+        // const float p = <- how many steradians does the pixel subtend? how to define specularity? 
+        // pathPayload.LastSpecularness = saturate( bsdfSample.PDF / (k+bsdfSample.PDF) + 0.002 );
+
+        //pathPayload.LastSpecularness = PowerHeuristic( 1, bsdfSample.PDF, 360, SampleHemisphereUniformPDF() );
+        pathPayload.LastSpecularness = BalanceHeuristic( 1, bsdfSample.PDF, 360, SampleHemisphereUniformPDF() );
+        // pathPayload.LastSpecularness = PowerHeuristic( 1, bsdfSample.PDF, 1, SampleHemisphereUniformPDF() );
+        // ^^ Power heuristic can amplify bad heuristics, and we're using approximation for direct lighting here - in testing Balance seems a bit better quality wise than Power 
+
+        // pathPayload.LastSpecularness = saturate( pathPayload.LastSpecularness * 1.1 );
+
+        if( debugDrawRayDetails )
         {
-            DebugDraw2DText( float2( 10, 100 * (pathPayload.BounceIndex ) +  0), float4(1,0.0,0,1), float4( pathPayload.BounceIndex, ldSample1D, ldSample2D.x, ldSample2D.y ) );
-            DebugDraw2DText( float2( 10, 100 * (pathPayload.BounceIndex ) + 15), float4(1,0.2,0,1), float4( geometrySurface.WorldspacePos.xyz, materialSurface.Normal.z ) );
-            DebugDraw2DText( float2( 10, 100 * (pathPayload.BounceIndex ) + 30), float4(1,0.4,0,1), float4( bsdfSample.F, bsdfSample.PDF ) );
-            DebugDraw2DText( float2( 10, 100 * (pathPayload.BounceIndex ) + 45), float4(1,0.6,0,1), float4( bsdfSample.Wi, sampleIndex ) );
+            // DebugDraw2DText( float2( 10, 100 * (pathPayload.BounceIndex ) +  0), float4(1,0.0,0,1), float4( pathPayload.BounceIndex, ldSample1D, ldSample2D.x, ldSample2D.y ) );
+            // DebugDraw2DText( float2( 10, 100 * (pathPayload.BounceIndex ) + 15), float4(1,0.2,0,1), float4( geometrySurface.WorldspacePos.xyz, materialSurface.Normal.z ) );
+            // DebugDraw2DText( float2( 10, 100 * (pathPayload.BounceIndex ) + 30), float4(1,0.4,0,1), float4( bsdfSample.F, bsdfSample.PDF ) );
+            // DebugDraw2DText( float2( 10, 100 * (pathPayload.BounceIndex ) + 45), float4(1,0.6,0,1), float4( bsdfSample.Wi, sampleIndex ) );
+            DebugDraw2DText( pixelPos + float2( 10, 16 * (pathPayload.BounceIndex)), float4(1,0.6,0,1), float4( pathPayload.Beta, pathPayload.BounceIndex ) );
         }
         //
         // add some kind of russian roulette here
@@ -449,143 +506,98 @@ void PathTraceClosestHit( inout ShaderMultiPassRayPayload rayPayloadLocal, in Bu
         //     pathPayload.NextRayDirection = float3(0,0,0);
     }
 
-    // compute new ray start position with the offset to avoid self-intersection; see function for docs
-    // (also used for direct lighting visibility rays because why not, it's so good)
-    const float3 nextRayOrigin  = OffsetNextRayOrigin( geometrySurface.WorldspacePos.xyz, (refracted)?(-geometrySurface.TriangleNormal):(geometrySurface.TriangleNormal) ); // compute new ray start position with the offset to avoid self-intersection
+    // Vanilla uses 'Next Event Estimation' (https://developer.nvidia.com/blog/conquering-noisy-images-in-ray-tracing-with-next-event-estimation/) for performance reasons.
+    // So for mostly diffuse bounces (pathPayload.LastSpecularness is low/zero, so neeDirectK is 1/high), the triangle emissive is mostly ignored and assumed to have been 
+    // captured by direct lighting via SamplePointLightsDirectRT.
+    // In contrast, for mostly specular bounces (previous prevLastSpecularness is high so neeEmissiveK is 1/high) it's better to capture via direct triangle emissive hits.
+    float neeEmissiveK  = saturate( prevLastSpecularness );             // nee energy conservation terms
+    float neeDirectK    = saturate( 1-pathPayload.LastSpecularness );   // nee energy conservation terms
 
-#if !VA_USE_RAY_SORTING
-    pathPayload.NextRayOrigin    = nextRayOrigin;
-    pathPayload.NextRayDirection = nextRayDirection;
-#endif
-
-    // Emissive + direct lighting
-    // Note: we scale emissive by prev specularness and direct lighting by current specularness to avoid double-lighting, since we always have 
-    // double (parallel) geometry and analytical lighting representation. 
+    // used mostly for debugging
+    if( g_pathTracerConsts.EnableNextEventEstimation == 0 )
     {
-        float3 lightRadiance            = {0,0,0};
-
-        SamplePointLightsDirectRT( geometrySurface, materialSurface, nextRayOrigin, sampleIndex, pathPayload.HashSeed, ldSample1D, ldSample2D, lightRadiance, pathPayload, debugDrawDirectLighting );
-        
-        // pathPayload.LastSpecularness is 'current specularness' which determines how much emissive we'll take in the next bounce.
-        // If this is the last bounce, it is 0 so we get (1.0-0.0) - all the light!
-        lightRadiance *= saturate(1-pathPayload.LastSpecularness);
-
-        // not sure what to do with this...
-        [branch] if( (materialSurface.IBL.UseLocal || materialSurface.IBL.UseDistant) && lastBounce )  // last bounce samples skybox 
-        {
-            evaluateIBL( materialSurface, lightRadiance, materialSurface.IBL.UseLocal, materialSurface.IBL.UseDistant );
-        }
-
-        float3 emissiveRadiance = {0,0,0};
-#if defined(MATERIAL_HAS_EMISSIVE)
-        {
-            // by convention, in Vanilla we either integrate emissive light via 'Next Event Estimation' (https://developer.nvidia.com/blog/conquering-noisy-images-in-ray-tracing-with-next-event-estimation/)
-            // for diffuse bounces, in which case pathPayload.LastSpecularness is low/zero, so direct emissive below is mostly ignored; and for highly specular bounces
-            // 'pathPayload.LastSpecularness' high/one, which means it wasn't captured by NEE so we add it here:
-            emissiveRadiance = materialSurface.PrecomputedEmissive * g_globals.PreExposureMultiplier * saturate( prevLastSpecularness );
-        }
-#endif
-
-        // the pathPayload.PathSpecularness here is before it gets updated, so it matches prevBeta
-        pathPayload.AccumulatedRadiance  += RadianceCombineAndFireflyClamp( pathPayload.PathSpecularness, prevBeta, lightRadiance+emissiveRadiance );
-
-        //if( debugDrawRays )
-        //{
-        //    //DebugText( float4( pathPayload.AccumulatedRadiance, pathPayload.BounceIndex ) );
-        //    //DebugText( float4( lightRadiance, pathPayload.BounceIndex ) );
-        //}
+        neeEmissiveK    = 1.0;  // 0.0
+        neeDirectK      = 0.0;  // 1.0
     }
 
-    pathPayload.PathSpecularness *= pathPayload.LastSpecularness;
-
-    if( debugDrawRays )
-    {
-#if defined( VA_FILAMENT_STANDARD )
-        //DebugDraw3DText( geometrySurface.WorldspacePos.xyz, float2( -10, 150 ), float4(1,1,1,1), float4( materialInputs.Metallic, materialInputs.Roughness, 0, 0 ) );
-#endif
-    }
-    if( debugDrawRayDetails )
-    {
-        DebugDraw3DText( geometrySurface.WorldspacePos.xyz, float2( -10, -16 ), float4(0,1,1,1.0), pathPayload.PathSpecularness ); // prevPathSpecularness
-    }
-
-    //pathPayload.AccumulatedRadiance = prevPathSpecularness;
-    //pathPayload.AccumulatedRadiance = prevSpecularness;
-
+#if 1 // some perf penalty to this! 
+    [branch]
     if( pathPayload.BounceIndex == 0 )
     {
         // provides info for mouse right click context menu!
-        ReportCursorInfo( instanceConstants, pathPayload.PixelPos.xy, geometrySurface.WorldspacePos );
-
-        // debugging viz stuff
-        if( (uint)g_pathTracerConsts.DebugViewType >= (uint)PathTracerDebugViewType::SurfacePropsBegin && (uint)g_pathTracerConsts.DebugViewType <= (uint)PathTracerDebugViewType::SurfacePropsEnd )
-        {
-            pathPayload.AccumulatedRadiance = 0;
-            if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::GeometryTexcoord0        )
-                pathPayload.AccumulatedRadiance = float3(geometrySurface.Texcoord01.xy, 0);
-            if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::GeometryNormalNonInterpolated        )
-                pathPayload.AccumulatedRadiance = DisplayNormalSRGB( geometrySurface.TriangleNormal );
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::GeometryNormalInterpolated      )
-                pathPayload.AccumulatedRadiance = DisplayNormalSRGB( geometrySurface.WorldspaceNormal.xyz );
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::GeometryTangentInterpolated     )
-                pathPayload.AccumulatedRadiance = DisplayNormalSRGB( geometrySurface.WorldspaceTangent.xyz );
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::GeometryBitangentInterpolated   )
-                pathPayload.AccumulatedRadiance = DisplayNormalSRGB( geometrySurface.WorldspaceBitangent.xyz );
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::ShadingNormal                   )
-                pathPayload.AccumulatedRadiance = DisplayNormalSRGB( materialSurface.Normal.xyz );
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::MaterialBaseColor               )
-                pathPayload.AccumulatedRadiance = materialInputs.BaseColor.xyz;
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::MaterialBaseColorAlpha          )
-                pathPayload.AccumulatedRadiance = materialInputs.BaseColor.aaa;
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::MaterialEmissive                )
-                pathPayload.AccumulatedRadiance = materialInputs.EmissiveColorIntensity;
-#if defined( VA_FILAMENT_STANDARD )
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::MaterialMetalness               )
-                pathPayload.AccumulatedRadiance = materialInputs.Metallic.xxx;
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::MaterialReflectance             )
-                pathPayload.AccumulatedRadiance = materialInputs.Reflectance.xxx;
+        ReportCursorInfo( instanceConstants, pixelPos.xy, geometrySurface.WorldspacePos );
+    }
+    const bool surfaceDebugViewEnabled = (uint)g_pathTracerConsts.DebugViewType >= (uint)PathTracerDebugViewType::SurfacePropsBegin && (uint)g_pathTracerConsts.DebugViewType <= (uint)PathTracerDebugViewType::SurfacePropsEnd;
+    if( surfaceDebugViewEnabled )
+    {
+        // if surface dbg view enabled, disable all other outputs (except in the case we're debugging NEE, then set neeDirectK to the smallest float heh)
+        neeEmissiveK = 0.0; neeDirectK = (g_pathTracerConsts.DebugViewType==PathTracerDebugViewType::NEELightPDF)?(1.2e-38f):(0.0); pathPayload.Beta = 0;
+    }
+#else
+    const bool surfaceDebugViewEnabled = false;
 #endif
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::MaterialRoughness               )
-                pathPayload.AccumulatedRadiance = materialSurface.PerceptualRoughness;
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::MaterialAmbientOcclusion        )
-                pathPayload.AccumulatedRadiance = materialInputs.AmbientOcclusion.xxx;
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::ReflectivityEstimate        )
-                pathPayload.AccumulatedRadiance = materialSurface.ReflectivityEstimate;
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::MaterialID                      )
-                pathPayload.AccumulatedRadiance = float3( asfloat(instanceConstants.MaterialGlobalIndex), 0, 0 );
-            else if( (uint)g_pathTracerConsts.DebugViewType == (uint)PathTracerDebugViewType::ShaderID                        )
-                pathPayload.AccumulatedRadiance = float3( asfloat((uint)VA_RM_SHADER_ID), 0, 0 );
-        }
+
+    // firefly filtering (which should be luminance-based, not per-channel - something to do in the future)
+    const float3 fireflyClampThreshold = ComputeFireflyClampThreshold( pathPayload.PathSpecularness );
+
+    // Emissive + last bounce ambient (note: when NEE enabled, we scale emissive for the sum to remain 1)
+    {
+        float3 pathRadiance = {0,0,0};
+
+        // last bounce sample from IBL as a light cache - a bad idea actually but leaving code in, just in case needed for the future
+        // [branch] if( (materialSurface.IBL.UseLocal || materialSurface.IBL.UseDistant) && lastBounce )  // last bounce samples skybox 
+        //     evaluateIBL( materialSurface, pathRadiance, materialSurface.IBL.UseLocal, materialSurface.IBL.UseDistant );
+
+#if defined(MATERIAL_HAS_EMISSIVE)
+        pathRadiance += neeEmissiveK * g_globals.PreExposureMultiplier * materialSurface.PrecomputedEmissive; // <- assuming uniform (non-lambertian) emitter - maybe upgrade for the future?
+#endif
+
+        // the pathPayload.PathSpecularness here is before it gets updated, so it matches prevBeta
+        pathRadiance = min( fireflyClampThreshold, prevBeta * pathRadiance ); 
+
+        // Accumulate to global! (except if we've finished accumulating and just looping on empty)
+        if( !g_pathTracerConsts.IgnoreResults() )
+            g_radianceAccumulation[pixelPos.xy].rgb += pathRadiance / g_globals.PreExposureMultiplier;   // <- keeping the preexposure multiplication here in case we decide to go to low precision storage in the future
     }
 
-    /*
-    // these can go to the vaPathTracer.hlsl itself!
-    // Apply fog to both for now - not a long term solution :)
-    diffuseColor.rgb    = LightingApplyFog( geometrySurface.WorldspacePos.xyz, diffuseColor.rgb );
-    specularColor.rgb   = LightingApplyFog( geometrySurface.WorldspacePos.xyz, specularColor.rgb );
+    // NEE direct lighting - light selection (visibility is at the end of the shader)
+    NEESampleDesc neeSampleDesc; neeSampleDesc.Radiance = 0; neeSampleDesc.Distance = 0; neeSampleDesc.PDF = 0;
+    [branch] if( neeDirectK > 0 )
+    {
+        neeSampleDesc = SamplePointLightsDirectRT( geometrySurface, materialSurface, sampleIndex, pathPayload.HashSeed, ldSample1D, ldSample2D, debugDrawDirectLighting );
 
-    // This adds UI highlights and other similar stuff - add to diffuse (and has ability to cancel out diffuse and specular)
-    float4 emissiveAdd  = Unpack_R10G10B10FLOAT_A2_UNORM( instanceConstants.EmissiveAddPacked );
-    emissiveAdd         = lerp( emissiveAdd, float4( 0, 0.5, 0, 0 ), g_globals.WireframePass ); // I honestly don't know why is wireframe even supported in raytracing when it doesn't work but hey...
-    diffuseColor.rgb    = diffuseColor.rgb * emissiveAdd.a + emissiveAdd.rgb;
-    specularColor.rgb   = specularColor.rgb * emissiveAdd.a;
+        // include the NEE energy conservation term and do firefly clamping
+        neeSampleDesc.Radiance = clamp( prevBeta * neeSampleDesc.Radiance * neeDirectK, 0, fireflyClampThreshold );
+    }
 
-    // Useful for debugging stuff
-    float4 debugColor   = DebugDisplay( geometrySurface, instanceConstants, materialInputs, meshConstants, materialSurface );
-    diffuseColor.rgb    = lerp( diffuseColor.rgb , debugColor.rgb, debugColor.a );
-    specularColor.rgb   = lerp( specularColor.rgb, 0, debugColor.a );
+    if( surfaceDebugViewEnabled )
+    {
+        float3 dbgViz = NewDebugVisualization( g_pathTracerConsts.DebugViewType, pathPayload, instanceConstants, meshConstants, materialConstants, geometrySurface, materialInputs, materialSurface, 
+            refracted, bouncePDF, neeSampleDesc.PDF );
+        if( !g_pathTracerConsts.IgnoreResults() )
+            g_radianceAccumulation[pixelPos.xy].rgb += dbgViz;
+    }
 
-    pathPayload.AccumulatedRadiance_Diff += diffuseColor;
-    pathPayload.AccumulatedRadiance_Spec += specularColor;*/
 
-    float3 auxAlbedo = saturate( materialSurface.DiffuseColor + materialSurface.F0 ); // the best I could do for now (effectively: lerp(albedo, float3(1,1,1), metallic ) )
-    PathTracerOutputAUX( pathPayload.PixelPos, pathPayload, geometrySurface.WorldspacePos.xyz, auxAlbedo, materialSurface.Normal, 
-        ComputeScreenMotionVectors( pathPayload.PixelPos + float2(0.5, 0.5), geometrySurface.WorldspacePos, geometrySurface.PreviousWorldspacePos, float2(0,0) ).xy );
+    // update for future
+    pathPayload.PathSpecularness *= pathPayload.LastSpecularness;
+
+//     if( debugDrawRays )
+//     {
+// #if defined( VA_FILAMENT_STANDARD )
+//         //DebugDraw3DText( geometrySurface.WorldspacePos.xyz, float2( -10, 150 ), float4(1,1,1,1), float4( materialInputs.Metallic, materialInputs.Roughness, 0, 0 ) );
+// #endif
+//     }
+//     if( debugDrawRayDetails )
+//     {
+//         DebugDraw3DText( geometrySurface.WorldspacePos.xyz, float2( -10, -16 ), float4(0,1,1,1.0), pathPayload.PathSpecularness ); // prevPathSpecularness
+//     }
+
 
     if( lastBounce )
     {
         // we're done!
-        PathTracerCommit( rayPayloadLocal.PathIndex, pathPayload );
+        PathTracerFinalize( rayPayloadLocal.PathIndex, pathPayload.Flags );
     }
     else
     {
@@ -594,25 +606,108 @@ void PathTraceClosestHit( inout ShaderMultiPassRayPayload rayPayloadLocal, in Bu
         pathPayload.HashSeed = Hash32( pathPayload.HashSeed );
         pathPayload.Flags |= (pathPayload.BounceIndex == g_pathTracerConsts.MaxBounces)?(VA_PATH_TRACER_FLAG_LAST_BOUNCE):(0);
 
-        g_pathPayloads[ rayPayloadLocal.PathIndex ] = pathPayload;
+        //g_pathPayloads[ rayPayloadLocal.PathIndex ] = pathPayload;
 
-#if VA_USE_RAY_SORTING
+        //g_pathPayloads[ rayPayloadLocal.PathIndex ].PixelPos         = pathPayload.PixelPos        ;
+        //g_pathPayloads[ rayPayloadLocal.PathIndex ].PackedConeInfo  = pathPayload.PackedConeInfo;
+        g_pathPayloads[ rayPayloadLocal.PathIndex ].ConeSpreadAngle  = pathPayload.ConeSpreadAngle ;
+        g_pathPayloads[ rayPayloadLocal.PathIndex ].ConeWidth        = pathPayload.ConeWidth       ;
+        g_pathPayloads[ rayPayloadLocal.PathIndex ].Beta             = pathPayload.Beta            ;
+        g_pathPayloads[ rayPayloadLocal.PathIndex ].Flags            = pathPayload.Flags           ;
+        g_pathPayloads[ rayPayloadLocal.PathIndex ].HashSeed         = pathPayload.HashSeed        ;
+        g_pathPayloads[ rayPayloadLocal.PathIndex ].BounceIndex      = pathPayload.BounceIndex     ;
+        g_pathPayloads[ rayPayloadLocal.PathIndex ].MaxRoughness     = pathPayload.MaxRoughness    ;
+        g_pathPayloads[ rayPayloadLocal.PathIndex ].LastSpecularness = pathPayload.LastSpecularness;
+        g_pathPayloads[ rayPayloadLocal.PathIndex ].PathSpecularness = pathPayload.PathSpecularness;
+
+
         // this gets sent through the path tracing API
         ShaderMultiPassRayPayload rayPayloadLocalNew;
-        rayPayloadLocalNew.PathIndex       = rayPayloadLocal.PathIndex;
-        rayPayloadLocalNew.ConeSpreadAngle = pathPayload.ConeSpreadAngle;
-        rayPayloadLocalNew.ConeWidth       = pathPayload.ConeWidth;
+        rayPayloadLocalNew.PathIndex        = rayPayloadLocal.PathIndex;
+        // rayPayloadLocalNew.PackedConeInfo   = pathPayload.PackedConeInfo;
+        rayPayloadLocalNew.ConeSpreadAngle  = pathPayload.ConeSpreadAngle;
+        rayPayloadLocalNew.ConeWidth        = pathPayload.ConeWidth;
 
         RayDesc nextRay;
-        nextRay.Origin      = nextRayOrigin;
+        // compute new ray start position with the offset to avoid self-intersection; see function for docs
+        nextRay.Origin      = OffsetNextRayOrigin( geometrySurface.WorldspacePos.xyz, (refracted)?(-geometrySurface.TriangleNormal):(geometrySurface.TriangleNormal) );
         nextRay.Direction   = nextRayDirection;
         nextRay.TMin        = 0.0;
         nextRay.TMax        = 1000000.0;
 
         const uint missShaderIndex      = 0;    // normal (primary) miss shader
         TraceRay( g_raytracingScene, RAY_FLAG_NONE/*RAY_FLAG_CULL_BACK_FACING_TRIANGLES*/, ~0, 0, 0, missShaderIndex, nextRay, rayPayloadLocalNew );
-#endif
+    }
+
+
+    [branch] if( (neeSampleDesc.Distance*(neeSampleDesc.Radiance.x+neeSampleDesc.Radiance.y+neeSampleDesc.Radiance.z) > 0) )
+    {
+        RayDesc visRayDesc;
+        ShaderMultiPassRayPayload visRayPayload;
+        // compute new ray start position with the offset to avoid self-intersection; see function for docs
+        bool neeRefracted = false; // TODO: think about this; do we want double-sided NEE?
+        visRayDesc.Origin      = OffsetNextRayOrigin( geometrySurface.WorldspacePos.xyz, (neeRefracted)?(-geometrySurface.TriangleNormal):(geometrySurface.TriangleNormal) );
+        visRayDesc.Direction   = neeSampleDesc.Direction;
+        visRayDesc.TMin        = 0.0;
+        visRayDesc.TMax        = neeSampleDesc.Distance;
+        visRayPayload.PathIndex         = VA_PATH_TRACER_VISIBILITY_RAY_FLAG | rayPayloadLocal.PathIndex;
+        // visRayPayload.PackedConeInfo    = pathPayload.PackedConeInfo;
+        visRayPayload.ConeSpreadAngle   = pathPayload.ConeSpreadAngle;
+        visRayPayload.ConeWidth         = pathPayload.ConeWidth;
+        //visRayPayload.Values            = neeSampleDesc.Radiance;
+        visRayPayload.PackedValues      = Pack_R11G11B10_FLOAT( neeSampleDesc.Radiance );
+        const uint missShaderIndex      = 1;    // visibility (primary) miss shader
+        TraceRay( g_raytracingScene, RAY_FLAG_SKIP_CLOSEST_HIT_SHADER | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, ~0, 0, 0, missShaderIndex, visRayDesc, visRayPayload );
     }
 }
 
-#endif // #ifndef VA_RAYTRACING
+float3 NewDebugVisualization( const PathTracerDebugViewType debugViewType, const ShaderPathPayload pathPayload, const ShaderInstanceConstants instanceConstants, const ShaderMeshConstants meshConstants, const ShaderMaterialConstants materialConstants, 
+    const GeometryInteraction geometrySurface, const MaterialInputs materialInputs, const MaterialInteraction materialSurface, const bool refracted, const float bouncePDF, const float neeLightPDF )
+{                                              
+    if( (uint)debugViewType == (uint)PathTracerDebugViewType::GeometryTexcoord0        )
+        return float3(geometrySurface.Texcoord01.xy, 0);
+    if( (uint)debugViewType == (uint)PathTracerDebugViewType::GeometryNormalNonInterpolated        )
+        return DisplayNormalSRGB( geometrySurface.TriangleNormal );
+    else if( (uint)debugViewType == (uint)PathTracerDebugViewType::GeometryNormalInterpolated      )
+        return DisplayNormalSRGB( geometrySurface.WorldspaceNormal.xyz );
+    else if( (uint)debugViewType == (uint)PathTracerDebugViewType::GeometryTangentInterpolated     )
+        return DisplayNormalSRGB( geometrySurface.WorldspaceTangent.xyz );
+    else if( (uint)debugViewType == (uint)PathTracerDebugViewType::GeometryBitangentInterpolated   )
+        return DisplayNormalSRGB( geometrySurface.WorldspaceBitangent.xyz );
+    else if( (uint)debugViewType == (uint)PathTracerDebugViewType::ShadingNormal                   )
+        return DisplayNormalSRGB( materialSurface.Normal.xyz );
+    else if( (uint)debugViewType == (uint)PathTracerDebugViewType::MaterialBaseColor               )
+        return materialInputs.BaseColor.xyz;
+    else if( (uint)debugViewType == (uint)PathTracerDebugViewType::MaterialBaseColorAlpha          )
+        return materialInputs.BaseColor.aaa;
+    else if( (uint)debugViewType == (uint)PathTracerDebugViewType::MaterialEmissive                )
+        return materialInputs.EmissiveColorIntensity;
+    #if defined( VA_FILAMENT_STANDARD )
+    else if( (uint)debugViewType == (uint)PathTracerDebugViewType::MaterialMetalness               )
+        return materialInputs.Metallic.xxx;
+    else if( (uint)debugViewType == (uint)PathTracerDebugViewType::MaterialReflectance             )
+        return materialInputs.Reflectance.xxx;
+    #endif
+    else if( (uint)debugViewType == (uint)PathTracerDebugViewType::MaterialRoughness               )
+        return materialSurface.PerceptualRoughness;
+    else if( (uint)debugViewType == (uint)PathTracerDebugViewType::MaterialAmbientOcclusion        )
+        return materialInputs.AmbientOcclusion.xxx;
+    else if( (uint)debugViewType == (uint)PathTracerDebugViewType::ReflectivityEstimate        )
+        return materialSurface.ReflectivityEstimate;
+    else if( (uint)debugViewType == (uint)PathTracerDebugViewType::NEELightPDF        )
+        return neeLightPDF;
+    else if( (uint)debugViewType == (uint)PathTracerDebugViewType::BounceSpecularness        )
+        return pathPayload.LastSpecularness;
+    else if( (uint)debugViewType == (uint)PathTracerDebugViewType::BouncePDF        )
+        return bouncePDF;
+    else if( (uint)debugViewType == (uint)PathTracerDebugViewType::BounceRefracted        )
+        return refracted;
+    else if( (uint)debugViewType == (uint)PathTracerDebugViewType::MaterialID                      )
+        return GradientRainbow( Hash32ToFloat( Hash32(instanceConstants.MaterialGlobalIndex) ) );
+    else if( (uint)debugViewType == (uint)PathTracerDebugViewType::ShaderID                        )
+        return GradientRainbow( Hash32ToFloat( Hash32((uint)VA_RM_SHADER_ID) ) );
+
+    return float3( 0, 1, 0 ); // we shouldn't get here
+}
+
+#endif // VA_RAYTRACING

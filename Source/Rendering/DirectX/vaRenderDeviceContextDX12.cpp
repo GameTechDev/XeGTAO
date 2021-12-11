@@ -366,6 +366,7 @@ void vaRenderDeviceContextBaseDX12::CommitOutputs( const vaRenderOutputs & outpu
 
 void vaRenderDeviceContextBaseDX12::CommitGlobals( vaRenderTypeFlags typeFlags, const vaShaderItemGlobals& shaderGlobals )
 {
+    shaderGlobals.Validate();
     //////////////////////////////////////////////////////////////////////////
     // set descriptor tables and prepare for copying
     // auto [gpuHeapSRVUAV, descHeapBaseIndexSRVUAV] = AllocateSRVUAVHeapDescriptors( vaRenderDeviceDX12::ExtendedRootSignatureIndexRanges::SRVUAVTotalCount );
@@ -391,7 +392,10 @@ void vaRenderDeviceContextBaseDX12::CommitGlobals( vaRenderTypeFlags typeFlags, 
     {
         if( shaderGlobals.ConstantBuffers[i] != nullptr )
         {
-            D3D12_GPU_VIRTUAL_ADDRESS gpuAddr = AsDX12( *shaderGlobals.ConstantBuffers[i] ).GetGPUBufferLocation( );
+            vaShaderResourceDX12& res = AsDX12( *shaderGlobals.ConstantBuffers[i] );
+            res.TransitionResource( *this, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER );
+            D3D12_GPU_VIRTUAL_ADDRESS gpuAddr = res.GetGPUVirtualAddress();
+            //D3D12_GPU_VIRTUAL_ADDRESS gpuAddr = AsDX12( *shaderGlobals.ConstantBuffers[i] ).GetGPUBufferLocation( );
             if( ( typeFlags & vaRenderTypeFlags::Graphics ) != 0 )
                 m_commandList->SetGraphicsRootConstantBufferView( vaRenderDeviceDX12::DefaultRootSignatureParams::GlobalDirectCBVBase + i, gpuAddr );
             if( ( typeFlags & vaRenderTypeFlags::Compute ) != 0 )
@@ -522,6 +526,8 @@ void vaRenderDeviceContextDX12::EndItems( )
 
 vaDrawResultFlags vaRenderDeviceContextBaseDX12::ExecuteItem( const vaGraphicsItem & renderItem, vaExecuteItemFlags flags )
 {
+    renderItem.Validate();
+
     // perhaps too fine grained to provide useful info but costly to run
     // VA_TRACE_CPU_SCOPE( ExecuteGraphicsItem );
     m_itemsSubmittedAfterLastExecute++;
@@ -560,7 +566,9 @@ vaDrawResultFlags vaRenderDeviceContextBaseDX12::ExecuteItem( const vaGraphicsIt
     {
         if( renderItem.ConstantBuffers[i] != nullptr )
         {
-            D3D12_GPU_VIRTUAL_ADDRESS gpuAddr = AsDX12( *renderItem.ConstantBuffers[i] ).GetGPUBufferLocation( );
+            vaShaderResourceDX12& res = AsDX12( *renderItem.ConstantBuffers[i] );
+            res.TransitionResource( *this, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER );
+            D3D12_GPU_VIRTUAL_ADDRESS gpuAddr = res.GetGPUVirtualAddress();
             m_commandList->SetGraphicsRootConstantBufferView( vaRenderDeviceDX12::DefaultRootSignatureParams::PerDrawDirectCBVBase + i, gpuAddr );
         }
 #ifdef VA_SET_UNUSED_DESC_TO_NULL
@@ -795,8 +803,7 @@ vaDrawResultFlags vaRenderDeviceContextBaseDX12::ExecuteItem( const vaGraphicsIt
 
 vaDrawResultFlags vaRenderDeviceContextBaseDX12::ExecuteItem( const vaComputeItem & computeItem, vaExecuteItemFlags flags )
 {
-    // No threads will be dispatched, because at least one of {ThreadGroupCountX, ThreadGroupCountY, ThreadGroupCountZ} is 0. This is probably not intentional?
-    assert( computeItem.DispatchParams.ThreadGroupCountX != 0 && computeItem.DispatchParams.ThreadGroupCountY != 0 && computeItem.DispatchParams.ThreadGroupCountZ != 0 );
+    computeItem.Validate();
 
     flags;
 //    VA_TRACE_CPU_SCOPE( ExecuteComputeItem );
@@ -837,7 +844,10 @@ vaDrawResultFlags vaRenderDeviceContextBaseDX12::ExecuteItem( const vaComputeIte
     {
         if( computeItem.ConstantBuffers[i] != nullptr )
         {
-            D3D12_GPU_VIRTUAL_ADDRESS gpuAddr = AsDX12( *computeItem.ConstantBuffers[i] ).GetGPUBufferLocation( );
+            vaShaderResourceDX12& res = AsDX12( *computeItem.ConstantBuffers[i] );
+            res.TransitionResource( *this, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER );
+            D3D12_GPU_VIRTUAL_ADDRESS gpuAddr = res.GetGPUVirtualAddress();
+            //D3D12_GPU_VIRTUAL_ADDRESS gpuAddr = AsDX12( *computeItem.ConstantBuffers[i] ).GetGPUBufferLocation( );
             m_commandList->SetComputeRootConstantBufferView( vaRenderDeviceDX12::DefaultRootSignatureParams::PerDrawDirectCBVBase + i, gpuAddr );
         }
 #ifdef VA_SET_UNUSED_DESC_TO_NULL
@@ -890,11 +900,11 @@ vaDrawResultFlags vaRenderDeviceContextBaseDX12::ExecuteItem( const vaComputeIte
             m_commandList->Dispatch( computeItem.DispatchParams.ThreadGroupCountX, computeItem.DispatchParams.ThreadGroupCountY, computeItem.DispatchParams.ThreadGroupCountZ );
             break;
         case( vaComputeItem::DispatchIndirect ): 
-            // assert( computeItem.DispatchIndirectParams.BufferForArgs != nullptr );
-            assert( false ); // not yet implemented
-            // see: https://docs.microsoft.com/en-us/windows/desktop/direct3d12/indirect-drawing and https://docs.microsoft.com/en-us/windows/desktop/api/d3d12/nf-d3d12-id3d12graphicscommandlist-executeindirect
-            // m_deviceContext->DispatchIndirect( computeItem.DispatchIndirectParams.BufferForArgs->SafeCast<vaShaderResourceDX11*>()->GetBuffer(), computeItem.DispatchIndirectParams.AlignedOffsetForArgs );
-            break;
+        {   
+            vaShaderResourceDX12 & res = AsDX12( *computeItem.DispatchIndirectParams.BufferForArgs );
+            res.TransitionResource( *this, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT );
+            m_commandList->ExecuteIndirect( m_deviceDX12.GetDispatchIndirectCommandSig().Get(), 1, res.GetResource(), computeItem.DispatchIndirectParams.AlignedOffsetForArgs, nullptr, 0 );
+        } break;
         default:
             assert( false );
             break;
@@ -919,6 +929,8 @@ void vaRenderDeviceContextDX12::BeginRaytraceItems( const vaRenderOutputs & rend
 
 vaDrawResultFlags vaRenderDeviceContextBaseDX12::ExecuteItem( const vaRaytraceItem & raytraceItem, vaExecuteItemFlags flags )
 {
+    raytraceItem.Validate();
+
     // No threads will be dispatched, because at least one of {ThreadGroupCountX, ThreadGroupCountY, ThreadGroupCountZ} is 0. This is probably not intentional?
     assert( raytraceItem.DispatchWidth != 0 && raytraceItem.DispatchHeight != 0 && raytraceItem.DispatchDepth != 0 );
 
@@ -992,7 +1004,10 @@ vaDrawResultFlags vaRenderDeviceContextBaseDX12::ExecuteItem( const vaRaytraceIt
     {
         if( raytraceItem.ConstantBuffers[i] != nullptr )
         {
-            D3D12_GPU_VIRTUAL_ADDRESS gpuAddr = AsDX12( *raytraceItem.ConstantBuffers[i] ).GetGPUBufferLocation( );
+            vaShaderResourceDX12& res = AsDX12( *raytraceItem.ConstantBuffers[i] );
+            res.TransitionResource( *this, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER );
+            D3D12_GPU_VIRTUAL_ADDRESS gpuAddr = res.GetGPUVirtualAddress();
+            //D3D12_GPU_VIRTUAL_ADDRESS gpuAddr = AsDX12( *raytraceItem.ConstantBuffers[i] ).GetGPUBufferLocation( );
             m_commandList->SetComputeRootConstantBufferView( vaRenderDeviceDX12::DefaultRootSignatureParams::PerDrawDirectCBVBase + i, gpuAddr );
         }
 #ifdef VA_SET_UNUSED_DESC_TO_NULL

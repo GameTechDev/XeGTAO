@@ -156,6 +156,8 @@ namespace Vanilla
 
         void                                            SetScene( const shared_ptr<class vaScene> & scene );
 
+        int                                             GetLastLightCount( ) const                                                              { return (int)m_collectedPointLights.size(); }
+
         void                                            Reset( );
         // vaVector4                                       GetShadowCubeViewspaceDepthOffsets( ) const                                             { return vaVector4( m_shadowCubeFlatOffsetAdd / (float)m_shadowCubeResolution, m_shadowCubeFlatOffsetScale / (float)m_shadowCubeResolution, m_shadowCubeSlopeOffsetAdd / (float)m_shadowCubeResolution, m_shadowCubeSlopeOffsetScale / (float)m_shadowCubeResolution ); }
 
@@ -261,8 +263,8 @@ namespace Vanilla
         //std::shared_ptr<vaTexture>                      m_cubemapArrayRTVs[6];  // RTVs each pointing at the beginning + n (n goes from 0 to 5)
         std::shared_ptr<vaTexture>                      m_cubemapSliceDSVs[6];  // temp DSVs used to render the cubemap
 
-        vaVector3                                       m_lightPosition;
-        float                                           m_lightSize;
+        vaVector3                                       m_lightCenter;
+        float                                           m_lightRadius;
         float                                           m_lightRange;
 
     public:
@@ -277,7 +279,7 @@ namespace Vanilla
         virtual vaDrawResultFlags                       Draw( vaRenderDeviceContext & renderContext, vaRenderInstanceList & renderSelection );
         virtual void                                    Tick( float deltaTime );
 
-        virtual void                                    Invalidate( )                                       { vaShadowmap::Invalidate(); m_lightPosition = {0,0,0}; m_lightSize = {0}; m_lightRange = {0}; }
+        virtual void                                    Invalidate( )                                       { vaShadowmap::Invalidate(); m_lightCenter = {0,0,0}; m_lightRadius = {0}; m_lightRange = {0}; }
 
     public:
         void                                            Tick( float deltaTime, const ShaderLightPoint & lightPoint );

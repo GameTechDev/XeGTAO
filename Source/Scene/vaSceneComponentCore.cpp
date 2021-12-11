@@ -67,7 +67,7 @@ string Components::DetailedTypeInfo( int typeIndex )
     return outInfo;
 }
 
-bool Components::Has( int typeIndex, entt::registry & registry, entt::entity entity )
+bool Components::Has( int typeIndex, const entt::registry & registry, entt::entity entity )
 {
     assert( typeIndex >= 0 && typeIndex < TypeCount() );
     return vaSceneComponentRegistry::GetInstance().m_components[typeIndex].HasCallback( registry, entity );
@@ -402,6 +402,9 @@ vaSceneComponentRegistry::vaSceneComponentRegistry( )
     RegisterComponent< Name >( "Name" );            // <- just an example on how you can use a custom name - perhaps you want to shorten the name to something more readable or even substitute a component for another
     RegisterComponent< Relationship >( );
     RegisterComponent< TransformLocalIsWorldTag >( );
+    RegisterComponent< DisableLightingRecursiveTag >( );
+    RegisterComponent< SerializationSkipChildrenTag >( );
+    RegisterComponent< SerializationSkipTag >( );
     RegisterComponent< TransformDirtyTag >( );
     RegisterComponent< TransformLocal >( );
     RegisterComponent< TransformWorld >( );
@@ -420,5 +423,6 @@ vaSceneComponentRegistry::vaSceneComponentRegistry( )
     RegisterComponent< SkyboxTexture >( );
     RegisterComponent< IgnoreByIBLTag >( );
     RegisterComponent< RenderCamera >( );
+    RegisterComponent< SimpleScript >( );
 }
 

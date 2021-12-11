@@ -31,7 +31,7 @@ namespace Vanilla
     //
     //  * vaConstantBuffer:         Used for constants buffers only (and only supports direct CBVs, in DX12 terms!)
     //     - Fixed size
-    //     - Use Update to transfer new contents; there's no support for partial updates, it's all or nothing.
+    //     - Use Upload to transfer new contents; there's no support for partial updates, it's all or nothing.
     //     - When 'dynamicUpload' creation option is used, the backing buffer will be c_dynamicChunkCount times
     //       larger than the dataSize which takes more space but allows very efficient updates - for ex., this
     //       is used for per-draw instance constant buffers and can be done 1,000,000 times per frame.
@@ -184,9 +184,10 @@ namespace Vanilla
         Readback                        = (1 << 0),
         Upload                          = (1 << 1),     // write-only, with limited SRV/UAV support
         RaytracingAccelerationStructure = (1 << 2),
-        VertexIndexBuffer               = (1 << 3),
-        ForceByteAddressBufferViews     = (1 << 4),
-        Shared                          = (1 << 5),     // same as vaResourceBindSupportFlags::Shared
+        ConstantBuffer                  = (1 << 3),
+        VertexIndexBuffer               = (1 << 4),
+        ForceByteAddressBufferViews     = (1 << 5),
+        Shared                          = (1 << 6),     // same as vaResourceBindSupportFlags::Shared
     };
     BITFLAG_ENUM_CLASS_HELPER( vaRenderBufferFlags );
 
@@ -228,7 +229,7 @@ namespace Vanilla
         uint64                              GetElementCount( ) const                                                { return m_elementCount;        }
         vaResourceFormat                    GetResourceFormat( ) const                                              { return m_resourceFormat;      }    
 
-        // Update-s will create a new UPLOAD heap resource, copy data to it, schedule GPU copy from it and keep the temporary resource alive until GPU has finished the copy
+        // Upload-s will create a new UPLOAD heap resource, copy data to it, schedule GPU copy from it and keep the temporary resource alive until GPU has finished the copy
         virtual void                        Upload( vaRenderDeviceContext & renderContext, const void * data, uint64 dstByteOffset, uint64 dataSize )   = 0;
         template< typename ElementType >
         void                                Upload( vaRenderDeviceContext & renderContext, const std::vector<ElementType> & srcVector );
@@ -259,14 +260,12 @@ namespace Vanilla
         void                                Readback( ElementType * dstData, uint32 itemCount ) 
                                                                                                                     { Readback( (void*)dstData, itemCount * sizeof(ElementType) ); }
 
-        virtual void                        ClearUAV( vaRenderDeviceContext & renderContext, const vaVector4ui & clearValue )                               = 0;
-
-        // it's entirely possible to add dstOffset and srcOffset here - just didn't have the need yet!
-        virtual void                        CopyFrom( vaRenderDeviceContext & renderContext, vaRenderBuffer & source, uint64 dataSizeInBytes = -1 )              = 0;
+        virtual void                        CopyFrom( vaRenderDeviceContext & renderContext, vaRenderBuffer & source, uint64 dstOffsetInBytes, uint64 srcOffsetInBytes, uint64 dataSizeInBytes = -1 ) = 0;
 
         virtual vaResourceBindSupportFlags  GetBindSupportFlags( ) const override                                   { return vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess; }
 
-        void                                ClearUAV( vaRenderDeviceContext & renderContext, uint32 clearValue )    { ClearUAV( renderContext, vaVector4ui(clearValue, clearValue, clearValue, clearValue) ); }
+        //vaDrawResultFlags                   ClearUAV( vaRenderDeviceContext & renderContext, const vaVector4ui & clearValue );
+        //vaDrawResultFlags                   ClearUAV( vaRenderDeviceContext & renderContext, uint32 clearValue );
 
         virtual bool                        GetCUDAShared( void * & outPointer, size_t & outSize )                  { return false; outPointer; outSize; }
 

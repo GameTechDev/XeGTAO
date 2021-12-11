@@ -77,6 +77,8 @@ namespace Vanilla
         std::vector<ShaderFeedbackDynamic>  m_debugDrawItems;
         bool                                m_freezeDebugDrawItems          = false;
 
+        std::weak_ptr<class vaScene>        m_uiLastScene;
+
     protected:
         VA_RENDERING_MODULE_MAKE_FRIENDS( );
         vaRenderGlobals( const vaRenderingModuleParams & params );

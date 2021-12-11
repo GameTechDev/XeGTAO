@@ -192,17 +192,6 @@ void ParticleMaterialAccumulateLights( const in float3 worldspacePos, const in S
         diffTerm = lerp( max( diffTerm, 0 ), 1, material.SubsurfaceScatterHack );
 #endif
 
-        // // debugging shadows
-        // if( light.CubeShadowIndex >= 0 )
-        // {
-        //     // do shadow map stuff
-        //     float3 cubeShadowDir = -normalize( mul( (float3x3)g_globals.ViewInv, pixelToLight ) );
-        //     float value = g_CubeShadowmapArray.Sample( g_samplerPointClamp, float4( cubeShadowDir, light.CubeShadowIndex ) ).x;
-        //     // return float4( GradientHeatMap( frac(length(viewspacePos)) ), 1.0 );
-        //     // return float4( GradientHeatMap( frac(pixelToLightLength) ), 1.0 );
-        //     return float4( GradientHeatMap( frac(value) ), 1.0 );
-        // }
-
         [branch]    // early out, facing away from the light
         if( diffTerm > 0 )
         {

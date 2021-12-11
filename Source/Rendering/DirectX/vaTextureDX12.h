@@ -62,7 +62,7 @@ namespace Vanilla
         ID3D12Resource *                    GetResource( ) const        { return m_resource.Get(); }
 
         // vaShaderResourceDX12 impl
-        virtual const vaConstantBufferViewDX12 *    GetCBV( ) const override;
+        //virtual const vaConstantBufferViewDX12 *    GetCBV( ) const override;
         virtual const vaShaderResourceViewDX12 *    GetSRV( ) const override;
         virtual const vaUnorderedAccessViewDX12 *   GetUAV( ) const override;
 
@@ -159,7 +159,7 @@ namespace Vanilla
     inline vaTextureDX12 & AsDX12( vaTexture & texture )   { return *texture.SafeCast<vaTextureDX12*>(); }
     inline vaTextureDX12 * AsDX12( vaTexture * texture )   { return texture->SafeCast<vaTextureDX12*>(); }
 
-    inline const vaConstantBufferViewDX12 *             vaTextureDX12::GetCBV( ) const              { return nullptr; }
+    //inline const vaConstantBufferViewDX12 *             vaTextureDX12::GetCBV( ) const              { return nullptr; }
     inline const vaShaderResourceViewDX12 *             vaTextureDX12::GetSRV( ) const              { return (m_overrideView==nullptr)?(m_srv.IsCreated()?&m_srv:nullptr):(AsDX12(*m_overrideView).GetSRV()); }
     inline const vaUnorderedAccessViewDX12 *            vaTextureDX12::GetUAV( ) const              { assert(m_overrideView==nullptr); return m_uav.IsCreated()?(&m_uav):(nullptr); }
     

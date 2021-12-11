@@ -359,7 +359,7 @@ LightParams EvaluateLightAtSurface( const ShaderLightPoint lightIn, const float3
 {
     LightParams light;
 
-    float3 posToLight       = lightIn.Position - worldPos;
+    float3 posToLight       = lightIn.Center - worldPos;
     float distanceSquare    = dot( posToLight, posToLight );
     light.Dist              = sqrt( distanceSquare );
     light.L                 = posToLight / light.Dist;
@@ -369,13 +369,13 @@ LightParams EvaluateLightAtSurface( const ShaderLightPoint lightIn, const float3
 #error Set all to 0 and leave early if NoL is <=0
 #endif 
 
-    light.Attenuation       = ShaderLightRangeAttenuation( distanceSquare, lightIn.Range ) * ShaderLightDistanceAttenuation( light.Dist, distanceSquare, lightIn.Size );
+    light.Attenuation       = ShaderLightRangeAttenuation( distanceSquare, lightIn.Range ) * ShaderLightDistanceAttenuation( light.Dist, distanceSquare, lightIn.Radius );
 
     float intensityIn       = lightIn.Intensity  * g_globals.PreExposureMultiplier;
     light.ColorIntensity    = lightIn.Color * intensityIn;
 
     // spot attenuation is designed so that if InnerAngle is 0deg and OuterAngle is 90deg then it's a Lambertian emitter - "saturate( dot( lightIn.Direction, -light.L ) )"
-    // all the math below is only there to 
+    // TODO: convert this to a better approximation of illumination, see https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf
     {
         float exitNoL = dot( lightIn.Direction, -light.L );
 #if 1
@@ -394,6 +394,9 @@ LightParams EvaluateLightAtSurface( const ShaderLightPoint lightIn, const float3
         // // squaring of spot attenuation is just for a softer outer->inner curve that I like more visually
         // light.Attenuation = spotAttenuation*spotAttenuation;
     }
+
+    // // approx
+    // light.SubtendedHalfAngle    = asin( saturate( lightIn.Size / light.Dist ) );
 
     return light;
 }

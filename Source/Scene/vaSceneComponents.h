@@ -18,6 +18,8 @@
 
 #include "vaSceneComponentCore.h"
 
+#include "Core/vaEvent.h"
+
 // EnTT components must be both move constructible and move assignable!
 
 namespace Vanilla
@@ -25,6 +27,7 @@ namespace Vanilla
     class vaXMLSerializer;
     class vaMemoryStream;
     class vaCameraBase;
+    class vaScene;
 
     // entt-specific scene namespace
     namespace Scene
@@ -92,6 +95,28 @@ namespace Vanilla
                 "If an entity has no parent, this tag makes no difference."; }
 
             bool                            Serialize( vaSerializer & serializer );
+        };
+
+        struct DisableLightingRecursiveTag : public UIVisible 
+        { 
+            static const char *             UITypeInfo( )           { return
+                "If this component is attached, all light components for this node and it's children (and children's children, "
+                "recursively) will be disabled."; }
+            bool                            Serialize( vaSerializer & serializer )      { serializer; return true; } // just a presence of Serialize will ensure the empty (tag) component will get created.
+        };
+
+        struct SerializationSkipTag : public UIVisible 
+        { 
+            static const char *             UITypeInfo( )           { return
+                "If this component is attached, serialization (saving) will skip this entity. Useful for procedural stuff for example. "; }
+            bool                            Serialize( vaSerializer & serializer )      { serializer; return true; } // just a presence of Serialize will ensure the empty (tag) component will get created.
+        };
+
+        struct SerializationSkipChildrenTag : public UIVisible 
+        { 
+            static const char *             UITypeInfo( )           { return
+                "If this component is attached, serialization (saving) will skip its children. Useful for procedural stuff for example. "; }
+            bool                            Serialize( vaSerializer & serializer )      { serializer; return true; } // just a presence of Serialize will ensure the empty (tag) component will get created.
         };
         
         struct TransformLocal : public vaMatrix4x4, public UIVisible
@@ -182,7 +207,7 @@ namespace Vanilla
             // Color of emitted light, as a linear RGB color (should ideally be normalized to 1 luminance).
             // UI should expose it as an sRGB color or a color temperature.
             vaVector3                       Color       = vaVector3( 1, 1, 1 );
-            // Brightness, with the actual unit depending on the type of light (see types above)
+            // Brightness, with the actual unit depending on the type of light; for punctual lights it's "angular density of emitted power", unit is Watt/steradian, computed as Flux/4*Pi
             float                           Intensity   = 1.0f;
             // Simple way to enable/disable or fade-in / fade-out the light - value must be [0, 1], it effectively multiplies 'Intensity' and 0 disables the light.
             float                           FadeFactor  = 1.0f;
@@ -242,22 +267,25 @@ namespace Vanilla
         // A basic point light source has a well-defined position in space but no direction - it emits light in all directions. It is extended by 
         // Spot light functionality (if 'SpotInnerAngle' and 'SpotOuterAngle' are not 0 or PI), which controls how much light is emitted based
         // on the angle from the direction.
-        // Unit is luminous power (lm).
+        // As far as I understand, the 'Intensity' represents "angular density of emitted power", unit is Watt/steradian, computed as Flux/4*Pi and analogous to luminous intensity (candela - cd).
+        // (Previously this stated that the unit was "luminous power (lm) (a.k.a. Radiant flux)" but that doesn't seem to match the shading math).
         // Direction is taken from entity's TransformWorld +X axis.
+        // It has over time been upgraded to function as a spherical lights: the Size is the distance from which to start attenuating or compute umbra/penumbra/antumbra/compute specular; see http://www.cemyuksel.com/research/pointlightattenuation/
         struct LightPoint : LightBase, UIVisible
         {
             static const char*              UITypeInfo( )   { return "Basic point or spot light"; }
 
-            // in some ways these are considered spherical lights: this is the distance from which to start attenuating or compute umbra/penumbra/antumbra / compute specular (making this into a 'sphere' light) - useful to avoid near-infinities for when close-to-point lights
-            float                           Size            = 0.1f;
-            float                           RTSizeModifier  = 1.0f;             // modifies Size for ray tracing direction (but not distance) - makes RT shadows sharper; this is a 'bodge' because Size is usually larger than the light to encompass the whole light casting geometry due to shadow maps and 'special emissive' materials that pick up intensity from light; will probably be removed in the future
-            // max range at which they are effective regardless of other parameters; influences performance and shadow quality (don't set to too high or shadow maps will not work)
-            float                           Range           = 200.0f;
-            //
+            // Note: Size and Range will get re-scaled by WorldTransform scaling uniformly
+            float                           Radius          = 1.0f;             // light size
+            float                           Range           = 200.0f;           // max range at which the light is effective regardless of other parameters; influences performance and shadow quality (don't set to too high or shadow maps will not work)
+            float                           ShadowRayShorten= 0.05f;            // reduces ray length used for testing visibility (shadows) to avoid emitter geometry intersection, expressed in multiples of Size
+                                                                                //
             float                           SpotInnerAngle  = 0;                // angle from Direction below which the spot light has the full intensity (a.k.a. inner cone angle)
             float                           SpotOuterAngle  = 0;                // angle from Direction below which the spot light intensity starts dropping (a.k.a. outer cone angle)
             //
-            bool                            CastShadows     = false;
+            bool                            CastShadows     = false;            // todo: will be made obsolete
+            bool                            ShadowRayDisk   = false;            // see VA_LIGHT_FLAG_SHADOW_RAY_DISK
+            bool                            ShowDebugViz    = false;            // doesn't get serialized; used to debug raytracing
 
                                             LightPoint( )                                                   {}
                                             LightPoint( const LightBase & base ) : LightBase( base )        {}
@@ -281,10 +309,11 @@ namespace Vanilla
                 "Keep in mind that in the 'IsAttachedToLight' mode, it will prevent the instance from creating"
                 "diffuse emissive lights." ; }
 
-            vaVector3                       EmissiveMultiplier      = {1, 1, 1};
+            vaVector3                       EmissiveMultiplier      = {1, 1, 1};    // this gets overridden when using ReferenceLightEntity
 
             EntityReference                 ReferenceLightEntity;                   // null means this is manually controlled
-            float                           ReferenceLightMultiplier= 100.0f;       // if ReferenceLightEntity != null, it will take its light intensity*color
+            float                           ReferenceLightMultiplier= 1.0f;         // if ReferenceLightEntity != null, it will take its light intensity*color
+            bool                            AssumeUniformUnitSphere = true;         // automatically compute ReferenceLightMultiplier, assuming the mesh is an uniform unit sphere emitter
 
             bool                            IsAttachedToLight( ) const      { return ReferenceLightEntity != entt::null; }
 
@@ -426,6 +455,23 @@ namespace Vanilla
 
             void                            Validate( );
             void                            UITick( UIArgs & uiArgs );
+            bool                            Serialize( vaSerializer & serializer );
+        };
+
+        typedef vaEvent<void( vaScene & scene, const string & simpleScriptType, entt::entity entity, struct SimpleScript & script, float deltaTime, int64 applicationTickIndex )> SimpleScriptCallbackEventType; // used internally
+        typedef std::function<void( vaScene & scene, const string & simpleScriptType, entt::entity entity, struct SimpleScript & script, float deltaTime, int64 applicationTickIndex )> SimpleScriptCallbackType; // used internally
+
+        struct SimpleScript : public UIVisible
+        {
+            static const char* UITypeInfo( ) { return
+                "Will provide a global callback, and some parameters to the application. Application needs to register using vaScene::RegisterSimpleScript. "
+                "Callback is executed serially from vaScene::TickBegin and ordering is undefined. TypeName is not case sensitive."; }
+
+            string                          TypeName;
+            string                          Parameters;
+
+            void                            UITick( UIArgs& uiArgs );
+            void                            Validate( );
             bool                            Serialize( vaSerializer & serializer );
         };
 

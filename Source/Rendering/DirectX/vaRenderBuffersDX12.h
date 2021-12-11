@@ -56,7 +56,7 @@ namespace Vanilla
     };
 
     // Constant buffers placed on upload heap - could be upgraded to allow for default heap but no pressing need atm
-    class vaConstantBufferDX12 : public vaConstantBuffer//, public vaShaderResourceDX12//, public vaResourceStateTransitionHelperDX12
+    class vaConstantBufferDX12 : public vaConstantBuffer, public virtual vaShaderResourceDX12//, public vaResourceStateTransitionHelperDX12
     {
         VA_RENDERING_MODULE_MAKE_FRIENDS( );
 
@@ -116,7 +116,8 @@ namespace Vanilla
         virtual vaResourceBindSupportFlags  GetBindSupportFlags( ) const override                           { return vaResourceBindSupportFlags::ConstantBuffer; }
         virtual uint32                      GetSRVBindlessIndex( vaRenderDeviceContext * renderContextPtr ) override { assert( renderContextPtr == nullptr ); renderContextPtr; assert( false ); return 0; }    // no bindless for constant buffers
 
-        D3D12_GPU_VIRTUAL_ADDRESS           GetGPUBufferLocation( ) const                                   { return (m_uploadConstantBuffer != nullptr)?(m_uploadConstantBuffer->CBV.BufferLocation + ComputeDynamicOffset()):(0); }
+        virtual D3D12_GPU_VIRTUAL_ADDRESS   GetGPUVirtualAddress( ) const override                          { return (m_uploadConstantBuffer != nullptr)?(m_uploadConstantBuffer->CBV.BufferLocation + ComputeDynamicOffset()):(0); }
+        virtual void                        TransitionResource( vaRenderDeviceContextBaseDX12 & context, D3D12_RESOURCE_STATES target ) override    { context; target; assert( target == D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER ); }
 
     private:            
         uint64                              ComputeDynamicOffset( ) const                                   { assert( m_actualSizeInBytes * m_currentChunk < m_actualTotalSizeInBytes);  return m_actualSizeInBytes * m_currentChunk; }
@@ -184,7 +185,7 @@ namespace Vanilla
         void                                DestroyInternal( bool lockMutex );
     };
 
-    class vaDynamicVertexBufferDX12 : public vaDynamicVertexBuffer, public vaShaderResourceDX12
+    class vaDynamicVertexBufferDX12 : public vaDynamicVertexBuffer, public virtual vaShaderResourceDX12
     {
         VA_RENDERING_MODULE_MAKE_FRIENDS( );
 
@@ -225,6 +226,7 @@ namespace Vanilla
 
         vaResourceStateTransitionHelperDX12 m_rsth;
 
+//        D3D12_CONSTANT_BUFFER_VIEW_DESC     CBV                 = {0, 0};
         vaShaderResourceViewDX12            m_srv;
         vaUnorderedAccessViewDX12           m_uav;
         vaUnorderedAccessViewDX12           m_uavSimple;       // always hold a simple non-raw non-structured buffer for clears
@@ -244,21 +246,22 @@ namespace Vanilla
         //bool                                Map( vaResourceMapType mapType );
         //void                                Unmap( );
 
-        ID3D12Resource *                    GetResource( ) const                                                                            { return m_resource.Get(); }
+        virtual ID3D12Resource *            GetResource( ) const override                                                                   { return m_resource.Get(); }
         const D3D12_RESOURCE_DESC &         GetDesc( ) const                                                                                { return m_desc; }
 
-        virtual const vaConstantBufferViewDX12 *    GetCBV( ) const override                                                                { return nullptr; };
+        //virtual const vaConstantBufferViewDX12 *    GetCBV( ) const override                                                                { return nullptr; };
         virtual const vaUnorderedAccessViewDX12 *   GetUAV( ) const override                                                                { return (!IsReadback())?(&m_uav):(nullptr); };
         virtual const vaShaderResourceViewDX12 *    GetSRV( ) const override                                                                { return (!IsReadback())?(&m_srv):(nullptr); };
 
         virtual void                        TransitionResource( vaRenderDeviceContextBaseDX12 & context, D3D12_RESOURCE_STATES target ) override;
         virtual void                        AdoptResourceState( vaRenderDeviceContextBaseDX12 & context, D3D12_RESOURCE_STATES target ) override;
 
-        virtual void                        ClearUAV( vaRenderDeviceContext & renderContext, const vaVector4ui & clearValue )   override;
+        // removed - use vaRenderDevice::ClearUAV instead
+        // virtual void                        ClearUAV( vaRenderDeviceContext & renderContext, const vaVector4ui & clearValue )   override;
 
-        virtual void                        CopyFrom( vaRenderDeviceContext & renderContext, vaRenderBuffer & source, uint64 dataSizeInBytes = -1 ) override;
+        virtual void                        CopyFrom( vaRenderDeviceContext & renderContext, vaRenderBuffer & source, uint64 dstOffsetInBytes, uint64 srcOffsetInBytes, uint64 dataSizeInBytes = -1 ) override;
 
-        virtual vaResourceBindSupportFlags  GetBindSupportFlags( ) const override                                                           { return (!IsReadback())?(vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess):(vaResourceBindSupportFlags::None); };
+        virtual vaResourceBindSupportFlags  GetBindSupportFlags( ) const override;
         virtual uint32                      GetSRVBindlessIndex( vaRenderDeviceContext * renderContextPtr ) override                        { assert( renderContextPtr == nullptr ); renderContextPtr; return m_srv.GetBindlessIndex(); }
 
         virtual D3D12_GPU_VIRTUAL_ADDRESS   GetGPUVirtualAddress( ) const override                          { return (m_resource != nullptr)?(m_resource->GetGPUVirtualAddress()):(0); }

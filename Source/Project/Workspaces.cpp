@@ -66,7 +66,7 @@ void Workspace00_Scene( vaRenderDevice & renderDevice, vaApplicationBase & appli
 
         void                                Initialize( vaRenderDevice & renderDevice, vaApplicationBase & application )
         {   application;
-            Scene           = std::make_shared<vaScene>( );
+            Scene           = vaScene::Create( );
             SceneRenderer   = renderDevice.CreateModule<vaSceneRenderer>( );
             SceneMainView   = SceneRenderer->CreateMainView( );
             SceneRenderer->SetScene( Scene );
@@ -147,9 +147,9 @@ void Workspace00_Scene( vaRenderDevice & renderDevice, vaApplicationBase & appli
 
 
                 if( ImGui::Button("set random parent") )
-                    globals->Scene->SetParent( globals->MovableEntity, globals->OtherEntities[vaRandom::Singleton.NextIntRange((int)globals->OtherEntities.size()-1)] );
+                    globals->Scene->SetParent( globals->MovableEntity, globals->OtherEntities[vaRandom::Singleton.NextIntRange((int)globals->OtherEntities.size()-1)], false );
                 if( ImGui::Button( "set random child" ) )
-                    globals->Scene->SetParent( globals->OtherEntities[vaRandom::Singleton.NextIntRange( (int)globals->OtherEntities.size( ) - 1 )], globals->MovableEntity );
+                    globals->Scene->SetParent( globals->OtherEntities[vaRandom::Singleton.NextIntRange( (int)globals->OtherEntities.size( ) - 1 )], globals->MovableEntity, false );
 
                 ImGui::Checkbox( "Wireframe", &globals->Wireframe );
                 ImGui::Separator( );
@@ -172,7 +172,7 @@ void Workspace00_Scene( vaRenderDevice & renderDevice, vaApplicationBase & appli
             for( int i = 0; i < 100; i++ )
                 OtherEntities.push_back( Scene->CreateEntity( string("entity_")+std::to_string(i), vaMatrix4x4::Translation(vaVector3::Random(rnd) * 2 - 1), entt::null, LightSphereMesh->UIDObject_GetUID() ) );
             for( int i = 0; i < 100; i++ )
-                Scene->SetParent( OtherEntities[rnd.NextIntRange((int)OtherEntities.size()-1)], OtherEntities[rnd.NextIntRange((int)OtherEntities.size()-1)] );
+                Scene->SetParent( OtherEntities[rnd.NextIntRange((int)OtherEntities.size()-1)], OtherEntities[rnd.NextIntRange((int)OtherEntities.size()-1)], false );
 
         }
     };

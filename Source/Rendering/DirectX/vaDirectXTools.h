@@ -327,6 +327,7 @@ namespace Vanilla
         const D3D12_GPU_DESCRIPTOR_HANDLE & GetCPUReadableGPUHandle( ) const    { return m_CPUReadableGPUHandle; }
     };
 
+    // I think this needs to go out as it's no longer used; leaving in for some future cleanup
     class vaConstantBufferViewDX12 : public vaResourceViewDX12
     {
         // this is left in for convenience & debugging purposes
@@ -421,17 +422,21 @@ namespace Vanilla
     public:
         virtual ~vaShaderResourceDX12( ) {};
 
-        virtual const vaConstantBufferViewDX12 *    GetCBV( )   const                                                                               { assert( false ); return nullptr; }
+        //virtual const vaConstantBufferViewDX12 *    GetCBV( )   const                                                                               { assert( false ); return nullptr; } <- no longer used, just use GetGPUVirtualAddress
         virtual const vaUnorderedAccessViewDX12 *   GetUAV( )   const                                                                               { assert( false ); return nullptr; }
         virtual const vaShaderResourceViewDX12 *    GetSRV( )   const                                                                               { assert( false ); return nullptr; }
 
         virtual void                                TransitionResource( vaRenderDeviceContextBaseDX12 & context, D3D12_RESOURCE_STATES target )     { context; target; assert( false ); }
         virtual void                                AdoptResourceState( vaRenderDeviceContextBaseDX12 & context, D3D12_RESOURCE_STATES target )     { context; target; assert( false ); }   // if something external does a transition we can update our internal tracking
 
+        // used by constant buffers
         virtual D3D12_GPU_VIRTUAL_ADDRESS           GetGPUVirtualAddress( ) const                                                                   { assert( false ); return {0}; }
+
         virtual UINT64                              GetSizeInBytes( ) const                                                                         { assert( false ); return 0; }
         virtual DXGI_FORMAT                         GetFormat( ) const                                                                              { assert( false ); return DXGI_FORMAT_UNKNOWN; }
         virtual UINT                                GetStrideInBytes( ) const                                                                       { assert( false ); return 0; }
+
+        virtual ID3D12Resource *                    GetResource( ) const                                                                            { assert( false ); return nullptr; }
     };
 
     //struct MemoryBufferComparer

@@ -52,28 +52,68 @@ bool Material_AlphaTest( const GeometryInteraction geometrySurface, const Materi
 #endif
 }
 
+// float3 getSpecularDominantDirArea( float3 N, float3 R, float NdotV, float roughness )
+// {
+//    // Simple linear approximation
+//    float lerpFactor = (1 - roughness);
+//    return normalize ( lerp (N , R , lerpFactor )) ;
+//}
+
 // hack we use to avoid Dirac delta functions
 static const float c_perfectSpecularPDF = 1000000.0f;
 
 // See surfaceshading from Filament's shading_model_standard.fs for more info.
 // At the moment clear coat is not implemented/enabled.
-float3 Material_BxDF( const MaterialInteraction materialSurface, const float3 Wi, const bool refracted ) 
+// 
+float3 Material_BxDF( const MaterialInteraction _materialSurface, const float3 Wi, const float sphereLightDistance, const float sphereLightRadius, const bool refracted )
 {
 #if VA_RM_TRANSPARENT
     if( refracted )
         return float3( 1, 1, 1 ) * c_perfectSpecularPDF;
 #endif
 
-    float3 h = normalize( materialSurface.View + Wi );    // materialSurface.View a.k.a. Wo
+    MaterialInteraction materialSurface = _materialSurface;
+
+    // spherical area light
+    float3 specWi = Wi; 
+    float specAreaLightNormalization = 1.0;
+
+#if 1 // enable spherical area light
+    if( sphereLightRadius > 0 )
+    {
+        // 'Specular D Modification' (https://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_notes_v2.pdf)
+        // materialSurface.Roughness = Sq( saturate( sqrt(materialSurface.Roughness) + (sphereLightSize / (sphereLightDistance) ) ) );
+
+        // "Closest representative point" approximation, pg 15+, https://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_notes_v2.pdf
+        // TODO: Better specular dominant dir, search for getSpecularDominantDir, https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf
+        // TODO: Smoothed Representative Point, https://www.dropbox.com/s/mx0ub7t3j0b46bo/sig2015_approx_models_PBR_notes_DRAFT.pdf?dl=0
+
+        float3 specularDominantDir = materialSurface.Reflected; // upgrade to better representative point
+
+        float3 surfaceToLight = Wi * sphereLightDistance;
+        float3 centerToRay = dot( surfaceToLight, specularDominantDir ) * specularDominantDir - surfaceToLight;
+        float3 closestPoint = surfaceToLight + centerToRay * saturate( sphereLightRadius / length(centerToRay) );
+        specWi = normalize( closestPoint );
+
+        specAreaLightNormalization = pow( materialSurface.Roughness / clamp(materialSurface.Roughness + sphereLightRadius / (2.0 * sphereLightDistance), 0.0, 1.0), 2.0);
+    }
+#endif
+
+    // materialSurface.View a.k.a. Wo
+    float3 diffH = normalize( materialSurface.View + Wi );          
+    float3 specH = normalize( materialSurface.View + specWi );
 
     float NoV = materialSurface.NoV;
-    float NoL = saturate( dot( materialSurface.Normal, Wi ) );
-    float NoH = saturate( dot( materialSurface.Normal, h ) );
-    float LoH = saturate( dot( Wi, h) );
+    float diffNoL = saturate( dot( materialSurface.Normal, Wi ) );
+    float specNoL = saturate( dot( materialSurface.Normal, specWi ) );
+    float diffNoH = saturate( dot( materialSurface.Normal, diffH ) );
+    float specNoH = saturate( dot( materialSurface.Normal, specH ) );
+    float diffLoH = saturate( dot( Wi, diffH ) );
+    float specLoH = saturate( dot( specWi, specH ) );
 
-    float3 Fr = specularLobe( materialSurface.View, materialSurface, Wi, h, NoV, NoL, NoH, LoH );
-    float3 Fd = diffuseLobe( materialSurface, NoV, NoL, LoH );
-    Fr *= materialSurface.EnergyCompensation;
+    float3 Fr = specularLobe( materialSurface.View, materialSurface, specWi, specH, NoV, specNoL, specNoH, specLoH );
+    float3 Fd = diffuseLobe( materialSurface, NoV, diffNoL, diffLoH );
+    Fr *= materialSurface.EnergyCompensation * specAreaLightNormalization;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // coment below is from original Filament implementation:
@@ -88,7 +128,7 @@ float3 Material_BxDF( const MaterialInteraction materialSurface, const float3 Wi
     // * above Frostbite's [Jen+01] is a reference to this (page 3): https://graphics.stanford.edu/papers/bssrdf/bssrdf.pdf
     {
         float f90 = saturate( materialSurface.DielectricF0 * 50.0 );     // same as "fresnel(materialSurface.DielectricF0, LoH).x", since materialSurface.DielectricF0 is scalar (grayscale)
-        float frD = F_Schlick( materialSurface.DielectricF0, f90, LoH ); // same as "fresnel(materialSurface.DielectricF0, LoH).x", since materialSurface.DielectricF0 is scalar (grayscale)
+        float frD = F_Schlick( materialSurface.DielectricF0, f90, diffLoH ); // same as "fresnel(materialSurface.DielectricF0, LoH).x", since materialSurface.DielectricF0 is scalar (grayscale)
         Fd *= 1-frD;
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -100,7 +140,7 @@ float3 Material_BxDF( const MaterialInteraction materialSurface, const float3 Wi
 
 #if defined(MATERIAL_HAS_CLEAR_COAT)
     float Fcc;
-    float clearCoat = clearCoatLobe(materialSurface, h, NoH, LoH, Fcc);
+    float clearCoat = clearCoatLobe(materialSurface, specH, NoH, LoH, Fcc);
     float attenuation = 1.0 - Fcc;
 
     float3 color = (Fd + Fr) * attenuation * NoL;
@@ -118,7 +158,15 @@ float3 Material_BxDF( const MaterialInteraction materialSurface, const float3 Wi
     float3 color    = Fd + Fr;
 #endif
 
-    return color * NoL;
+    color *= saturate( dot( materialSurface.Normal, Wi ) );   // geometry cosine term - perhaps pull it out outside of this
+
+    return color;
+}
+float3 Material_BxDF( const MaterialInteraction materialSurface, const float3 Wi, const bool refracted )
+{
+    const float sphereLightDistance = 1e32f;
+    const float sphereLightSize     = 0.0f;
+    return Material_BxDF( materialSurface, Wi, sphereLightDistance, sphereLightSize, refracted );
 }
 
 float Material_WeighLight( const ShaderLightTreeNode lightNode, const GeometryInteraction geometrySurface, const MaterialInteraction materialSurface )
@@ -129,6 +177,10 @@ float Material_WeighLight( const ShaderLightTreeNode lightNode, const GeometryIn
     const float uncertaintyDistanceHeuristic = 0.28;
     float distance = VA_MAX( lightNode.UncertaintyRadius*uncertaintyDistanceHeuristic, deltaLength-lightNode.UncertaintyRadius*uncertaintyDistanceHeuristic );    // this is distance to somewhere inside node sphere - this is our best guess
     float lightAttenuation = ShaderLightAttenuation( distance, lightNode.RangeAvg, lightNode.SizeAvg );
+
+#if 0 // a test!
+    return lightAttenuation;
+#endif 
 
 #if 0   // incident light comes from center
     vaVector3 Wi = delta / deltaLength;
@@ -169,18 +221,32 @@ float Material_WeighLight( const ShaderLightTreeNode lightNode, const GeometryIn
 
 #ifdef VA_RAYTRACING    // just to speed up compilation of non-raytracing stuff
 
+float Material_BxDF_PDF_Tangent( const GeometryInteraction geometrySurface, const MaterialInteraction materialSurface, const float3 Wo, const float3 Wi, const bool refracted )
+{
+    float pdf1 = SampleHemisphereCosineWeightedPDF( Wi.z );
+    float pdf2 = SampleGGXVNDF_PDF( Wo, Wi, materialSurface.Roughness, materialSurface.Roughness );
+    pdf1 = max( 1e-16, pdf1 );  // things go haywire with too low pdfs and this doesn't seem to cause measurable energy loss, but there's probably a better standard way to deal with it
+    pdf2 = max( 1e-16, pdf2 );  // things go haywire with too low pdfs and this doesn't seem to cause measurable energy loss, but there's probably a better standard way to deal with it
+    return lerp( pdf2, pdf1, materialSurface.ReflectivityEstimate );
+}
+
+float Material_BxDF_PDF_World( const GeometryInteraction geometrySurface, const MaterialInteraction materialSurface, float3 Wo, float3 Wi, const bool refracted )
+{
+    const float3x3 shadingTangentToWorld = materialSurface.TangentToWorld;
+    Wo = mul( shadingTangentToWorld, Wo );
+    Wi = mul( shadingTangentToWorld, Wi );
+    return Material_BxDF_PDF_Tangent( geometrySurface, materialSurface, Wo, Wi, refracted );
+}
+
 // Figure out a good next sample direction for the BxDF using importance sampling; takes one 1D and 1 2D low discrepancy samples, 
 // returns 'Wi' (light incoming direction / next path direction) IN TANGENT SPACE
 void Material_BxDFSample( const GeometryInteraction geometrySurface, const MaterialInteraction materialSurface, float r, const float2 u, out float3 Wi, out float pdf, out bool refracted )
 {
     // we're doing everything here in tangent space, so convert
-#if 0 // but which tangent space, geometry (ignores material normal)...
-    const float3x3 shadingTangentToWorld = geometrySurface.TangentToWorld();
-#else // ...or material one?
     const float3x3 shadingTangentToWorld = materialSurface.TangentToWorld;
-#endif
 
     float3 Wo = mul( shadingTangentToWorld, materialSurface.View ); // a.k.a. Ve
+
     // We assume the Wo view vector is never coming 'from below' of the materialSurface.Normal so z>0 in the shading tangent frame.
     // Otherwise, we have a problem.
 
@@ -203,7 +269,7 @@ void Material_BxDFSample( const GeometryInteraction geometrySurface, const Mater
         Wi = refract( -Wo, float3( 0, 0, -1 ), eta );
         
         // and go back material-> air with a hack to simulate thickness - total hack, all of this
-        Wi = refract( Wi, float3( 0, 0, 1 ), 0.98/eta );
+        Wi = refract( Wi, float3( 0, 0, 1 ), 0.97/eta );
 
         // We must go back from tangent space to world space now
         Wi = normalize( mul( Wi, shadingTangentToWorld ) );
@@ -260,12 +326,7 @@ void Material_BxDFSample( const GeometryInteraction geometrySurface, const Mater
     Wi = normalize( Wi + (max( 0, -dot(Wi, Tn) ) * ( 0.6 + Rand1D(r)*0.8 ) ) * Tn ); // push the Wi 'out' in the triangle normal direction if required, dithered
 #endif
 
-                                                                                     // Ok, now figure out the PDF!
-    float pdf1 = SampleHemisphereCosineWeightedPDF( Wi.z );
-    float pdf2 = SampleGGXVNDF_PDF( Wo, Wi, materialSurface.Roughness, materialSurface.Roughness );
-    pdf1 = max( 1e-16, pdf1 );  // things go haywire with too low pdfs and this doesn't seem to cause measurable energy loss, but there's probably a better standard way to deal with it
-    pdf2 = max( 1e-16, pdf2 );  // things go haywire with too low pdfs and this doesn't seem to cause measurable energy loss, but there's probably a better standard way to deal with it
-    pdf = lerp( pdf2, pdf1, materialSurface.ReflectivityEstimate );   // <- is this really correct? I struggle.
+    pdf = Material_BxDF_PDF_Tangent( geometrySurface, materialSurface, Wo, Wi, refracted );
 
 #endif
                                                                       // Debugging if needed
@@ -279,6 +340,9 @@ void Material_BxDFSample( const GeometryInteraction geometrySurface, const Mater
 
     // We must go back to world space now
     Wi = normalize( mul( Wi, shadingTangentToWorld ) );
+
+    // just a test
+    // pdf = Material_BxDF_PDF_World( geometrySurface, materialSurface, materialSurface.View, Wi, refracted );
 }
 
 #endif // #ifdef VA_RAYTRACING
@@ -287,7 +351,7 @@ void Material_BxDFSample( const GeometryInteraction geometrySurface, const Mater
 // this will use Material_BxDF, Material_WeighLight and others defined above!
 #include "../Lighting/vaPointLight.hlsli"
 
-float4 Material_Forward( const GeometryInteraction geometrySurface, const MaterialInteraction materialSurface )
+float4 Material_Forward( const GeometryInteraction geometrySurface, const MaterialInteraction materialSurface, const bool debugPixel )
 {
     float3 color     = 0.0.xxx;
 
@@ -303,7 +367,7 @@ float4 Material_Forward( const GeometryInteraction geometrySurface, const Materi
     // #endif
 
     // #if defined(HAS_DYNAMIC_LIGHTING)
-    EvaluatePointLightsForward( geometrySurface, materialSurface, color );
+    EvaluatePointLightsForward( geometrySurface, materialSurface, color, debugPixel );
     // #endif
 
 #if defined(MATERIAL_HAS_EMISSIVE)

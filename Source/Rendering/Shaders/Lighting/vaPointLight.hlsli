@@ -23,10 +23,11 @@
 #ifndef RAYTRACED_SHADOWS
 void EvaluateShadowMap( const ShaderLightPoint lightRaw, const GeometryInteraction geometrySurface, const MaterialInteraction materialSurface, inout LightParams light )
 {
+    uint cubeShadowIndex = lightRaw.Flags & VA_LIGHT_FLAG_CUBEMAP_MASK;
     float shadowAttenuation = 1.0;
     [branch]
-    if( light.Attenuation > 0 && lightRaw.CubeShadowIndex >= 0 )
-        shadowAttenuation *= ComputeCubeShadow( materialSurface.CubeShadows, materialSurface.GetWorldGeometricNormalVector(), lightRaw.CubeShadowIndex, light.L, light.Dist, lightRaw.Size, lightRaw.Range );
+    if( light.Attenuation > 0 && cubeShadowIndex != VA_LIGHT_FLAG_CUBEMAP_MASK )
+        shadowAttenuation *= ComputeCubeShadow( materialSurface.CubeShadows, materialSurface.GetWorldGeometricNormalVector(), cubeShadowIndex, light.L, light.Dist, lightRaw.Radius, lightRaw.Range );
     else    
     {
         float bentNoL = saturate( dot( materialSurface.BentNormal, light.L ) );
@@ -36,7 +37,7 @@ void EvaluateShadowMap( const ShaderLightPoint lightRaw, const GeometryInteracti
 }
 #endif
 
-void EvaluatePointLightsForward( const GeometryInteraction geometrySurface, const MaterialInteraction materialSurface, inout float3 radiance )
+void EvaluatePointLightsForward( const GeometryInteraction geometrySurface, const MaterialInteraction materialSurface, inout float3 radiance, const bool debugPixel )
 {
 
 #if 0
@@ -47,7 +48,7 @@ void EvaluatePointLightsForward( const GeometryInteraction geometrySurface, cons
         {
             ShaderLightPoint lightRaw = g_lightsPoint[i];
             lightRaw.Intensity  *= g_globals.PreExposureMultiplier;
-            DebugDraw3DLightViz( lightRaw.Position/*+g_globals.WorldBase.xyz*/, lightRaw.Direction, lightRaw.Size, lightRaw.Range, lightRaw.SpotInnerAngle, lightRaw.SpotOuterAngle, lightRaw.Color * lightRaw.Intensity );
+            DebugDraw3DLightViz( lightRaw.Center/*+g_globals.WorldBase.xyz*/, lightRaw.Direction, lightRaw.Radius, lightRaw.Range, lightRaw.SpotInnerAngle, lightRaw.SpotOuterAngle, lightRaw.Color * lightRaw.Intensity );
         }
     }
 #endif
@@ -64,147 +65,157 @@ void EvaluatePointLightsForward( const GeometryInteraction geometrySurface, cons
 
         [branch]
         if( light.Attenuation > 0 )
-            radiance += Material_BxDF( materialSurface, light.L, false ) * light.ColorIntensity.rgb * (light.Attenuation);
+        {
+            // float3 specularDominantDir = materialSurface.Reflected;
+            // 
+            // float3 L = light.L*light.Dist;
+            // float3 centerToRay = dot( L, specularDominantDir ) * specularDominantDir - L;
+            // float3 closestPoint = L + centerToRay * saturate( lightRaw.Radius / length(centerToRay) );
+            // 
+            // float3 specularWi = normalize( closestPoint );
+
+            if( debugPixel && ((lightRaw.Flags & VA_LIGHT_FLAG_DEBUG_DRAW) != 0) )
+            {
+                //DebugDraw3DLightViz( lightRaw.Center/*+g_globals.WorldBase.xyz*/, lightRaw.Direction, lightRaw.Radius, lightRaw.Range, lightRaw.SpotInnerAngle, lightRaw.SpotOuterAngle, lightRaw.Color * lightRaw.Intensity );
+                DebugDraw3DLine( geometrySurface.WorldspacePos, lightRaw.Center, float4( 0, 1, 1, 1.0 ) );
+                // DebugDraw3DCone( geometrySurface.WorldspacePos, lightRaw.Center, light.SubtendedHalfAngle, float4( 0, 1, 1, 1.0 ) );
+
+                // DebugDraw3DCone( geometrySurface.WorldspacePos, geometrySurface.WorldspacePos+materialSurface.Reflected, 0.01, float4( 1, 0, 0, 1.0 ) );
+                // DebugDraw3DCone( lightRaw.Center, lightRaw.Center+centerToRay*3, 0.02, float4( 0, 1, 0, 1.0 ) );
+                // DebugDraw3DSphere( geometrySurface.WorldspacePos+closestPoint, 0.5, float4( 0, 0, 1, 1.0 ) );
+            }
+
+            // const float lightDistance   = light.Dist;
+            // const float lightRadius     = lightRaw.Radius;
+            // float specularNormalization = pow( materialSurface.Roughness / clamp(materialSurface.Roughness + lightRadius / (2.0 * lightDistance), 0.0, 1.0), 2.0);
+
+            radiance += Material_BxDF( materialSurface, light.L, light.Dist, lightRaw.Radius, false ) * light.ColorIntensity.rgb * (light.Attenuation);
+        }
     }
 
 }
 
 #ifdef VA_RAYTRACING
 
-void SampleSinglePointLightDirectRT( uint lightIndex, float invProbability, const GeometryInteraction geometrySurface, const MaterialInteraction materialSurface, const float3 nextRayOrigin, float ldSample1D, float2 ldSample2D, inout float3 directRadiance, const ShaderPathPayload rayPayload, const bool debugDraw )
+// based on https://schuttejoe.github.io/post/arealightsampling/ 
+void SampleSphereLight( const float3 surfacePos, ShaderLightPoint light, const float2 ldSample2D, const bool debugDraw, out float3 outDir, out float outDistance )
 {
-    float2 disk = UniformSampleDisk( ldSample2D ); //ConcentricSampleDisk( u );
+    float3 c = light.Center;
+    float  r = light.Radius;
 
-    ShaderLightPoint lightRaw = g_lightsPoint[lightIndex];
-    lightRaw.Intensity  *= invProbability;
+    float3 o = surfacePos;
 
-#ifdef RAYTRACED_SHADOWS   // raytraced visibility
-    // disable shadow maps :)
-    lightRaw.CubeShadowIndex = -1;
-#endif
+    float3 w = c - o;
+    float distanceToCenter = max( 1e-16, length( w ) );
+    w /= distanceToCenter;
 
-    LightParams light = EvaluateLightAtSurface( lightRaw, geometrySurface.WorldspacePos, materialSurface.Normal );
+    float q = sqrt( 1.0 - (r / distanceToCenter) * (r / distanceToCenter) );    // <- optimize
 
-    // Not sure what to do about this for now - microshadowing could make sense in raytracing scenarios for micro-crevices but 
-    // AO term in most gltf models seems to be more large-scale, almost overlapping SSAO-scale and that doesn't make sense
-    // to use in path tracing.
-    // light.Attenuation *= computeMicroShadowing( light.NoL, materialSurface.DiffuseAmbientOcclusion );
+    float3x3 toWorld = ComputeOrthonormalBasis( w );
 
-#ifdef RAYTRACED_SHADOWS
-    float3 visibilityRayFrom    = nextRayOrigin;
-    float3 visibilityRayTo      = lightRaw.Position;
-    float3 visibilityRayDir     = visibilityRayTo - visibilityRayFrom;
-    float visibilityRayLength   = length( visibilityRayDir );
-    [branch]
-    if( light.Attenuation > 0 && visibilityRayLength > 0 )
-    {
+    float r0 = ldSample2D.x;
+    float r1 = ldSample2D.y;
 
-        // sphere monte carlo sampling - works for visibility and (partial) direction only at the moment (see the manual update of light.L and light.NoL below)
-        // this is a compromise between rasterized (analytical) and path traced version
-#if 1
-        {
-            visibilityRayDir /= visibilityRayLength;
-            float3 tsX, tsY;
-            ComputeOrthonormalBasis( visibilityRayDir, tsX, tsY );
-            float3 disk3D = lightRaw.Position + (disk.x * tsX + disk.y * tsY - visibilityRayDir * max( 0, sqrt( 1-disk.x*disk.x-disk.y*disk.y) ) ) * (lightRaw.Size * lightRaw.RTSizeModifier);
+    float theta = acos(1 - r0 + r0 * q);       // <- optimize? fast acos? maybe not?
+    float phi   = 2 * VA_PI * r1;
 
-            // update target (light) pos and dependencies for visibility testing
-            visibilityRayTo     = disk3D;
-            visibilityRayDir    = visibilityRayTo - visibilityRayFrom;
-            visibilityRayLength = length( visibilityRayDir );
+    float3 local = SphericalToCartesian( phi, theta );
+    float3 nwp = mul( local, toWorld );
 
-            // debugging code
-            //for( int i = 0; i < 64; i++ )
-            //{
-            //    float2 disk = UniformSampleDisk(u); //ConcentricSampleDisk( u );
-            //
-            //    float3 disk3D = lightRaw.Position + (disk.x * tsX + disk.y * tsY - visibilityRayDir * max( 0, sqrt( 1-disk.x*disk.x-disk.y*disk.y) ) ) * lightRaw.Size;
-            //
-            //    if( debugDraw )
-            //    {
-            //        DebugDraw3DLine( geometrySurface.WorldspacePos, disk3D, float4(1,1,1,0.5) );
-            //        DebugDraw3DLine( disk3D, disk3D + tsX * 0.02 * lightRaw.Size, float4(1,0,0,1) );
-            //        DebugDraw3DLine( disk3D, disk3D + tsY * 0.02 * lightRaw.Size, float4(0,1,0,1) );
-            //    }
-            //}
-        }
-#endif
+    float t = IntersectRaySphere( o, nwp, c, r );   // can be optimized (we already have center-origin in 'w')
+    if( t == 0 ) 
+        t = r;  // not sure when/if this ever happens but account for it
 
-        // (re)compute visibility ray params
-        visibilityRayDir    /= visibilityRayLength;
-        visibilityRayLength = max( 0, visibilityRayLength-lightRaw.Size );  // intentionally not using lightRaw.RTSizeModifier here - it's only supposed to rescale the disk
+    t = max( 0, t - light.ShadowRayShorten );
 
-                                                                            // setup visibility ray DXR structure
-        RayDesc visibilityRay;
-        visibilityRay.Origin      = visibilityRayFrom;
-        visibilityRay.Direction   = visibilityRayDir;
-        visibilityRay.TMin        = 0.0;
-        visibilityRay.TMax        = visibilityRayLength;
+    float3 xp = o + nwp * t;
 
-#if 1
-        ShaderMultiPassRayPayload rayPayloadViz;
-        rayPayloadViz.PathIndex         = 0;        // pass in 0 which means there was a ClosestHit; if miss, MissVisibility will set it to 1
-        rayPayloadViz.ConeSpreadAngle   = rayPayload.ConeSpreadAngle;
-        rayPayloadViz.ConeWidth         = rayPayload.ConeWidth;
-        const uint missShaderIndex      = 1;    // visibility (primary) miss shader
-        TraceRay( g_raytracingScene, RAY_FLAG_SKIP_CLOSEST_HIT_SHADER | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, ~0, 0, 0, missShaderIndex, visibilityRay, rayPayloadViz );
-        const bool visibilityRayMiss = rayPayloadViz.PathIndex != 0;
-#else
-        const bool visibilityRayMiss = true;
-#endif
+    // we don't need the normal currently
+    float3 lightSurfaceNormal = xp - c;
 
-        // update these for more accurate/softer spherical integration when 
-        light.L     = lerp( light.L, visibilityRayDir, 0.5 );   // <- meet half way there due to the way current art is tuned - this all goes out of the window in a future pass because it's hacky
-        light.NoL   = saturate( dot( materialSurface.Normal, light.L ) );
+    float hh = saturate( 1 - local.z*local.z*local.z );
 
-        if( debugDraw )
-        {
-            const float4 color = visibilityRayMiss?float4(1,1, 0, 1):float4(1,0,0,0.5);
-            DebugDraw3DLine( visibilityRayFrom, visibilityRayFrom + visibilityRayDir * visibilityRayLength, color );
-            //DebugDraw3DLightViz( lightRaw.Position, lightRaw.Direction, lightRaw.Size, lightRaw.Range, lightRaw.SpotInnerAngle, lightRaw.SpotOuterAngle, lightRaw.Color * lightRaw.Intensity );
-            DebugDraw3DText( visibilityRayFrom + visibilityRayDir * (visibilityRayLength - lightRaw.Size), float2(0,0), color, float4( lightIndex, light.Attenuation, 0, lightRaw.Size ) );
-        }
-
-        [branch]
-        if( visibilityRayMiss )
-            directRadiance += Material_BxDF( materialSurface, light.L, false ) * light.ColorIntensity.rgb * (light.Attenuation);
-    }
-
-#else
-    [branch]
-    if( light.Attenuation > 0 )
-        directRadiance += Material_BxDF( materialSurface, light.L, false ) * light.ColorIntensity.rgb * (light.Attenuation);
-#endif
-    // if( debugDraw )
-    // {
-    //     //DebugText( float4( lightRaw.Color * lightRaw.Intensity, light.Attenuation ) );
-    //     //DebugText( float4( materialSurface.Normal, 0 ) );
-    //     //geometrySurface.DebugText();
-    // }
+    outDir      = nwp;
+    outDistance = t;
 }
 
-// used for 'Next Event Estimation' - see https://developer.nvidia.com/blog/conquering-noisy-images-in-ray-tracing-with-next-event-estimation/ 
-void SamplePointLightsDirectRT( const GeometryInteraction geometrySurface, const MaterialInteraction materialSurface, const float3 nextRayOrigin, uint sampleIndex, uint pathHashSeed, float ldSample1D, float2 ldSample2D, inout float3 directRadiance, const ShaderPathPayload rayPayload, const bool debugDraw )
+// This is a weird-ish mix of classic old school attenuation done by EvaluateLightAtSurface and RT direct light sampling 
+// I should rewrite it all based on https://pbr-book.org/3ed-2018/Light_Transport_I_Surface_Reflection/Sampling_Light_Sources, (see "\pbrt-v3\src\shapes\sphere.cpp"), but at the moment this will do.
+NEESampleDesc SampleSinglePointLightDirectRT( uint lightIndex, float invProbability, const GeometryInteraction geometrySurface, const MaterialInteraction materialSurface, const float ldSample1D, const float2 ldSample2D, bool debugDraw )
 {
-    const uint totalLights = g_lighting.LightCountPoint;
-    const int treeDepth = g_lighting.LightTreeDepth;
+    NEESampleDesc retDesc = { {0,0,0}, 0, {0,0,0}, 1.0/invProbability };
+    
+    if( lightIndex >= g_lighting.LightCountPoint )
+        return retDesc;
+        
+    ShaderLightPoint lightRaw = g_lightsPoint[lightIndex];
+
+    debugDraw &= (lightRaw.Flags & VA_LIGHT_FLAG_DEBUG_DRAW) != 0;  // only display debugging info if enabled on the light itself, otherwise it overwhelms everything
+
+    lightRaw.Intensity  *= invProbability;
+
+    LightParams light = EvaluateLightAtSurface( lightRaw, geometrySurface.WorldspacePos, materialSurface.Normal );
+    // Not sure what to do about this for now - microshadowing could make sense in raytracing scenarios for micro-crevices but AO term in 
+    // most gltf models seems to be more large-scale, almost overlapping SSAO-scale and that doesn't make sense to use in path tracing.
+    // light.Attenuation *= computeMicroShadowing( light.NoL, materialSurface.DiffuseAmbientOcclusion );
+
+    [branch]
+    if( light.Attenuation <= 0 )
+        return retDesc;
+
+    float3 visibilityRayFrom    = geometrySurface.WorldspacePos;
+    float3 visibilityRayDir;
+    float visibilityRayLength;
+
+#if 0 // this could be a bit more expensive to leave in, so compiling it out
+    if( debugDraw )
+    {
+        for( int i = 0; i < 64; i++ )
+        {
+            const float2 _ldSample2D = frac( ldSample2D + R2seq(i, 0) );
+            SampleSphereLight( geometrySurface.WorldspacePos, lightRaw, _ldSample2D, debugDraw, visibilityRayDir, visibilityRayLength );
+            if( debugDraw )
+            {
+                DebugDraw3DLine( geometrySurface.WorldspacePos, geometrySurface.WorldspacePos + visibilityRayDir*visibilityRayLength, float4( 1, 0.5, 0, 1 ) );
+                DebugDraw3DSphere( geometrySurface.WorldspacePos + visibilityRayDir*visibilityRayLength, 0.02, float4( 0, 0, 1, 1 ) );
+            }
+        }
+    }
+#endif
+
+    // Get ray direction
+    SampleSphereLight( geometrySurface.WorldspacePos, lightRaw, ldSample2D, debugDraw, visibilityRayDir, visibilityRayLength );
+
+    retDesc.Direction   = visibilityRayDir;
+    retDesc.Distance    = visibilityRayLength;
+    retDesc.Radiance    = Material_BxDF( materialSurface, visibilityRayDir, false ) * light.ColorIntensity.rgb * light.Attenuation;
+
+    return retDesc;
+}
+
+struct LightSelection
+{
+    uint    Index;
+    float   InvProbability;
+};
+
+LightSelection UniformSampleLights( const GeometryInteraction geometrySurface, const MaterialInteraction materialSurface, uint sampleIndex, uint pathHashSeed, float ldSample1D, float2 ldSample2D, const bool debugDraw )
+{
+    LightSelection ret;
+    ret.Index = (uint)(ldSample1D * g_lighting.LightCountPoint);
+    ret.InvProbability = (float)g_lighting.LightCountPoint;
+    return ret;
+}
+
+LightSelection IntensitySampleLights( const GeometryInteraction geometrySurface, const MaterialInteraction materialSurface, uint sampleIndex, uint pathHashSeed, float ldSample1D, float2 ldSample2D, const bool debugDraw )
+{
+    LightSelection ret;
     const int treeBottomLevelSize   = g_lighting.LightTreeBottomLevelSize;
     const int treeBottomLevelOffset = g_lighting.LightTreeBottomLevelOffset;
-
-    //uint hashLocal = Hash32Combine( pathHashSeed, VA_PATH_TRACER_HASH_SEED_LIGHTING_SPEC );
-    //float localRand = LDSample1D( sampleIndex, hashLocal );
-
-#if 0 // uniform monte carlo integration (best case performance)
-    //float ldSample1D   = LDSample1D( sampleIndex*lightsToIntegrate + step, hashSeed1D );
-    uint lightIndex = (uint)(ldSample1D * totalLights);
-    float invProbability = totalLights;
-    {
-#elif 0 // importance sampling based only on intensity sum (slow)
     const float intensitySumAll = g_lightTree[1].IntensitySum;
-
     float nextRnd   = ldSample1D * intensitySumAll;
     float sumSoFar  = 0.0f;
-    int lightIndex = totalLights;
+    int lightIndex = g_lighting.LightCountPoint;
     float invProbability = 0;
     for( int nodeIndex = treeBottomLevelOffset; nodeIndex < (treeBottomLevelOffset+treeBottomLevelSize); nodeIndex++ )
     {
@@ -216,18 +227,23 @@ void SamplePointLightsDirectRT( const GeometryInteraction geometrySurface, const
             break;
         }
     }
-    if( lightIndex < totalLights )
-    {
-#elif 0 // best case reference: importance sampling based on weight (super-slow)
-    const float intensitySumAll = g_lightTree[1].IntensitySum;
+    ret.Index = lightIndex;
+    ret.InvProbability = invProbability;
+    return ret;
+}
 
+LightSelection WeightTestSampleLights( const GeometryInteraction geometrySurface, const MaterialInteraction materialSurface, uint sampleIndex, uint pathHashSeed, float ldSample1D, float2 ldSample2D, const bool debugDraw )
+{
+    LightSelection ret;
+    const int treeBottomLevelSize   = g_lighting.LightTreeBottomLevelSize;
+    const int treeBottomLevelOffset = g_lighting.LightTreeBottomLevelOffset;
+    const float intensitySumAll = g_lightTree[1].IntensitySum;
     float weightSumAll = 0;
     for( int nodeIndex = treeBottomLevelOffset; nodeIndex < (treeBottomLevelOffset+treeBottomLevelSize); nodeIndex++ )
         weightSumAll += Material_WeighLight( g_lightTree[nodeIndex], geometrySurface, materialSurface );
-
     float nextRnd   = ldSample1D * weightSumAll;
     float sumSoFar  = 0.0f;
-    int lightIndex = totalLights;
+    int lightIndex = g_lighting.LightCountPoint;
     float invProbability = 0;
     for( nodeIndex = treeBottomLevelOffset; nodeIndex < (treeBottomLevelOffset+treeBottomLevelSize); nodeIndex++ )
     {
@@ -240,13 +256,22 @@ void SamplePointLightsDirectRT( const GeometryInteraction geometrySurface, const
             break;
         }
     }
-    if( lightIndex < totalLights )
-    {
-#elif 1 // traverse that tree
+    ret.Index = lightIndex;
+    ret.InvProbability = invProbability;
+    return ret;
+}
+
+LightSelection TreeSampleLights( const GeometryInteraction geometrySurface, const MaterialInteraction materialSurface, uint sampleIndex, uint pathHashSeed, float ldSample1D, float2 ldSample2D, const bool debugDraw )
+{
+    LightSelection ret;
+    const int treeDepth = g_lighting.LightTreeDepth;
+    const int treeBottomLevelSize   = g_lighting.LightTreeBottomLevelSize;
+    const int treeBottomLevelOffset = g_lighting.LightTreeBottomLevelOffset;
     uint nodeIndex = 1;  // top node is 1 (0 is empty) - makes it convenient because children are always n*2+0 and n*2+1
     float probability = 1.0;
     const float weightNormalization = 0.08;        // give some random chance to 
     float localRand = ldSample1D;
+    [loop]
     for( uint depth = 0; depth < treeDepth-1; depth++ )
     {
         nodeIndex *= 2; // move indexing to next level
@@ -255,6 +280,7 @@ void SamplePointLightsDirectRT( const GeometryInteraction geometrySurface, const
         const ShaderLightTreeNode subNodeR = g_lightTree[nodeIndex+1];
 
         // maybe we could remove this branch at some point, but beware of not messing up probability
+        [branch]
         if( subNodeR.IsDummy() )
             continue;
 
@@ -270,6 +296,7 @@ void SamplePointLightsDirectRT( const GeometryInteraction geometrySurface, const
 
         lr = lr * (1-weightNormalization*2) + weightNormalization;
 
+        [branch]
         if( lr > localRand )           // '>' because if lr is zero, it guarantees that the 'right' path is taken and if lr is one it guarantees that the 'left path is taken - assuming localRand is [0, 1)
         {   // pick left path
             probability *= lr;
@@ -297,15 +324,36 @@ void SamplePointLightsDirectRT( const GeometryInteraction geometrySurface, const
     }
     float invProbability = 1.0 / probability;
     uint lightIndex = nodeIndex - treeBottomLevelOffset;
-    if( lightIndex < totalLights )
+    ret.Index = lightIndex;
+    ret.InvProbability = invProbability;
+    return ret;
+}
+
+// used for 'Next Event Estimation' - see https://developer.nvidia.com/blog/conquering-noisy-images-in-ray-tracing-with-next-event-estimation/ 
+NEESampleDesc SamplePointLightsDirectRT( const GeometryInteraction geometrySurface, const MaterialInteraction materialSurface, uint sampleIndex, uint pathHashSeed, float ldSample1D, float2 ldSample2D, const bool debugDraw )
+{
+    const uint totalLights = g_lighting.LightCountPoint;
+
+#if   0 // uniform monte carlo integration (best case performance)
+    LightSelection lightSel = UniformSampleLights( geometrySurface, materialSurface, sampleIndex, pathHashSeed, ldSample1D, ldSample2D, debugDraw );
+#elif 0 // intensity importance sampling based (only on intensity sum, super-slow because I didn't pre-compute)
+    LightSelection lightSel = IntensitySampleLights( geometrySurface, materialSurface, sampleIndex, pathHashSeed, ldSample1D, ldSample2D, debugDraw );
+#elif 0 // best case reference: importance sampling based on weight (super-slow)
+    LightSelection lightSel = WeightTestSampleLights( geometrySurface, materialSurface, sampleIndex, pathHashSeed, ldSample1D, ldSample2D, debugDraw );
+#elif 0 // light tree
+    LightSelection lightSel = TreeSampleLights( geometrySurface, materialSurface, sampleIndex, pathHashSeed, ldSample1D, ldSample2D, debugDraw );
+#else
+    LightSelection lightSel;
+
+    switch( g_pathTracerConsts.LightSamplingMode )
     {
-#else // ALL LIGHTS AT ONCE? is that even legal?
-    float invProbability = 1;
-    for( uint lightIndex = 0; lightIndex < totalLights; lightIndex++ )
-    {
-#endif
-        SampleSinglePointLightDirectRT( lightIndex, invProbability, geometrySurface, materialSurface, nextRayOrigin, ldSample1D, ldSample2D, directRadiance, rayPayload, debugDraw );
+    case( 0 ): lightSel = UniformSampleLights( geometrySurface, materialSurface, sampleIndex, pathHashSeed, ldSample1D, ldSample2D, debugDraw ); break;
+    case( 1 ): lightSel = IntensitySampleLights( geometrySurface, materialSurface, sampleIndex, pathHashSeed, ldSample1D, ldSample2D, debugDraw ); break;
+    case( 2 ): lightSel = TreeSampleLights( geometrySurface, materialSurface, sampleIndex, pathHashSeed, ldSample1D, ldSample2D, debugDraw ); break;
     }
+#endif
+
+    return SampleSinglePointLightDirectRT( lightSel.Index, lightSel.InvProbability, geometrySurface, materialSurface, ldSample1D, ldSample2D, debugDraw );
 }
 
 #endif // VA_RAYTRACING

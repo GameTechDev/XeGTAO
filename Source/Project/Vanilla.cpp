@@ -39,6 +39,8 @@
 #include "Rendering/Misc/vaZoomTool.h"
 #include "Rendering/Misc/vaImageCompareTool.h"
 
+#include "Rendering/vaPathTracer.h"
+
 //#include "Rendering/Misc/vaTextureReductionTestTool.h"
 
 #include <iomanip>
@@ -197,6 +199,45 @@ static string CameraFileName( int index )
         fileName += vaStringTools::Format( "_%d", index );
     fileName += ".camerastate";
     return fileName;
+}
+
+entt::entity MakeSphereLight( vaRenderDevice & renderDevice, vaScene & scene, const string & name, const vaVector3 & position, float size, const vaVector3 & color, const float intensity, entt::entity parentEntity )
+{
+    const vaGUID & unitSphereMeshID     = renderDevice.GetMeshManager().UnitSphere()->UIDObject_GetUID();
+    const vaGUID & emissiveMaterialID   = renderDevice.GetMaterialManager().GetDefaultEmissiveLightMaterial()->UIDObject_GetUID();
+
+    entt::entity lightEntity = scene.CreateEntity( name, vaMatrix4x4::FromScaleRotationTranslation( {size, size, size}, vaMatrix3x3::Identity, position ), parentEntity, 
+        unitSphereMeshID, emissiveMaterialID );
+
+    auto & newLight         = scene.Registry().emplace<Scene::LightPoint>( lightEntity );
+    newLight.Color          = color;
+    newLight.Intensity      = intensity;
+    newLight.FadeFactor     = 1.0f;
+    newLight.Radius         = 1.0f;
+    newLight.Range          = 5000.0f;
+    newLight.SpotInnerAngle = 0.0f;
+    newLight.SpotOuterAngle = 0.0f;
+    newLight.CastShadows    = false;
+
+    Scene::EmissiveMaterialDriver & emissiveDriver = scene.Registry().emplace<Scene::EmissiveMaterialDriver>( lightEntity );
+    emissiveDriver.ReferenceLightEntity    = Scene::EntityReference( scene.Registry(), lightEntity );
+    emissiveDriver.AssumeUniformUnitSphere = true;
+    
+    return lightEntity;
+}
+
+entt::entity MakeConnectingRod( vaRenderDevice & renderDevice, vaScene & scene, const string & name, const vaVector3 & posFrom, const vaVector3 & posTo, float radius, entt::entity parentEntity )
+{
+    const vaGUID & cylinderMeshID       = renderDevice.GetMeshManager().UnitCylinder(0)->UIDObject_GetUID();
+    vaGUID materialID   = "32f9a23c-6730-411a-86a8-d343aace8784"; // <- xxx_streetlight_metal from Bistro, or just use default // renderDevice.GetMaterialManager().GetDefaultMaterial()->UIDObject_GetUID();
+
+    vaVector3 diff = posTo-posFrom;
+    vaMatrix4x4 transform = vaMatrix4x4::Translation(0, 0, 0.5f) * vaMatrix4x4::Scaling( radius, radius, diff.Length() ) * vaMatrix4x4( vaMatrix3x3::RotateFromTo( vaVector3( 0, 0, 1 ), (diff).Normalized() ) );
+    transform = transform * vaMatrix4x4::Translation(posFrom);
+
+    entt::entity entity = scene.CreateEntity( name, transform, parentEntity, cylinderMeshID, materialID );
+
+    return entity;
 }
 
 #pragma warning ( suppress: 4505 ) // unreferenced local function has been removed
@@ -837,7 +878,7 @@ static void AddLumberyardTestLights( vaScene & scene, const vaGUID & unitSphereM
         Scene::EmissiveMaterialDriver & emissiveDriver = scene.Registry().emplace<Scene::EmissiveMaterialDriver>( lightEntity );
         emissiveDriver.EmissiveMultiplier       = {1.0f, 100.0f, 1.0f}; // this will get overridden by ReferenceLightEntity so it's for debugging only
         emissiveDriver.ReferenceLightEntity     = Scene::EntityReference( scene.Registry(), lightEntity );
-        emissiveDriver.ReferenceLightMultiplier = 30.0f;
+        emissiveDriver.AssumeUniformUnitSphere  = true;
     }
 #endif
 }
@@ -1183,7 +1224,7 @@ void VanillaSample::OnTick( float deltaTime )
                     m_currentScene = nullptr;
                 else
                 {
-                    m_currentScene = std::make_shared<vaScene>( );
+                    m_currentScene = vaScene::Create( );
                     m_currentScene->LoadJSON( vaCore::GetMediaRootDirectoryNarrow( ) + m_scenesInFolder[m_currentSceneIndex] + ".vaScene" );
                 }
             }
@@ -1206,7 +1247,7 @@ void VanillaSample::OnTick( float deltaTime )
 
         }
 
-        SimpleBistroAnimStuff( deltaTime, prevScene != m_currentScene );
+        InteractiveBistroTick( deltaTime, prevScene != m_currentScene );
 
         // LOAD FROM SCENE
 
@@ -1429,18 +1470,7 @@ void VanillaSample::UIPanelTick( vaApplicationBase & application )
         }
         m_settings.CurrentSceneName = m_scenesInFolder[currentSceneIndex];
 
-        if( m_simpleBistroAnimAvailable )
-        {
-            if( ImGui::CollapsingHeader( "Bistro animations" ) )
-            {
-                VA_GENERIC_RAII_SCOPE( ImGui::Indent();, ImGui::Unindent(); );
-                ImGui::Checkbox("Anim time advance", &m_simpleBistroAnimAdvanceTime );
-                ImGui::InputDouble( "Anim time", &m_simpleBistroAnimTime );
-                ImGui::Separator();
-                ImGui::Checkbox( "Move some objects", &m_simpleBistroAnimMoveObjs );
-                ImGui::Checkbox( "Swing the big light", &m_simpleBistroAnimSwingLight );
-            }
-        }
+        InteractiveBistroUI( application );
     }
     else
     {
@@ -1520,9 +1550,10 @@ namespace Vanilla
 
         string                                  m_statusInfo = "-";
         bool                                    m_shouldStop = false;
+        bool                                    m_divertTracerOutput = false;
 
     public:
-        AutoBenchTool( VanillaSample& parent, vaMiniScriptInterface& scriptInterface, bool ensureVisualDeterminism, bool writeReport );
+        AutoBenchTool( VanillaSample& parent, vaMiniScriptInterface& scriptInterface, bool ensureVisualDeterminism, bool writeReport, bool divertTracerOutput );
         ~AutoBenchTool( );
 
         void                                    ReportAddRowValues( const std::vector<string>& row ) { m_reportCSV.push_back( row ); FlushRowValues( ); }
@@ -1770,7 +1801,7 @@ void VanillaSample::ScriptedAutoBench( vaApplicationBase & application )
         m_miniScript.Start( [ thisPtr = this] (vaMiniScriptInterface & msi)
         {
             // this sets up some globals and also backups all the sample settings
-            AutoBenchTool autobench( *thisPtr, msi, false, true );
+            AutoBenchTool autobench( *thisPtr, msi, false, true, true );
 
             // animation stuff
             const float c_framePerSecond    = 10;
@@ -1958,21 +1989,21 @@ void VanillaSample::ScriptedDemo( vaApplicationBase & application )
     //if( !application.IsFullscreen() )
     //    ImGui::TextColored( {1.0f, 0.3f, 0.3f, 1.0f}, "!! app not fullscreen !!" );
 
-    bool effectEnabled = m_sceneMainView->Settings().AOOption == 3;
-    ImGui::Checkbox( "Enable XeGTAO", &effectEnabled );
-    if( effectEnabled )
-        m_sceneMainView->Settings().AOOption = 3;
-    else
-        m_sceneMainView->Settings().AOOption = 0;
+    // bool effectEnabled = m_sceneMainView->Settings().AOOption == 3;
+    // ImGui::Checkbox( "Enable XeGTAO", &effectEnabled );
+    // if( effectEnabled )
+    //     m_sceneMainView->Settings().AOOption = 3;
+    // else
+    //     m_sceneMainView->Settings().AOOption = 0;
 
-    VA_GENERIC_RAII_SCOPE( ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV( (float)vaMath::Frac(application.GetTimeFromStart()*0.3), 0.6f, 0.6f));, ImGui::PopStyleColor(); );
+    //VA_GENERIC_RAII_SCOPE( ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV( (float)vaMath::Frac(application.GetTimeFromStart()*0.3), 0.6f, 0.6f));, ImGui::PopStyleColor(); );
 
     if( ImGui::Button( "RUN FLYTHROUGH ('Esc' to stop)", {-1, 0} ) )
     {
         m_miniScript.Start( [ thisPtr = this, &application ] (vaMiniScriptInterface & msi)
         {
             // this sets up some globals and also backups all the sample settings
-            AutoBenchTool autobench( *thisPtr, msi, false, false );
+            AutoBenchTool autobench( *thisPtr, msi, false, false, false );
 
             // animation stuff
             autobench.SetUIStatusInfo( "Playing flythrough; hit 'F1' to show/hide UI, 'Esc' to stop" );
@@ -2001,6 +2032,83 @@ void VanillaSample::ScriptedDemo( vaApplicationBase & application )
                 // if( warmupPass )
                 //     testFrame += 3;
             }
+        } );        
+    }
+
+    if( ImGui::Button( "Record flythrough at 30fps ('Esc' to stop)", {-1, 0} ) )
+    {
+        m_miniScript.Start( [ thisPtr = this, &application ] (vaMiniScriptInterface & msi)
+        {
+            // this sets up some globals and also backups all the sample settings
+            AutoBenchTool autobench( *thisPtr, msi, true, true, false );
+
+            // animation stuff
+            autobench.SetUIStatusInfo( "Recording flythrough; hit 'F1' to show/hide UI, 'Esc' to stop" );
+
+            //vaUIManager::GetInstance( ).SetVisible( false );
+            application.SetVsync( true );
+
+            const float c_framePerSecond = 30;
+            const float c_frameDeltaTime = 1.0f / (float)c_framePerSecond;
+            const float c_totalTime = thisPtr->GetFlythroughCameraController( )->GetTotalTime( );
+            const int   c_totalFrameCount = (int)( c_totalTime / c_frameDeltaTime );
+
+            thisPtr->SetFlythroughCameraEnabled( true );
+            thisPtr->GetFlythroughCameraController( )->SetPlaySpeed( 0.0f );
+
+            // info
+            autobench.ReportAddText( "\r\nRecording a flythrough with current settings\r\n" );
+
+            // let temporal stuff stabilize
+            for( int frameCounter = 0; frameCounter < 30; frameCounter++ )
+            {
+                autobench.SetUIStatusInfo( "warmup, " + vaStringTools::Format( "%.1f%%", (float)frameCounter/(float)(30-1)*100.0f ) );
+
+                thisPtr->GetFlythroughCameraController( )->SetPlayTime( 0 );
+                if( !msi.YieldExecution( ) || autobench.GetShouldStop() || application.GetInputKeyboard()->IsKeyDown(KK_ESCAPE) ) { vaUIManager::GetInstance( ).SetVisible( true ); return; }
+            }
+
+
+            int width   = thisPtr->CurrentFrameTexture( )->GetWidth( ); // /2;
+            int height  = thisPtr->CurrentFrameTexture( )->GetHeight( ); // /2;
+            shared_ptr<vaTexture> captureTexture = vaTexture::Create2D( thisPtr->GetRenderDevice(), vaResourceFormat::R8G8B8A8_UNORM_SRGB, width, height, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::RenderTarget );
+
+            for( int frameCounter = 0; frameCounter < c_totalFrameCount; frameCounter++ )
+            {
+                thisPtr->GetFlythroughCameraController( )->SetPlayTime( frameCounter * c_frameDeltaTime );
+
+                autobench.SetUIStatusInfo( "capturing, " + vaStringTools::Format( "%.1f%%", (float)frameCounter/(float)(c_totalFrameCount-1)*100.0f ) );
+
+                if( !msi.YieldExecution( ) || autobench.GetShouldStop() || application.GetInputKeyboard()->IsKeyDown(KK_ESCAPE) ) { vaUIManager::GetInstance( ).SetVisible( true ); return; }
+
+                if( thisPtr->m_sceneMainView->Settings( ).RenderPath == vaRenderType::PathTracing && thisPtr->m_sceneMainView->PathTracer( ) != nullptr )
+                {
+                    while( !thisPtr->m_sceneMainView->PathTracer( )->FullyAccumulated() )
+                    {
+                        if( !msi.YieldExecution( ) || autobench.GetShouldStop() || application.GetInputKeyboard()->IsKeyDown(KK_ESCAPE) ) { vaUIManager::GetInstance( ).SetVisible( true ); return; }
+                    }
+                }
+
+                wstring folderName = autobench.ReportGetDir( );
+                vaFileTools::EnsureDirectoryExists( folderName );
+
+                thisPtr->GetRenderDevice( ).GetMainContext( )->StretchRect( captureTexture, thisPtr->CurrentFrameTexture( ), {0,0,0,0} );
+
+                // thisPtr->CurrentFrameTexture( )->SaveToPNGFile( *thisPtr->GetRenderDevice( ).GetMainContext( ),
+                //     folderName + vaStringTools::Format( L"frame_%05d.png", testFrame ) );
+
+                captureTexture->SaveToPNGFile( *thisPtr->GetRenderDevice( ).GetMainContext( ),
+                    folderName + vaStringTools::Format( L"frame_%05d.png", frameCounter ) );            
+            }
+
+            // for conversion to mpeg one option is to download ffmpeg and then do 
+            string conversionInfo = vaStringTools::Format( "To convert to mpeg download ffmpeg and then do 'ffmpeg -r %d -f image2 -s %dx%d -i frame_%%05d.png -vcodec libx264 -crf 13 -pix_fmt yuv420p outputvideo.mp4' ",
+                (int)c_framePerSecond, width, height );
+
+            autobench.ReportAddText( "\r\n"+ conversionInfo +"\r\n" ); 
+
+            VA_LOG_SUCCESS( conversionInfo );
+
         } );        
     }
 }
@@ -2232,94 +2340,8 @@ void VanillaSample::ScriptedTests( vaApplicationBase & application )
 
 }
 
-void VanillaSample::SimpleBistroAnimStuff( float deltaTime, bool sceneChanged )
-{
-    if( sceneChanged )
-    {
-        m_simpleBistroAnimCeilingFan    = Scene::FindFirstByName( m_currentScene->CRegistry(), "ceiling_fan_1_rotate_pivot", entt::null, true );
-        m_simpleBistroAnimSpaceship     = Scene::FindFirstByName( m_currentScene->CRegistry(), "SpaceFighter_2_animated", entt::null, true );
-        m_simpleBistroAnimSpaceshipLL   = Scene::FindFirstByName( m_currentScene->CRegistry(), "light_left", m_simpleBistroAnimSpaceship, true );
-        m_simpleBistroAnimSpaceshipLR   = Scene::FindFirstByName( m_currentScene->CRegistry(), "light_right", m_simpleBistroAnimSpaceship, true );
-        m_simpleBistroAnimCeilingLight  = Scene::FindFirstByName( m_currentScene->CRegistry(), "ceiling_lamp_03_rotate_pivot", entt::null, true );
-    }
-
-    // very simple bistro anim - if bistro loaded :)
-    if( m_simpleBistroAnimCeilingFan == entt::null && m_simpleBistroAnimSpaceship == entt::null && m_simpleBistroAnimCeilingLight == entt::null )
-    {
-        m_simpleBistroAnimAvailable = false;
-        m_simpleBistroAnimMoveObjs = false;
-        m_simpleBistroAnimSwingLight = false;
-        m_simpleBistroAnimAdvanceTime = false;
-        return;
-    }
-    else
-        m_simpleBistroAnimAvailable = true;
-
-    if( m_simpleBistroAnimAdvanceTime )
-        m_simpleBistroAnimTime += deltaTime;
-
-    entt::registry & registry = m_currentScene->Registry( );
-
-    if( m_simpleBistroAnimMoveObjs )
-    {
-        if( m_simpleBistroAnimCeilingFan != entt::null )
-        {
-            Scene::TransformLocal * trans = registry.try_get<Scene::TransformLocal>( m_simpleBistroAnimCeilingFan );
-            if( trans != nullptr ) 
-            {
-                *trans = vaMatrix4x4::RotationZ( (float)vaMath::Frac(m_simpleBistroAnimTime*0.1f) * VA_PIf * 2.0f );
-                Scene::SetTransformDirtyRecursive( registry, m_simpleBistroAnimCeilingFan );
-            }
-        }
-        if( m_simpleBistroAnimSpaceship != entt::null )
-        {
-            Scene::TransformLocal * trans = registry.try_get<Scene::TransformLocal>( m_simpleBistroAnimSpaceship );
-            if( trans != nullptr ) 
-            {
-                const float stage1 = 6.0f;
-                const float stage2 = 8.0f;
-                const float stage3 = 14.0f;
-                float animTime = (float)fmod( m_simpleBistroAnimTime, stage3 );
-                if( animTime < stage1 )
-                {
-                    float localTime = (animTime)/stage1;
-                    *trans = vaMatrix4x4::Translation( {0, -1500.0f * localTime, 0.0f } );
-                } else if( animTime < stage2 )
-                { 
-                    float localTime = (animTime-stage1) / (stage2-stage1);
-                    *trans = vaMatrix4x4::RotationZ( localTime * VA_PIf ) * vaMatrix4x4::Translation( vaMath::Lerp( vaVector3( 0, -1500.0f, 0.0f ), vaVector3( 230, -1500.0f, -180 ), localTime ) );
-            }else if( animTime < stage3 )
-            { 
-                float localTime = (animTime-stage2) / (stage3-stage2);
-                *trans = vaMatrix4x4::RotationZ( 1.0 * VA_PIf ) * vaMatrix4x4::Translation( vaMath::Lerp( vaVector3( 230, -1500.0f, -180.0f ), vaVector3( 230, 0, -180.0f ), localTime ) );
-            }
-
-            Scene::SetTransformDirtyRecursive( registry, m_simpleBistroAnimSpaceship );
-            }
-        }
-        if( m_simpleBistroAnimSpaceshipLL != entt::null && m_simpleBistroAnimSpaceshipLR != entt::null )
-        {
-            Scene::LightPoint * lightL = registry.try_get<Scene::LightPoint>( m_simpleBistroAnimSpaceshipLL );
-            Scene::LightPoint * lightR = registry.try_get<Scene::LightPoint>( m_simpleBistroAnimSpaceshipLR );
-            if( lightL != nullptr && lightR != nullptr )
-            {
-                lightL->FadeFactor = (fmod( m_simpleBistroAnimTime, 1.0 ) > 0.8f)?(1.0f):(0.0f);
-                lightR->FadeFactor = (fmod( m_simpleBistroAnimTime, 1.0 ) > 0.8f)?(1.0f):(0.0f);
-            }
-        }
-    }
-    if( m_simpleBistroAnimSwingLight && m_simpleBistroAnimCeilingLight != entt::null )
-    {
-        Scene::TransformLocal * trans = registry.try_get<Scene::TransformLocal>( m_simpleBistroAnimCeilingLight );
-        if( trans != nullptr ) 
-        {
-            *trans = vaMatrix4x4::RotationAxis( vaVector3( 0.5f, 0.7f, 0.0f ).Normalized(), sin( (float)vaMath::Frac(m_simpleBistroAnimTime*0.15f) * VA_PIf * 2.0f ) * VA_PIf * 0.4f );
-            Scene::SetTransformDirtyRecursive( registry, m_simpleBistroAnimCeilingLight );
-        }
-    }
-}
-
-AutoBenchTool::AutoBenchTool( VanillaSample & parent, vaMiniScriptInterface & scriptInterface, bool ensureVisualDeterminism, bool writeReport ) : m_parent( parent ), m_scriptInterface( scriptInterface ), m_backupCameraStorage( (int64)0, (int64)1024 ) 
+AutoBenchTool::AutoBenchTool( VanillaSample & parent, vaMiniScriptInterface & scriptInterface, bool ensureVisualDeterminism, bool writeReport, bool divertTracerOutput ) 
+    : m_parent( parent ), m_scriptInterface( scriptInterface ), m_backupCameraStorage( (int64)0, (int64)1024 ), m_divertTracerOutput( divertTracerOutput )
 { 
     // must call this so we can call any stuff allowed only on the main thread
     vaThreading::SetSyncedWithMainThread();
@@ -2338,7 +2360,8 @@ AutoBenchTool::AutoBenchTool( VanillaSample & parent, vaMiniScriptInterface & sc
     m_parent.GetApplication().SetVsync( false );
 
     // disable so we can do our own views
-    vaTracer::SetTracerViewingUIEnabled( false );
+    if( m_divertTracerOutput )
+        vaTracer::SetTracerViewingUIEnabled( false );
 
     // display script UI
     m_scriptInterface.SetUICallback( [&statusInfo = m_statusInfo, &shouldStop = m_shouldStop] 
@@ -2428,7 +2451,8 @@ AutoBenchTool::~AutoBenchTool( )
     m_parent.SetFlythroughCameraEnabled( m_backupFlythroughCameraEnabled );
     m_parent.SetRequireDeterminism( false );
 
-    vaTracer::SetTracerViewingUIEnabled( true );
+    if( m_divertTracerOutput )
+        vaTracer::SetTracerViewingUIEnabled( true );
 
     m_scriptInterface.SetUICallback( nullptr );
 
@@ -2766,6 +2790,262 @@ void AutoTuneTool::AddSearchSetting( const string & name, float * settingAddr, f
     m_settings.push_back( {name, settingAddr, rangeMin, rangeMax} );
 }
 
+struct InteractiveBistroContext
+{
+    vaRenderDevice &                        RenderDevice;       // needed for creating render objects <shrug>
+    bool                                    EnableMoveObjs      = true;
+    bool                                    EnableSwingLight    = true;
+    bool                                    EnableAdvanceTime   = false;
+    double                                  AnimTime            = 0;
+    entt::entity                            CeilingFan          = entt::null;
+    entt::entity                            Spaceship           = entt::null;
+    entt::entity                            SpaceshipLL         = entt::null;
+    entt::entity                            SpaceshipLR         = entt::null;
+    entt::entity                            CeilingLight        = entt::null;
+    entt::entity                            StatueLightParent   = entt::null;
+    
+    entt::entity                            AllLightsParent     = entt::null;
+
+    InteractiveBistroContext( vaRenderDevice & renderDevice ) : RenderDevice(renderDevice)  { }
+};
+
+void VanillaSample::InteractiveBistroUI( vaApplicationBase & application )
+{
+    if( m_interactiveBistroContext == nullptr )
+        return;
+    InteractiveBistroContext & context = *reinterpret_cast<InteractiveBistroContext*>( m_interactiveBistroContext.get() );
+
+    application;
+    int enabledLights = m_sceneRenderer->GetLighting()->GetLastLightCount();
+    if( ImGui::CollapsingHeader( ("Interactive Bistro (" + std::to_string(enabledLights) + ")###Interactive Bistro").c_str() ) )
+    {
+        VA_GENERIC_RAII_SCOPE( ImGui::Indent();, ImGui::Unindent(); );
+        ImGui::Checkbox("Anim time advance", &context.EnableAdvanceTime );
+        ImGui::InputDouble( "Anim time", &context.AnimTime );
+        ImGui::Separator();
+        ImGui::Checkbox( "Move some objects", &context.EnableMoveObjs );
+        ImGui::Checkbox( "Swing the big light", &context.EnableSwingLight );
+        ImGui::Separator();
+        if( context.AllLightsParent != entt::null && ImGui::CollapsingHeader( "Light switches" ) )
+        {
+            ImGui::Text( "Total enabled lights: %d", m_sceneRenderer->GetLighting()->GetLastLightCount() );
+            struct SPBI
+            {
+                string          Name;
+                entt::entity    Entity;
+                bool            Enabled;
+            };
+            std::vector<SPBI> SwitchableLights;
+            Scene::VisitChildren( m_currentScene->CRegistry( ), context.AllLightsParent, [ & ]( entt::entity child )
+            {
+                string nameID   = Scene::GetIDString( m_currentScene->CRegistry( ), child );
+                string name     = Scene::GetName( m_currentScene->CRegistry( ), child );
+                bool switchedOn = !m_currentScene->CRegistry( ).any_of<Scene::DisableLightingRecursiveTag>( child );
+                if( ImGui::Checkbox( ( name + "###" + nameID ).c_str( ), &switchedOn ) )
+                {
+                    if( switchedOn )
+                        m_currentScene->Registry( ).remove<Scene::DisableLightingRecursiveTag>( child );
+                    else
+                        m_currentScene->Registry( ).emplace_or_replace<Scene::DisableLightingRecursiveTag>( child );
+                }
+            } );
+        }
+        //ImGui::Checkbox( "Animate 
+        //ImGui::Separator();
+    }
+}
+
+void VanillaSample::InteractiveBistroTick( float deltaTime, bool sceneChanged )
+{
+    if( sceneChanged )
+    {
+        m_interactiveBistroContext = nullptr;
+
+        entt::entity ceilingFan = Scene::FindFirstByName( m_currentScene->CRegistry(), "ceiling_fan_1_rotate_pivot", entt::null, true );
+        
+        if( ceilingFan == entt::null )
+            return;
+
+        m_interactiveBistroContext = std::make_shared<InteractiveBistroContext>( GetRenderDevice() );
+        InteractiveBistroContext & context = *reinterpret_cast<InteractiveBistroContext*>( m_interactiveBistroContext.get() );
+
+        context.CeilingFan          = ceilingFan;
+        context.StatueLightParent   = Scene::FindFirstByName( m_currentScene->CRegistry(), "InteriorStatueLights", entt::null, true );
+        context.Spaceship           = Scene::FindFirstByName( m_currentScene->CRegistry(), "SpaceFighter_2_animated", entt::null, true );
+        context.SpaceshipLL         = Scene::FindFirstByName( m_currentScene->CRegistry(), "light_left", context.Spaceship, true );
+        context.SpaceshipLR         = Scene::FindFirstByName( m_currentScene->CRegistry(), "light_right", context.Spaceship, true );
+        context.CeilingLight        = Scene::FindFirstByName( m_currentScene->CRegistry(), "ceiling_lamp_03_rotate_pivot", entt::null, true );
+        context.AllLightsParent     = Scene::FindFirstByName( m_currentScene->CRegistry(), "Lights", entt::null, true );
+
+        if( context.StatueLightParent != entt::null )
+        {
+            Scene::TagDestroyChildren( m_currentScene->Registry(), context.StatueLightParent, true );
+            Scene::DestroyTagged(m_currentScene->Registry());
+
+#ifdef VA_GTAO_SAMPLE
+            const int       count = 20;
+            const float     intensity = 0.1f;
+            const float     size   = 0.03f;
+#else
+            const int       count = 500;
+            const float     intensity = 0.02f;
+            const float     size   = 0.012f;
+#endif
+            const float     angleOffset = 0.0f;
+            const float     totalSwirls = 4.0f;
+            const float     radius = 0.32f;
+            const float     height = 1.3f;
+            for( int i = 0; i < count; i++ )
+            {
+                float angle = angleOffset + i/float(count-1)*totalSwirls * 2.0f * VA_PIf;
+
+                vaVector3 pos = { radius * cos(angle), radius * sin(angle), height * i/float(count-1) };
+                vaVector3 col = vaColor::HSV2RGB( { i/float(count-1), 0.95f, 1.0f } );
+                //vaStringTools::Format("light_%04d", i)   // vaVector3::RandomNormal(rand).ComponentAbs( );
+                MakeSphereLight( GetRenderDevice(), *m_currentScene, vaStringTools::Format("l_%04d", i), pos, size, col, intensity, context.StatueLightParent );
+            }
+        }
+
+        m_currentScene->RegisterSimpleScript( "StringLights", m_interactiveBistroContext, [&context] ( vaScene & scene, const string & typeName, entt::entity entity, struct Scene::SimpleScript & script, float deltaTime, int64 )
+        {   deltaTime; script;
+            if( typeName != "StringLights" ) { assert( false ); return; }
+
+            if( Scene::FindFirstByName( scene.CRegistry(), "Generated", entity ) != entt::null )
+                return; // already generated, bug out!
+
+            entt::entity guidesEntity = Scene::FindFirstByName( scene.CRegistry(), "Guides", entity );
+            if( guidesEntity == entt::null )
+                return;
+            entt::entity genEntity = scene.CreateEntity( "Generated", vaMatrix4x4::Identity, entity );
+            scene.Registry().emplace<Scene::SerializationSkipTag>( genEntity );
+
+            typedef std::pair<string, vaVector3> SuspensionPointType;
+            std::vector<SuspensionPointType> suspensionPoints;
+            Scene::VisitChildren( scene.CRegistry(), guidesEntity, [&]( entt::entity entity )
+            { 
+                suspensionPoints.push_back( {Scene::GetName( scene.CRegistry(), entity ), Scene::GetWorldTransform( scene.CRegistry(), entity ).GetTranslation()} );
+            } );
+            std::sort( suspensionPoints.begin( ), suspensionPoints.end( ), [ ]( const SuspensionPointType& left, const SuspensionPointType& right ) { return left.first < right.first; } );
+
+            if( suspensionPoints.size() < 2 )
+            { scene.CreateEntity( "Not enough Guides :)", vaMatrix4x4::Identity, genEntity ); return; }
+
+            int totalLights = -1;
+            if( sscanf( script.Parameters.c_str(), "%d", &totalLights ) != 1)
+                totalLights = -1;
+            if( totalLights <= 0 || totalLights > 65535 )
+            { scene.CreateEntity( "Error parsing params", vaMatrix4x4::Identity, genEntity ); return; }
+
+#ifdef VA_GTAO_SAMPLE
+            totalLights /= 8;
+            const float lightIntensity = 0.015f;
+            const float lightSize   = 0.035f;
+#else
+            const float lightIntensity = 0.0015f;
+            const float lightSize   = 0.025f;
+#endif
+
+            const float ropeSlack = 0.15f;
+            int remainingLights = totalLights;
+            int createdLights = 0;
+
+            const float colorLoops  = 5.0f;
+
+            for( int i = 0; i < suspensionPoints.size( )-1; i++ )
+            {
+                int segmentLights = (int)(remainingLights / (float)(suspensionPoints.size( )-1-i) + 0.5f);
+                vaVector3 posFrom = suspensionPoints[i].second;
+                vaVector3 posTo = suspensionPoints[i+1].second;
+                vaVector3 lightPosPrev;
+                for( int j = 0; j < segmentLights; j++ )
+                {
+                    vaVector3 lightPos = vaVector3::Lerp( posFrom, posTo, (j + 0.5f) / (float)(segmentLights) );
+                    vaVector3 lightCol = vaColor::HSV2RGB( { vaMath::Frac( createdLights/float(totalLights-1) * colorLoops ), 1.0f, 1.0f } );
+                    lightPos.z -= (posTo-posFrom).Length() * ropeSlack * std::sinf( (j + 0.5f) / (float)(segmentLights) * VA_PIf );
+                    //vaStringTools::Format("light_%04d", i)   // vaVector3::RandomNormal(rand).ComponentAbs( );
+                    MakeSphereLight( context.RenderDevice, scene, vaStringTools::Format("l_%02di_%04d", i,j), lightPos, lightSize, lightCol, lightIntensity, genEntity );
+                    if( j == 0 )                MakeConnectingRod( context.RenderDevice, scene, "rb", posFrom, lightPos, lightSize * 0.15f, genEntity );
+                    if( j > 0 )                 MakeConnectingRod( context.RenderDevice, scene, "rc", lightPosPrev, lightPos, lightSize * 0.15f, genEntity );
+                    if( j == segmentLights-1 )  MakeConnectingRod( context.RenderDevice, scene, "re", lightPos, posTo, lightSize * 0.15f, genEntity );
+                    lightPosPrev = lightPos;
+                    createdLights++;
+                    remainingLights--;
+                }
+            }
+        }
+        );
+
+    }
+
+    if( m_interactiveBistroContext == nullptr )
+        return;
+
+    InteractiveBistroContext & context = *reinterpret_cast<InteractiveBistroContext*>( m_interactiveBistroContext.get() );
+
+    if( context.EnableAdvanceTime )
+        context.AnimTime += deltaTime;
+
+    entt::registry & registry = m_currentScene->Registry( );
+
+    if( context.EnableMoveObjs )
+    {
+        if( context.CeilingFan != entt::null )
+        {
+            Scene::TransformLocal * trans = registry.try_get<Scene::TransformLocal>( context.CeilingFan );
+            if( trans != nullptr ) 
+            {
+                *trans = vaMatrix4x4::RotationZ( (float)vaMath::Frac(context.AnimTime*0.1f) * VA_PIf * 2.0f );
+                Scene::SetTransformDirtyRecursive( registry, context.CeilingFan );
+            }
+        }
+        if( context.Spaceship != entt::null )
+        {
+            Scene::TransformLocal * trans = registry.try_get<Scene::TransformLocal>( context.Spaceship );
+            if( trans != nullptr ) 
+            {
+                const float stage1 = 6.0f;
+                const float stage2 = 8.0f;
+                const float stage3 = 14.0f;
+                float animTime = (float)fmod( context.AnimTime, stage3 );
+                if( animTime < stage1 )
+                {
+                    float localTime = (animTime)/stage1;
+                    *trans = vaMatrix4x4::Translation( {0, -1500.0f * localTime, 0.0f } );
+                } else if( animTime < stage2 )
+                { 
+                    float localTime = (animTime-stage1) / (stage2-stage1);
+                    *trans = vaMatrix4x4::RotationZ( localTime * VA_PIf ) * vaMatrix4x4::Translation( vaMath::Lerp( vaVector3( 0, -1500.0f, 0.0f ), vaVector3( 230, -1500.0f, -180 ), localTime ) );
+                }else if( animTime < stage3 )
+                { 
+                    float localTime = (animTime-stage2) / (stage3-stage2);
+                    *trans = vaMatrix4x4::RotationZ( 1.0 * VA_PIf ) * vaMatrix4x4::Translation( vaMath::Lerp( vaVector3( 230, -1500.0f, -180.0f ), vaVector3( 230, 0, -180.0f ), localTime ) );
+                }
+
+                Scene::SetTransformDirtyRecursive( registry, context.Spaceship );
+            }
+        }
+        if( context.SpaceshipLL != entt::null && context.SpaceshipLR != entt::null )
+        {
+            Scene::LightPoint * lightL = registry.try_get<Scene::LightPoint>( context.SpaceshipLL );
+            Scene::LightPoint * lightR = registry.try_get<Scene::LightPoint>( context.SpaceshipLR );
+            if( lightL != nullptr && lightR != nullptr )
+            {
+                lightL->FadeFactor = (fmod( context.AnimTime, 1.0 ) > 0.8f)?(1.0f):(0.0f);
+                lightR->FadeFactor = (fmod( context.AnimTime, 1.0 ) > 0.8f)?(1.0f):(0.0f);
+            }
+        }
+    }
+    if( context.EnableSwingLight && context.CeilingLight != entt::null )
+    {
+        Scene::TransformLocal * trans = registry.try_get<Scene::TransformLocal>( context.CeilingLight );
+        if( trans != nullptr ) 
+        {
+            *trans = vaMatrix4x4::RotationAxis( vaVector3( 0.5f, 0.7f, 0.0f ).Normalized(), sin( (float)vaMath::Frac(context.AnimTime*0.15f) * VA_PIf * 2.0f ) * VA_PIf * 0.4f );
+            Scene::SetTransformDirtyRecursive( registry, context.CeilingLight );
+        }
+    }
+}
+
 
 #define WORKSPACE( name )                                                                                                               \
     void name( vaRenderDevice & renderDevice, vaApplicationBase & application, float deltaTime, vaApplicationState applicationState );  \
@@ -2805,3 +3085,4 @@ void InitWorkspaces( )
     WORKSPACE( VanillaAssetImporter );
 #endif
 };
+

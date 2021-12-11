@@ -24,6 +24,7 @@ namespace Vanilla
 
     class vaPathTracer : public vaRenderingModule//, public vaUIPanel
     {
+    public:
         enum class Mode
         {
             StaticAccumulate,
@@ -37,26 +38,24 @@ namespace Vanilla
         shared_ptr<vaShaderLibrary>                 m_shaderLibrary                 = nullptr;
         shared_ptr<vaPixelShader>                   m_PSWriteToOutput               = nullptr;
 
-        shared_ptr<vaComputeShader>                 m_CSKickoff                     = nullptr;
+        shared_ptr<vaComputeShader>                 m_CSFinalize                    = nullptr;
         //shared_ptr<vaComputeShader>                 m_CSTickCounters                = nullptr;
 
         shared_ptr<vaTexture>                       m_radianceAccumulation;         // there's also viewspace depth stored in .w
         //shared_ptr<vaTexture>                       m_viewspaceDepth;
 
-        shared_ptr<vaRenderBuffer>                  m_pathTracerControl;
+        shared_ptr<vaRenderBuffer>                  m_pathTracerControl;            // at the moment only contains active number of paths
         shared_ptr<vaRenderBuffer>                  m_pathPayloads;
         shared_ptr<vaRenderBuffer>                  m_pathGeometryHitInfoPayloads;
-        //shared_ptr<vaRenderBuffer>                  m_pathListUnsorted;             // path indices, 0...pathCount
         shared_ptr<vaRenderBuffer>                  m_pathListSorted;               // path indices, sorted
-        shared_ptr<vaRenderBuffer>                  m_pathSortKeys;
-        //shared_ptr<vaRenderBuffer>                  m_pathSortKeysSorted;
+        shared_ptr<vaRenderBuffer>                  m_pathSortKeys;                 // also g_pathSortKeys[g_pathTracerConsts.MaxPathCount] contains current alive count, dropping with each PathTracerFinalize
 
         shared_ptr<vaGPUSort>                       m_GPUSort;
 
-        Mode                                        m_mode                          = Mode::RealTime; // Mode::StaticAccumulate;
-        int                                         m_staticAccumSampleTarget       = 512; //32768;     // stop at this number of samples (full paths) per pixel
+        Mode                                        m_mode                          = Mode::StaticAccumulate; // Mode::RealTime;
+        int                                         m_staticAccumSampleTarget       = 256; //32768;     // stop at this number of samples (full paths) per pixel
         bool                                        m_staticEnableAA                = true;
-        bool                                        m_realtimeEnableAA              = false;
+        bool                                        m_realtimeEnableAA              = true;
         bool                                        m_realtimeEnableTemporalNoise   = false;            // noise between frames
         int                                         m_realtimeAccumSampleTarget     = 1;                // stop at this number of samples (full paths) per pixel
         int                                         m_realtimeAccumDenoiseType      = 0;                // 0 - disabled, 1 - OIDN (if enabled), 2 - OptiX (if enabled), 3 - OptiX temporal (if enabled)
@@ -66,11 +65,17 @@ namespace Vanilla
         int64                                       m_accumLastShadersID            = -1;
         int                                         m_accumSampleTarget             = 0;        // determined by m_staticAccumSampleTarget or m_realtimeAccumSampleTarget based on mode
         int                                         m_accumSampleIndex              = 0;        // current number of samples (full paths) per pixel
-        int                                         m_maxBounces                    = 4;
-        constexpr static int                        c_maxBounceUpperBound           = 16;
+        bool                                        m_enableRussianRoulette         = true;
+        int                                         m_minBounces                    = 2;
+        int                                         m_maxBounces                    = 10;
+        constexpr static int                        c_maxBounceUpperBound           = 32;
         int                                         m_sampleNoiseOffset             = 0;        // always 0 in Mode::StaticAccumulate, and varies by frame in Mode::RealTime
 
         bool                                        m_enableFireflyClamp            = true;
+        float                                       m_fireflyClampThreshold         = 8.0f;
+        bool                                        m_enableNextEventEstimation     = true;
+        bool                                        m_enablePathRegularization      = true;
+        int                                         m_lightSamplingMode             = 2;        // 0 - uniform sampling; 1 - power-weighted heuristic; 2 - light tree
 
         bool                                        m_enablePerBounceSort           = true;
 
@@ -84,8 +89,6 @@ namespace Vanilla
         float                                       m_debugForcedDispatchDivergence = 0.0f;
 
         float                                       m_globalMIPOffset               = -2.0f;
-
-        bool                                        m_enablePathRegularization      = true;
 
         shared_ptr<vaRenderMesh>                    m_paintingsMesh;
         shared_ptr<vaRenderMaterial>                m_divergenceMirrorMaterial;
@@ -119,7 +122,10 @@ namespace Vanilla
     public:
         vaDrawResultFlags                           Draw( vaRenderDeviceContext & renderContext, vaDrawAttributes & drawAttributes, const shared_ptr<vaSkybox> & skybox, const shared_ptr<vaTexture> & outputColor, const shared_ptr<vaTexture> & outputDepth );
 
-        PathTracerDebugViewType &                       DebugViz( )                                             { return m_debugViz; }
+        PathTracerDebugViewType &                   DebugViz( )                                             { return m_debugViz; }
+
+        Mode                                        Mode( ) const                                           { return m_mode; }
+        bool                                        FullyAccumulated( ) const                               { return m_accumSampleIndex == m_accumSampleTarget; }
 
         void                                        UITick( vaApplicationBase & application ); // override;
 

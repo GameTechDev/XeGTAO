@@ -214,7 +214,7 @@ void vaAssetImporter::UIPanelTick( vaApplicationBase & application )
                     return;
                 }
 
-                shared_ptr<vaScene>         scene = std::make_shared<vaScene>( fileName ); //+ "_Scene" );
+                shared_ptr<vaScene>         scene = vaScene::Create( fileName ); //+ "_Scene" );
 
                 if( m_settings.DefaultDistantIBL != ""  )
                 {

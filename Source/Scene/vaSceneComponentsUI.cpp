@@ -91,12 +91,12 @@ void Scene::HandleRightClickContextMenuPopup( vaScene & scene, entt::entity enti
     {
         VA_GENERIC_RAII_SCOPE( ,ImGui::EndMenu( ););
         ImGui::TextDisabled( "Delete entity: are you really sure? There is no 'Undo'" );
-        ImGui::TextDisabled( "(Children, if any, will be unparented but not deleted)" );
+        ImGui::TextDisabled( "(ALL children will be deleted too - unparent to avoid)" );
         ImGui::Separator( );
         if( ImGui::MenuItem( "Yes, delete", NULL, false, true ) )
         {
             ImGui::CloseCurrentPopup( );
-            scene.DestroyEntity( entity, false );
+            scene.DestroyEntity( entity, true );
             return;
         }
         if( ImGui::MenuItem( "Uh oh no, cancel", NULL, false, true ) )
@@ -447,9 +447,18 @@ void LightPoint::UITick( UIArgs & uiArgs )
 
     ImGui::Separator( );
 
-    ImGui::InputFloat( "Size", &Size );
-    ImGui::InputFloat( "RTSizeModifier", &RTSizeModifier );
+
+    ImGui::InputFloat( "Radius", &Radius );
+    if( ImGui::IsItemHovered( ) ) ImGui::SetTooltip( "Local space light emitter sphere radius" );
     ImGui::InputFloat( "Range", &Range );
+    if( ImGui::IsItemHovered( ) ) ImGui::SetTooltip( "Range beyond which light emitted from this light cannot travel (not physically based, but helps with performance)" );
+
+    auto transformWorld = uiArgs.Registry.try_get<Scene::TransformWorld>( uiArgs.Entity );
+    if( transformWorld != nullptr )
+    {
+        float uniformScale = (transformWorld->GetAxisX( ).Length() + transformWorld->GetAxisY( ).Length() + transformWorld->GetAxisZ( ).Length()) / 3.0f;
+        ImGui::Text( "  World space radius: %.3f, range: %.3f", Radius * uniformScale, Range * uniformScale );
+    }
 
     bool spotLight = SpotInnerAngle != 0 || SpotOuterAngle != 0;
     if( ImGui::Checkbox( "Spotlight", &spotLight ) )
@@ -478,6 +487,16 @@ void LightPoint::UITick( UIArgs & uiArgs )
     ImGui::Separator( );
 
     ImGui::Checkbox( "CastShadows", &CastShadows );
+    if( ImGui::IsItemHovered( ) ) ImGui::SetTooltip( "Ignored for raytracing (shadows always cast)" );
+    ImGui::Checkbox( "Cast shadow ray to disk", &ShadowRayDisk );
+    if( ImGui::IsItemHovered( ) ) ImGui::SetTooltip( "Raycast visibility (shadow) to light as a disk surface (as opposed to sphere by default). Can be useful for spotlights. NOT YET CORRECTLY IMPLEMENTED" );
+    ImGui::InputFloat( "Shadow ray shorten", &ShadowRayShorten );
+    if( ImGui::IsItemHovered( ) ) ImGui::SetTooltip( "reduces ray length used for testing visibility (shadows) to avoid emitter geometry intersection, expressed in multiples of Size" );
+
+    ImGui::Separator( );
+
+    ImGui::Checkbox( "Shader debug visualization", &ShowDebugViz );
+    
 }
 
 void LightPoint::UIDraw( const entt::registry & registry, entt::entity entity, vaDebugCanvas2D & canvas2D, vaDebugCanvas3D & canvas3D )
@@ -490,7 +509,14 @@ void LightPoint::UIDraw( const entt::registry & registry, entt::entity entity, v
 
     vaVector3 position = transformWorld->GetTranslation( );
     vaVector3 direction = transformWorld->GetAxisX( ).Normalized( );
-    canvas3D.DrawLightViz( position, direction, this->Size, this->Range, std::max( 0.0001f, this->SpotInnerAngle ), std::max( 0.0001f, this->SpotOuterAngle ), this->Color );
+
+    bool spotLight = SpotInnerAngle != 0 || SpotOuterAngle != 0;
+    float innerAngle = (!spotLight)?(VA_PIf):(std::max( 0.0001f, this->SpotInnerAngle ));
+    float outerAngle = (!spotLight)?(VA_PIf):(std::max( 0.0001f, this->SpotOuterAngle ));
+
+    float uniformScale = (transformWorld->GetAxisX( ).Length() + transformWorld->GetAxisY( ).Length() + transformWorld->GetAxisZ( ).Length()) / 3.0f;
+
+    canvas3D.DrawLightViz( position, direction, this->Radius * uniformScale, this->Range * uniformScale, innerAngle, outerAngle, this->Color );
     //        canvas3D.DrawBox( *this, 0x80202020, 0x30A01010, transformWorld );
 }
 
@@ -501,7 +527,11 @@ void EmissiveMaterialDriver::UITick( UIArgs & uiArgs )
     ReferenceLightEntity.DrawUI( uiArgs, "ReferenceLight" );
 
     if( ReferenceLightEntity != entt::null )
+    {
         ImGui::InputFloat( "ReferenceLightMultiplier",  &ReferenceLightMultiplier );
+        ImGui::Checkbox( "AssumeUniformUnitSphere", &AssumeUniformUnitSphere );
+        if( ImGui::IsItemHovered( ) ) ImGui::SetTooltip( "Use this to automatically set ReferenceLightMultiplier, assuming the emitter mesh is a uniform unit sphere and material emissive color is set to {1.0, 1.0, 1.0}" );
+    }
 }
 
 void EmissiveMaterialDriver::Validate( entt::registry& , entt::entity )

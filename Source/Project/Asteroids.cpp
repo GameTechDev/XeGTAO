@@ -273,7 +273,7 @@ void Workspace01_Asteroids( vaRenderDevice & renderDevice, vaApplicationBase & a
             // we've got to register all components we're about to be using
             vaSceneComponentRegistry::RegisterComponent<AsteroidStatic>();
 
-            Scene               = std::make_shared<vaScene>( "Asteroids!!" );
+            Scene               = vaScene::Create( "Asteroids!!" );
 
             MotionWorkerNode    = std::make_shared<AsteroidsMotionWorkNode>( *Scene, AnimateAsteroids );
             Scene->Async().AddWorkNode( MotionWorkerNode );

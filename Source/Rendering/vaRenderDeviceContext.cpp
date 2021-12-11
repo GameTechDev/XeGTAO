@@ -86,6 +86,7 @@ void vaRenderDeviceContext::PostPresent( )
 
 static void UpdateRenderItemGlobals( vaRenderDeviceContext & renderContext, vaShaderItemGlobals & shaderGlobals, const vaDrawAttributes * drawAttributes, vaRenderTypeFlags renderTypeFlags )
 {
+    shaderGlobals.Validate();
     //VA_TRACE_CPU_SCOPE( UpdateRenderItemGlobals );
 
     if( drawAttributes != nullptr )
@@ -111,10 +112,13 @@ static void UpdateRenderItemGlobals( vaRenderDeviceContext & renderContext, vaSh
     }
 
     renderContext.GetRenderDevice( ).GetRenderGlobals( ).UpdateAndSetToGlobals( renderContext, shaderGlobals, drawAttributes );
+
+    shaderGlobals.Validate();
 }
 
 void vaRenderDeviceContext::BeginGraphicsItems( const vaRenderOutputs & renderOutputs, const vaDrawAttributes* drawAttributes )
 {
+    renderOutputs.Validate();
     vaRenderTypeFlags renderTypeFlags = vaRenderTypeFlags::Graphics;
 
     vaShaderItemGlobals shaderGlobals;
@@ -125,6 +129,7 @@ void vaRenderDeviceContext::BeginGraphicsItems( const vaRenderOutputs & renderOu
 
 void vaRenderDeviceContext::BeginComputeItems( const vaRenderOutputs & renderOutputs, const vaDrawAttributes * drawAttributes )
 {
+    renderOutputs.Validate();
     vaRenderTypeFlags renderTypeFlags = vaRenderTypeFlags::Compute;
 
     vaShaderItemGlobals shaderGlobals;
@@ -135,6 +140,7 @@ void vaRenderDeviceContext::BeginComputeItems( const vaRenderOutputs & renderOut
 
 void vaRenderDeviceContext::BeginRaytraceItems( const vaRenderOutputs & renderOutputs, const vaDrawAttributes* drawAttributes )
 {
+    renderOutputs.Validate();
     vaRenderTypeFlags renderTypeFlags = vaRenderTypeFlags::Compute | vaRenderTypeFlags::Raytrace;
 
     vaShaderItemGlobals shaderGlobals;

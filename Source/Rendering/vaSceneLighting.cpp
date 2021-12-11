@@ -462,10 +462,10 @@ void vaCubeShadowmap::Tick( float deltaTime, const ShaderLightPoint & lightPoint
     }
 
     bool hasChanges = m_includeDynamicObjects;
-    if( !vaVector3::NearEqual( m_lightPosition, lightPoint.Position ) || !vaMath::NearEqual( m_lightSize, lightPoint.Size ) || !vaMath::NearEqual( m_lightRange, lightPoint.Range ) )
+    if( !vaVector3::NearEqual( m_lightCenter, lightPoint.Center ) || !vaMath::NearEqual( m_lightRadius, lightPoint.Radius ) || !vaMath::NearEqual( m_lightRange, lightPoint.Range ) )
     {
-        m_lightPosition = lightPoint.Position;
-        m_lightSize     = lightPoint.Size;
+        m_lightCenter   = lightPoint.Center;
+        m_lightRadius   = lightPoint.Radius;
         m_lightRange    = lightPoint.Range;
         hasChanges      = true;
     }
@@ -590,13 +590,13 @@ vaDrawResultFlags vaCubeShadowmap::Draw( vaRenderDeviceContext & renderContext, 
     vaCameraBase cameraFrontCubeFace;
 
     // not sure why is this assert here but smaller value might not work - figure out if this is actually correct
-    assert( m_lightSize > 0.001f );
+    assert( m_lightRadius > 0.001f );
 
     cameraFrontCubeFace.SetYFOV( 90.0f / 180.0f * VA_PIf );
-    cameraFrontCubeFace.SetNearPlaneDistance( m_lightSize );
+    cameraFrontCubeFace.SetNearPlaneDistance( m_lightRadius );
     cameraFrontCubeFace.SetFarPlaneDistance( m_lightRange );
     cameraFrontCubeFace.SetViewport( vaViewport( m_cubemapSliceDSVs[0]->GetSizeX(), m_cubemapSliceDSVs[0]->GetSizeY() ) );
-    cameraFrontCubeFace.SetPosition( m_lightPosition );
+    cameraFrontCubeFace.SetPosition( m_lightCenter );
 
     vaDrawResultFlags drawResults = vaDrawResultFlags::None;
 
@@ -779,8 +779,10 @@ void vaSceneLighting::UpdateFromScene( vaScene & scene, float deltaTime, int64 t
     scene.Registry( ).view<Scene::LightPoint, Scene::TransformWorld>( ).each( [ & ]( entt::entity entity, const Scene::LightPoint & point, const Scene::TransformWorld & world )
     {
         // disabled 
-        if( point.FadeFactor == 0 || point.Intensity == 0 )
+        if( point.FadeFactor == 0 || point.Intensity == 0 || Scene::HasOrParentsHave<Scene::DisableLightingRecursiveTag>( scene.Registry(), entity ) )
             return;
+
+        float uniformScale = (world.GetAxisX( ).Length() + world.GetAxisY( ).Length() + world.GetAxisZ( ).Length()) / 3.0f;
 
         // not supported (yet)
         // assert( !point.CastShadows );
@@ -788,11 +790,11 @@ void vaSceneLighting::UpdateFromScene( vaScene & scene, float deltaTime, int64 t
         ShaderLightPoint light;
         light.Color                 = point.Color;
         light.Intensity             = point.Intensity * point.FadeFactor;
-        light.Position              = world.GetTranslation( ) - m_worldBase;
+        light.Center                = world.GetTranslation( ) - m_worldBase;
         light.Direction             = world.GetAxisX().Normalized();
-        light.Size                  = std::max( VA_EPSf, point.Size );
-        light.RTSizeModifier        = point.RTSizeModifier;
-        light.Range                 = point.Range;
+        light.Radius                = std::max( VA_EPSf, point.Radius ) * uniformScale;
+        light.ShadowRayShorten      = point.ShadowRayShorten * light.Radius;
+        light.Range                 = point.Range * uniformScale;
         light.SpotInnerAngle        = point.SpotInnerAngle;
         light.SpotOuterAngle        = point.SpotOuterAngle;
         vaColor::NormalizeLuminance( light.Color, light.Intensity );
@@ -804,10 +806,13 @@ void vaSceneLighting::UpdateFromScene( vaScene & scene, float deltaTime, int64 t
             light.SpotOuterAngle = VA_PIf;
         }
 
-        light.CubeShadowIndex       = -1;
+        // init to "no cubemap"
+        light.Flags                 = VA_LIGHT_FLAG_CUBEMAP_MASK;
+        light.Flags                |= (point.ShowDebugViz)?(VA_LIGHT_FLAG_DEBUG_DRAW):(0);
+        light.Flags                |= (point.ShadowRayDisk)?(VA_LIGHT_FLAG_SHADOW_RAY_DISK):(0);
 
-        lightPosMin = vaVector3::ComponentMin( lightPosMin, light.Position );
-        lightPosMax = vaVector3::ComponentMax( lightPosMax, light.Position );
+        lightPosMin = vaVector3::ComponentMin( lightPosMin, light.Center );
+        lightPosMax = vaVector3::ComponentMax( lightPosMax, light.Center );
         
 
         if( m_collectedPointLights.size() >= ShaderLightPoint::MaxPointLights )
@@ -827,13 +832,14 @@ void vaSceneLighting::UpdateFromScene( vaScene & scene, float deltaTime, int64 t
         ShaderLightPoint light;
         light.Color                 = vaVector3(1,1,1);
         light.Intensity             = 0.0f;
-        light.Position              = vaVector3(0,0,0);
+        light.Center                = vaVector3(0,0,0);
         light.Direction             = vaVector3(0,0,1);
-        light.Size                  = 1.0f;
-        light.RTSizeModifier        = 0;
+        light.Radius                = 1.0f;
+        light.ShadowRayShorten      = 0;
         light.Range                 = 0;
         light.SpotInnerAngle        = 0;
         light.SpotOuterAngle        = 0;
+        light.Flags                 = VA_LIGHT_FLAG_CUBEMAP_MASK;
         m_collectedPointLights.push_back( light );
         m_collectedPointLightEntities.push_back( entt::null );
     }
@@ -864,7 +870,7 @@ void vaSceneLighting::UpdateFromScene( vaScene & scene, float deltaTime, int64 t
         // generate Morton order based on the position inside the unit cube
         for( size_t i = 0; i < m_collectedPointLights.size(); i++ )
         {
-            const vaVector3 & position = m_collectedPointLights[i].Position;
+            const vaVector3 & position = m_collectedPointLights[i].Center;
 
             int x = int( (position.x - lightPosMin[0]) * scale * 1023.0f + 0.5f);
             int y = int( (position.y - lightPosMin[1]) * scale * 1023.0f + 0.5f);
@@ -902,11 +908,11 @@ void vaSceneLighting::UpdateFromScene( vaScene & scene, float deltaTime, int64 t
                 if( lightIndex < lightCount )
                 {
                     ShaderLightPoint & light = m_sortedPointLights[lightIndex];
-                    node.Center             = light.Position;
+                    node.Center             = light.Center;
                     node.UncertaintyRadius  = 0.0f;
                     node.IntensitySum       = light.Intensity * vaColor::LinearToLuminance( light.Color );
-                    node.RangeAvg           = std::max( VA_EPSf, light.Range );          // this is the range beyond which this attenuates to 0; clamp to VA_EPSf to avoid singularities
-                    node.SizeAvg            = light.Size;           // this is the light size which prevents singularities
+                    node.RangeAvg           = std::max( VA_EPSf, light.Range );     // this is the range beyond which this attenuates to 0; clamp to VA_EPSf to avoid singularities
+                    node.SizeAvg            = light.Radius;                         // this is the light size which prevents singularities
                 }
                 else
                     node.SetDummy( );
@@ -1150,10 +1156,10 @@ void vaSceneLighting::UpdateFromScene( vaScene & scene, float deltaTime, int64 t
 
             for( int i = 0; i < m_sortedPointLights.size(); i++ )
             {
-                canvas2D.DrawText3D( canvas3D.GetLastCamera( ), m_sortedPointLights[i].Position, {0, 0}, 0xFFFFFFFF, 0xFF000000, "b: %d", hitCountsBaseline[i] );
-                canvas2D.DrawText3D( canvas3D.GetLastCamera( ), m_sortedPointLights[i].Position, {0,16}, 0xFF00FF00, 0xFF000000, "r: %d", hitCountsReference[i] );
-                canvas2D.DrawText3D( canvas3D.GetLastCamera( ), m_sortedPointLights[i].Position, {0,32}, 0xFF0000FF, 0xFF000000, "d: %d", hitCountsDevelopment[i] );
-                canvas2D.DrawText3D( canvas3D.GetLastCamera( ), m_sortedPointLights[i].Position, {0,48}, 0xFFFF0000, 0xFF000000, "de: %d", hitCountsReference[i]-hitCountsDevelopment[i] );
+                canvas2D.DrawText3D( canvas3D.GetLastCamera( ), m_sortedPointLights[i].Center, {0, 0}, 0xFFFFFFFF, 0xFF000000, "b: %d", hitCountsBaseline[i] );
+                canvas2D.DrawText3D( canvas3D.GetLastCamera( ), m_sortedPointLights[i].Center, {0,16}, 0xFF00FF00, 0xFF000000, "r: %d", hitCountsReference[i] );
+                canvas2D.DrawText3D( canvas3D.GetLastCamera( ), m_sortedPointLights[i].Center, {0,32}, 0xFF0000FF, 0xFF000000, "d: %d", hitCountsDevelopment[i] );
+                canvas2D.DrawText3D( canvas3D.GetLastCamera( ), m_sortedPointLights[i].Center, {0,48}, 0xFFFF0000, 0xFF000000, "de: %d", hitCountsReference[i]-hitCountsDevelopment[i] );
             }
         }
 
@@ -1206,7 +1212,9 @@ void vaSceneLighting::UpdateFromScene( vaScene & scene, float deltaTime, int64 t
 
             cubeShadow->Tick( deltaTime, light );
 
-            light.CubeShadowIndex = (float)cubeShadow->GetStorageTextureIndex( );
+            int cubeShadowIndex = cubeShadow->GetStorageTextureIndex( );
+            light.Flags = light.Flags & ~VA_LIGHT_FLAG_CUBEMAP_MASK; // clear mask
+            light.Flags |= (cubeShadowIndex>=0)?(cubeShadowIndex & VA_LIGHT_FLAG_CUBEMAP_MASK):(VA_LIGHT_FLAG_CUBEMAP_MASK);
         }
 
         // if not in use, remove - not optimal but hey good enough for now

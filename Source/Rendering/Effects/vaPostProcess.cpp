@@ -727,55 +727,6 @@ vaDrawResultFlags vaPostProcess::GenerateMotionVectors( vaRenderDeviceContext & 
 
 #pragma warning ( disable: 4505 ) 
 
-// Foley & van Dam p593 / http://lolengine.net/blog/2013/01/13/fast-rgb-to-hsv
-static void RGB2HSV(float r, float g, float b, float &h, float &s, float &v)
-{
-    float rgb_max = std::max(r, std::max(g, b));
-    float rgb_min = std::min(r, std::min(g, b));
-    float delta = rgb_max - rgb_min;
-    s = delta / (rgb_max + 1e-20f);
-    v = rgb_max;
-
-    float hue;
-    if (r == rgb_max)
-        hue = (g - b) / (delta + 1e-20f);
-    else if (g == rgb_max)
-        hue = 2 + (b - r) / (delta + 1e-20f);
-    else
-        hue = 4 + (r - g) / (delta + 1e-20f);
-    if (hue < 0)
-        hue += 6.f;
-    h = hue * (1.f / 6.f);
-}
-
-// Foley & van Dam p593 / http://en.wikipedia.org/wiki/HSL_and_HSV
-void HSVtoRGB(float h, float s, float v, float& out_r, float& out_g, float& out_b)
-{
-    if (s == 0.0f)
-    {
-        // gray
-        out_r = out_g = out_b = v;
-        return;
-    }
-
-    h = fmodf(h, 1.0f) / (60.0f / 360.0f);
-    int   i = (int)h;
-    float f = h - (float)i;
-    float p = v * (1.0f - s);
-    float q = v * (1.0f - s * f);
-    float t = v * (1.0f - s * (1.0f - f));
-
-    switch (i)
-    {
-    case 0: out_r = v; out_g = t; out_b = p; break;
-    case 1: out_r = q; out_g = v; out_b = p; break;
-    case 2: out_r = p; out_g = v; out_b = t; break;
-    case 3: out_r = p; out_g = q; out_b = v; break;
-    case 4: out_r = t; out_g = p; out_b = v; break;
-    case 5: default: out_r = v; out_g = p; out_b = q; break;
-    }
-}
-
 uint saturate( uint input, float saturation )
 {
     saturation;

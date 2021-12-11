@@ -142,12 +142,19 @@ bool LightPoint::Serialize( vaSerializer & serializer )
 {
     VERIFY_TRUE_RETURN_ON_FALSE( LightBase::Serialize( serializer ) );
 
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "Size"          , Size           ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "RTSizeModifier", RTSizeModifier, 0.75f ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "Range"         , Range          ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "SpotInnerAngle", SpotInnerAngle ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "SpotOuterAngle", SpotOuterAngle ) );
-    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<bool >( "CastShadows"   , CastShadows    ) );
+    if( serializer.IsReading() )
+    {
+        if( !serializer.Serialize<float>( "Size"          ,     Radius           ) )
+            VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "Radius"          ,     Radius           ) );
+    }
+    else
+        VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "Radius"    ,     Radius           ) );
+
+    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "ShadowRayShorten",   ShadowRayShorten, 0.05f ) );
+    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "Range"         ,     Range          ) );
+    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "SpotInnerAngle",     SpotInnerAngle ) );
+    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "SpotOuterAngle",     SpotOuterAngle ) );
+    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<bool >( "CastShadows"   ,     CastShadows    ) );
 
     return true;
 }
@@ -157,7 +164,8 @@ bool EmissiveMaterialDriver::Serialize( SerializeArgs & args, vaSerializer & ser
     VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<vaVector3>( "EmissiveMultiplier" , EmissiveMultiplier ) );
     VERIFY_TRUE_RETURN_ON_FALSE( ReferenceLightEntity.Serialize( args, serializer, "ReferenceLightEntity" ) );
     VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<float>( "ReferenceLightMultiplier"  , ReferenceLightMultiplier ) );
-
+    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<bool>( "AssumeUniformUnitSphere", AssumeUniformUnitSphere, false ) );
+  
     return true;
 }
 

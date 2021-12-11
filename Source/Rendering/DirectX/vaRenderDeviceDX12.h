@@ -252,6 +252,8 @@ namespace Vanilla
         ComPtr<ID3D12DescriptorHeap>        m_imgui_SRVDescHeap = nullptr;
 #endif
 
+        ComPtr<ID3D12CommandSignature>      m_simpleDispatchIndirectCommandSig;
+
         vaConstantBufferViewDX12            m_nullCBV;
         vaShaderResourceViewDX12            m_nullSRV;
         vaUnorderedAccessViewDX12           m_nullUAV;
@@ -312,6 +314,8 @@ namespace Vanilla
 //        ID3D11DeviceContext *               GetImmediateRenderContext( ) const                                            { return m_deviceImmediateContext; }
         const ComPtr<ID3D12Device6> &       GetPlatformDevice( ) const                                                      { return m_device; }
         const ComPtr<ID3D12CommandQueue> &  GetCommandQueue( ) const                                                        { return m_commandQueue; }
+
+        const ComPtr<ID3D12CommandSignature> & GetDispatchIndirectCommandSig( ) const                                       { return m_simpleDispatchIndirectCommandSig; }
 
         virtual vaShaderManager &           GetShaderManager( ) override                                                    { assert(false); return *((vaShaderManager *)nullptr); }
 
@@ -409,6 +413,8 @@ namespace Vanilla
         void                                SyncGPU( bool executeAfterFrameDoneCallbacks );
         // will sync on previous frames; age can go from c_BackbufferCount to 0 where 0 means sync to current frame with a call SyncGPU(false)
         void                                SyncGPUFrame( int age );
+
+        virtual void                        SyncGPU( ) override                                                     { SyncGPU( true ); }
     };
 
     //////////////////////////////////////////////////////////////////////////

@@ -78,3 +78,13 @@ void vaRenderBuffer::Readback( void * dstData, uint64 dstDataSize )
     //Unmap( );
 }
 
+//void vaRenderBuffer::ClearUAV( vaRenderDeviceContext& renderContext, const vaVector4ui& clearValue )
+//{
+//
+//}
+//
+//vaDrawResultFlags vaRenderBuffer::ClearUAV( vaRenderDeviceContext & renderContext, uint32 clearValue )    
+//{ 
+//    return renderContext.GetRenderDevice().ClearUAV( renderContext, *this, clearValue ); 
+//}
+//

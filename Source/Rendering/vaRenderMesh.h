@@ -349,8 +349,9 @@ namespace Vanilla
         // //                                                m_constantBuffer;
         // shared_ptr<vaRenderBuffer>                      m_simpleConstantBuffers;
 
-        // meshes useful for general debugging
-        shared_ptr<vaRenderMesh>                        m_unitSphere        = nullptr;
+        // meshes useful for general debugging (at 3 levels of tessellation :) )
+        shared_ptr<vaRenderMesh>                        m_unitSphere[3]                 = { nullptr, nullptr, nullptr };
+        shared_ptr<vaRenderMesh>                        m_unitCylinder[3]               = { nullptr, nullptr, nullptr };
 
         int                                             m_constantBufferMaxCount        = 65535;
         shared_ptr<vaRenderBuffer>                      m_constantBuffer;
@@ -388,7 +389,8 @@ namespace Vanilla
         void                                            UpdateAndSetToGlobals( /*vaRenderDeviceContext & renderContext,*/ vaShaderItemGlobals & shaderItemGlobals/*, const vaDrawAttributes & drawAttributes*/ );
 
     public:
-        shared_ptr<vaRenderMesh>                        UnitSphere( );
+        shared_ptr<vaRenderMesh>                        UnitSphere( int tessLevel = 1 );
+        shared_ptr<vaRenderMesh>                        UnitCylinder( int tessLevel = 1 );
 
     protected:
         friend vaRenderDevice;

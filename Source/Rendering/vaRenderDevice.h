@@ -98,6 +98,8 @@ namespace Vanilla
 
         void                                Reset( ) { *this = vaRenderOutputs( ); }
 
+        void                                Validate( ) const;
+
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // static initializers
         static vaRenderOutputs              FromRTDepth( const std::shared_ptr<vaTexture> & renderTarget, const std::shared_ptr<vaTexture> & depthStencil = nullptr, bool updateViewport = true )
@@ -153,7 +155,6 @@ namespace Vanilla
             ret.SetRenderTargetsAndUnorderedAccessViews( numRTs, renderTargets, depthStencil, numUAVs, UAVs, updateViewport );
             return ret;
         }
-
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     };
 
@@ -225,6 +226,10 @@ namespace Vanilla
         shared_ptr<vaVertexShader>              m_vertexShaderStretchRect;
         shared_ptr<vaPixelShader>               m_pixelShaderStretchRectLinear;
         shared_ptr<vaPixelShader>               m_pixelShaderStretchRectPoint;
+        
+        // UAV clears workaround - use CSs instead of regular API because of buggy drivers (and, honestly, the API is for this is crap: https://www.gamedev.net/forums/topic/672063-d3d12-clearunorderedaccessviewfloat-fails/)
+        shared_ptr<vaComputeShader>             m_CSClearUAV_Buff_1U;
+        shared_ptr<vaComputeShader>             m_CSClearUAV_Buff_4U;
 
     protected:
 
@@ -361,6 +366,8 @@ namespace Vanilla
         void                                GetMultithreadingParams( int & outAvailableCPUThreads, int & outWorkerCount ) const;
         virtual void                        SetMultithreadingParams( int workerCount )                                  { workerCount; }
 
+        virtual void                        SyncGPU( )                                                                  = 0;
+
     private:
         friend vaApplicationBase;
         // ImGui gets drawn into the main device context ( GetMainContext() ) - this is fixed for now but could be a parameter
@@ -425,6 +432,10 @@ namespace Vanilla
         //
         // Copies srcTexture into dstTexture with stretching using requested filter and blend modes. Backups current render target and restores it after.
         virtual vaDrawResultFlags           StretchRect( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & dstTexture, const shared_ptr<vaTexture> & srcTexture, const vaVector4 & dstRect = {0,0,0,0}, const vaVector4 & srcRect = {0,0,0,0}, bool linearFilter = true, vaBlendMode blendMode = vaBlendMode::Opaque, const vaVector4 & colorMul = vaVector4( 1.0f, 1.0f, 1.0f, 1.0f ), const vaVector4 & colorAdd = vaVector4( 0.0f, 0.0f, 0.0f, 0.0f ) );
+        //
+        // "Manual" UAV clears
+        vaDrawResultFlags                   ClearUAV( vaRenderDeviceContext & renderContext, const shared_ptr<vaRenderBuffer> & buffer, const vaVector4ui & clearValue );
+        vaDrawResultFlags                   ClearUAV( vaRenderDeviceContext & renderContext, const shared_ptr<vaRenderBuffer> & buffer, uint32 clearValue );
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public:

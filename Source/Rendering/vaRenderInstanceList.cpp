@@ -422,7 +422,7 @@ void vaRenderInstanceStorage::StopAndUpload( vaRenderDeviceContext & renderConte
     assert( instanceCount <= m_instanceMaxCount );
 
     if( instanceCount > 0 )
-        m_renderConstants->CopyFrom( renderContext, *m_uploadConstants[m_currentBackbuffer], instanceCount * sizeof(ShaderInstanceConstants) );
+        m_renderConstants->CopyFrom( renderContext, *m_uploadConstants[m_currentBackbuffer], 0, 0, instanceCount * sizeof(ShaderInstanceConstants) );
 
     // advance to next for writing
     m_currentBackbuffer = (m_currentBackbuffer+1)%vaRenderDevice::c_BackbufferCount;

@@ -11,6 +11,10 @@
 #include "../vaSharedTypes.h"
 #include "../vaConversions.h"
 
+#ifdef VA_COMPILED_AS_SHADER_CODE
+#include "../vaRenderingShared.hlsl"
+#endif
+
 #ifndef VA_LIGHTING_SHARED_H
 #define VA_LIGHTING_SHARED_H
 
@@ -26,6 +30,11 @@
 #define IBL_IRRADIANCE_CUBEMAP                      1
 
 #define IBL_IRRADIANCE_SOURCE                       IBL_IRRADIANCE_CUBEMAP
+
+#define VA_LIGHT_FLAG_CUBEMAP_MASK                  (0xFFFF)        // index of the mask, or 0xFFFF for disabled
+#define VA_LIGHT_FLAG_DEBUG_DRAW                    (1 << 16)        // this is a visibility only ray - no closest hit shader; this flag serves dual purpose: miss shader clears it to indicate a miss
+#define VA_LIGHT_FLAG_SHADOW_RAY_DISK               (1 << 17)        // raycast to disk surface - otherwise raycast to sphere by default
+
 
 #ifdef VA_COMPILED_AS_SHADER_CODE
 #define VA_SHADERCOMPATIBLE_REF
@@ -59,18 +68,19 @@ struct ShaderLightPoint
     vaVector3           Color;							// stored as linear, tools should show srgb though
     float               Intensity;                      // premultiplied by exposure
 
-    vaVector3           Position;
-    float               Range;                          // distance at which it is considered that it cannot effectively contribute any light (also used for shadows)
+    vaVector3           Center;
+    float               Radius;                           // see https://youtu.be/wzIcjzKQ2BE?t=884
 
     // can be compressed to 32bit
     vaVector3           Direction;
-    float               Size;                           // useful to avoid near-infinities for when close-to-point lights, should be set to biggest acceptable value. see https://youtu.be/wzIcjzKQ2BE?t=884
+    float               Range;                          // distance at which it is considered that it cannot effectively contribute any light (also used for shadows)
     // can be compressed to 8/16bit
     float               SpotInnerAngle;                 // angle from Direction below which the spot light has the full intensity (a.k.a. inner cone angle)
     float               SpotOuterAngle;                 // angle from Direction below which the spot light intensity starts dropping (a.k.a. outer cone angle)
     
-    float               CubeShadowIndex;                // if used, index of cubemap shadow in the cubemap array texture; otherwise -1
-    float               RTSizeModifier;                 // this is used to multiply .Size for RT shadow ray testing - it is temporary and just Size will be used once emissive materials start being done differently (independent from Size)
+    uint                Flags;                          // see VA_LIGHT_FLAG_xxx - also used to store cube shadow index
+    // can be compressed to 8bit 
+    float               ShadowRayShorten;               // reduces ray length used for testing visibility (shadows) to avoid emitter geometry intersection, expressed in multiples of Size
 };
 
 struct ShaderLightTreeNode
@@ -182,8 +192,7 @@ struct ShaderLightingConstants
         float distance = VA_MAX( UncertaintyRadius, (VA_LENGTH(delta)-UncertaintyRadius) );    // this is distance to node sphere
         return IntensitySum * ShaderLightAttenuation( distance, RangeAvg, SizeAvg );
     };
-
-
+    
 #ifndef VA_COMPILED_AS_SHADER_CODE
 } // namespace Vanilla
 #endif
