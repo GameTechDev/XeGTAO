@@ -17,25 +17,20 @@
 
 namespace Vanilla
 {
-    // class vaRenderMaterialDX12 : public vaRenderMaterial
-    // {
-    //     VA_RENDERING_MODULE_MAKE_FRIENDS( );
-    // 
-    // protected:
-    // 
-    // protected:
-    //     vaRenderMaterialDX12( const vaRenderingModuleParams & params ) : vaRenderMaterial( params ) { }
-    //     ~vaRenderMaterialDX12( ) { }
-    // 
-    // public:
-    //     D3D12_RAYTRACING_GEOMETRY_DESC &                        RT_Desc( )                          { return m_RT_desc;         }
-    //     D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC &    RT_BLASBuildDesc( )                 { return m_RT_BLASBuildDesc;    }
-    //     D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO & RT_PrebuildInfo( )                  { return m_RT_prebuildInfo; }
-    //     void                                                    RT_CreateBLASDataIfNeeded( );
-    //     const shared_ptr<vaRenderBuffer> &                      RT_BLASData( )                      { return m_RT_BLASData;     }
-    //     bool                                                    RT_BLASDataDirty( ) const           { return m_RT_BLASDataDirty; }
-    //     void                                                    RT_SetBLASDataDirty( bool dirty )   { m_RT_BLASDataDirty = dirty; }
-    // };
+    class vaRenderMaterialDX12 : public vaRenderMaterial
+    {
+        VA_RENDERING_MODULE_MAKE_FRIENDS( );
+    
+    protected:
+    
+    protected:
+        vaRenderMaterialDX12( const vaRenderingModuleParams & params ) : vaRenderMaterial( params ) { }
+        ~vaRenderMaterialDX12( ) { }
+    
+    protected:
+        friend class vaRenderMaterialManagerDX12;
+        //void                            SetCallableShaderTableIndex( int index )    { m_shaderTableIndex = index; }
+    };
 
     class vaRenderMaterialManagerDX12 : public vaRenderMaterialManager
     {
@@ -68,9 +63,8 @@ namespace Vanilla
         int64                           m_callableShaderTableLastFrameIndex     = -1;
 
         // valid only between PreRenderUpdateInternal and PostRenderCleanup
-        std::vector<CallableShaders>    m_callablesTable;
-        std::unordered_map<vaFramePtr<vaShaderDataDX12>, uint32>
-                                        m_uniqueCallableLibraries;
+        std::vector<CallableShaders>    m_globalCallablesTable;     // this is per-material, with duplicates
+        std::vector<CallableShaders>    m_uniqueCallablesTable;     // these are unique, addressed into with 
 
 
     private:
@@ -91,13 +85,16 @@ namespace Vanilla
         friend class vaRaytracePSODX12;
         friend class vaRenderDeviceContextBaseDX12;
         const std::vector<vaRenderMaterialManagerDX12::CallableShaders> & 
-                                        GetCallablesTable( ) const              { return m_callablesTable; }
-        const std::unordered_map<vaFramePtr<vaShaderDataDX12>, uint32> &
-                                        GetUniqueCallableLibraries( ) const     { return m_uniqueCallableLibraries; }
+                                        GetUniqueCallablesTable( ) const        { return m_uniqueCallablesTable; }
+        //const std::unordered_map<vaFramePtr<vaShaderDataDX12>, uint32> &
+        //                                GetUniqueCallableLibraries( ) const     { return m_uniqueCallableLibraries; }
         int64                           GetCallablesTableID( ) const            { return m_callableShaderTableUniqueContentsID; }
 
     public:
     };
+
+    inline vaRenderMaterialDX12 & AsDX12( vaRenderMaterial & resource )   { return *resource.SafeCast<vaRenderMaterialDX12*>(); }
+    inline vaRenderMaterialDX12 * AsDX12( vaRenderMaterial * resource )   { return resource->SafeCast<vaRenderMaterialDX12*>(); }
 
     inline vaRenderMaterialManagerDX12 &  AsDX12( vaRenderMaterialManager & resource )   { return *resource.SafeCast<vaRenderMaterialManagerDX12*>(); }
     inline vaRenderMaterialManagerDX12 *  AsDX12( vaRenderMaterialManager * resource )   { return resource->SafeCast<vaRenderMaterialManagerDX12*>(); }

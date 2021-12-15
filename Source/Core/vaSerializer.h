@@ -29,6 +29,9 @@ namespace Vanilla
         string                  m_type      = "";
 
     protected:
+        // failed/uninitialized
+        vaSerializer( )         { }
+
         // generic
         vaSerializer( nlohmann::json && src, bool forReading );
 
@@ -48,12 +51,14 @@ namespace Vanilla
         const nlohmann::json &  JSON( ) const                                               { return m_json; }
 
     public:
-        bool                    Write( vaStream & stream );
-        bool                    Write( const string & filePath );
+        string                  Dump( ) const;                              // output everything to string
+        bool                    Write( vaStream & stream ) const;           // output everything to a stream
+        bool                    Write( const string & filePath ) const;     // output everything to a file
 
     public:
         static vaSerializer     OpenWrite( const string & type = "" )                       { return vaSerializer(type); }
-        static vaSerializer     OpenRead( const string & filePath, const string & assertType = "" );
+        static vaSerializer     OpenReadFile( const string & filePath, const string & assertType = "" );
+        static vaSerializer     OpenReadString( const string & jsonData, const string & assertType = "" );
 
     public:
         const string &          Type( ) const                                               { return m_type; }

@@ -165,6 +165,8 @@ namespace Vanilla
         const shared_ptr<vaASSAOLite> &     ASSAO( ) const                          { return m_ASSAO; }
         const shared_ptr<vaGTAO> &     	    GTAO( ) const                           { return m_GTAO; }
 
+        const shared_ptr<vaPathTracer>      PathTracer( ) const                     { return m_pathTracer; }
+
         void                                EnableSuperSampling( bool enabled, bool fastVersion );
         
         const shared_ptr<vaTexture> &       GetOutputDepth( ) const                 { return m_outputDepth; } // (m_SS!=nullptr)?(m_SS->DownsampledDepth):(m_workingDepth); }

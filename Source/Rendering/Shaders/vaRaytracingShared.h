@@ -24,25 +24,30 @@
 // Miss shader-based API path to allow for callables that support TraceRay; use VA_RAYTRACING_SHADER_MISSCALLABLES_SHADE_OFFSET and null acceleration structure to invoke; see https://microsoft.github.io/DirectX-Specs/d3d/Raytracing.html#callable-shaders
 #define VA_RAYTRACING_SHADER_MISS_CALLABLES_SHADE_OFFSET    2	// effectively, ID of the specific callable shader  (first two are for vaRaytraceItem::Miss and MissSecondary)
 
+#define VA_RAYTRACING_ENABLE_MOTION_VECTORS
+
 
 #ifndef VA_COMPILED_AS_SHADER_CODE
 namespace Vanilla
 {
 #endif
 
-    // used for individual path tracing rays or visibility rays
+    // used for individual path tracing rays or visibility rays, with custom payload
     struct ShaderMultiPassRayPayload
     {
         uint                    PathIndex;                  // a.k.a. path index; (1<31) used as a visibility flag
-        float                   ConeSpreadAngle;
-        float                   ConeWidth;      
+        // uint                    PackedConeInfo;             // PackF2( ConeSpreadAngle, ConeWidth )
+        float                   ConeSpreadAngle;            // pretty sure this can be safely packed in 16bit
+        float                   ConeWidth;
+        //vaVector3               Values;                     // holds radiance or whatever
+        uint                    PackedValues;               // holds radiance or whatever
     };
 
     // for visibility rays - not actually used at the moment to avoid shader complexity but it would be an easy optimization
     // WARNING: changing this at runtime requires C++ code rebuild due to sizeof() while setting up raytracing PSO
     struct ShaderRayPayloadGeneric
     {
-        vaVector2i              PixelPos;                   // set by caller, useful for debugging or outputting
+        vaVector2i              PixelPos;             // set by caller, useful for debugging or outputting
         float                   ConeSpreadAngle;            // set by caller, updated by callee: see RayTracingGems, Chapter 20 Texture Level of Detail Strategies for Real-Time Ray Tracing
         float                   ConeWidth;                  // set by caller, updated by callee: see RayTracingGems, Chapter 20 Texture Level of Detail Strategies for Real-Time Ray Tracing
         vaVector3               AccumulatedRadiance;        // initialized by caller, updated by callee
@@ -328,6 +333,7 @@ float3 SampleGGXVNDF( float3 Wo, float alpha_x, float alpha_y, float2 u, out flo
 // 'screenPos' is ([0, width], [0, height]) with the +0.5 center pixel offset!
 float3 ComputeScreenMotionVectors( float2 screenPos, float3 worldSpacePos, float3 previousWorldSpacePos, float2 cameraJitterDelta )
 {
+#ifdef VA_RAYTRACING_ENABLE_MOTION_VECTORS
     float4 projectedPos = mul( g_globals.ViewProj, float4( worldSpacePos.xyz, 1.0 ) );
     float depthNDC  = projectedPos.z/projectedPos.w;
     float depth     = projectedPos.w;
@@ -353,6 +359,9 @@ float3 ComputeScreenMotionVectors( float2 screenPos, float3 worldSpacePos, float
     delta.xy -= cameraJitterDelta;
 
     return delta;
+#else
+    return float3( 0, 0, 0 );
+#endif
 }
 //
 #endif // #ifdef VA_RAYTRACING

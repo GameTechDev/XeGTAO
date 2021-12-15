@@ -88,6 +88,7 @@ void vaRenderOutputs::SetRenderTarget( const std::shared_ptr<vaTexture> & render
     {
         assert( ( depthStencil->GetBindSupportFlags( ) & vaResourceBindSupportFlags::DepthStencil ) != 0 );
     }
+    Validate();
 }
 
 void vaRenderOutputs::SetUnorderedAccessViews( uint32 numUAVs, const std::shared_ptr<vaShaderResource>* UAVs, bool updateViewport )
@@ -148,11 +149,24 @@ void vaRenderOutputs::SetRenderTargetsAndUnorderedAccessViews( uint32 numRTs, co
     {
         assert( ( depthStencil->GetBindSupportFlags( ) & vaResourceBindSupportFlags::DepthStencil ) != 0 );
     }
+    Validate();
 }
 
 void vaRenderOutputs::SetRenderTargets( uint32 numRTs, const std::shared_ptr<vaTexture>* renderTargets, const std::shared_ptr<vaTexture>& depthStencil, bool updateViewport )
 {
     SetRenderTargetsAndUnorderedAccessViews( numRTs, renderTargets, depthStencil, 0, nullptr, updateViewport );
+}
+
+void vaRenderOutputs::Validate( ) const
+{
+#ifdef _DEBUG
+    for( int i = 0; i < countof(UnorderedAccessViews); i++ )
+    {  if( UnorderedAccessViews[i] != nullptr ) assert( (UnorderedAccessViews[i]->GetBindSupportFlags() & vaResourceBindSupportFlags::UnorderedAccess ) != 0 ); }
+    for( int i = 0; i < countof(RenderTargets); i++ )
+    {  if( RenderTargets[i] != nullptr ) assert( (RenderTargets[i]->GetBindSupportFlags() & vaResourceBindSupportFlags::RenderTarget ) != 0 ); }
+    if( DepthStencil != nullptr )
+        assert( (DepthStencil->GetBindSupportFlags() & vaResourceBindSupportFlags::DepthStencil ) != 0 );
+#endif
 }
 
 thread_local vaRenderDeviceThreadLocal vaRenderDevice::s_threadLocal;
@@ -624,4 +638,38 @@ void vaRenderDevice::GetMultithreadingParams( int & outAvailableCPUThreads, int 
     outAvailableCPUThreads += (int)vaTF::Executor( ).num_workers( );
 #endif
     outWorkerCount = m_multithreadedWorkerCount;
+}
+
+vaDrawResultFlags vaRenderDevice::ClearUAV( vaRenderDeviceContext & renderContext, const shared_ptr<vaRenderBuffer> & buffer, const vaVector4ui & clearValue )
+{
+    assert( false ); // codepath never tested/debugged through, sorry - test it and remove assert please :)
+    assert( !vaResourceFormatHelpers::IsFloat(buffer->GetResourceFormat()) );
+    assert( vaResourceFormatHelpers::GetChannelCount(buffer->GetResourceFormat()) == 4 );
+    if( m_CSClearUAV_Buff_4U == nullptr )
+        m_CSClearUAV_Buff_4U = vaComputeShader::CreateFromFile( *this, "vaPostProcess.hlsl", "CSClearUAV_Buff_4U", { { "VA_POSTPROCESS_CLEAR_UAV_TEX2D_4U", "" } }, true );
+    // clear data
+    PostProcessConstants consts; reinterpret_cast<vaVector4ui&>(consts.Param1) = clearValue;
+    m_PPConstants->Upload( renderContext, &consts, sizeof(consts) );
+    // setup dispatch
+    vaComputeItem computeItem;
+    computeItem.ComputeShader = m_CSClearUAV_Buff_4U;
+    computeItem.SetDispatch( (uint32)(buffer->GetElementCount() + 63) / 64 );
+    return renderContext.ExecuteSingleItem( computeItem, vaRenderOutputs::FromUAVs( buffer ), nullptr );
+}
+
+vaDrawResultFlags vaRenderDevice::ClearUAV( vaRenderDeviceContext & renderContext, const shared_ptr<vaRenderBuffer> & buffer, uint32 clearValue )
+{
+    assert( false ); // codepath never tested/debugged through, sorry - test it and remove assert please :)
+    assert( !vaResourceFormatHelpers::IsFloat(buffer->GetResourceFormat()) );
+    assert( vaResourceFormatHelpers::GetChannelCount(buffer->GetResourceFormat()) == 1 );
+    if( m_CSClearUAV_Buff_1U == nullptr )
+        m_CSClearUAV_Buff_1U = vaComputeShader::CreateFromFile( *this, "vaPostProcess.hlsl", "CSClearUAV_Buff_1U", { {"VA_POSTPROCESS_CLEAR_UAV_TEX2D_1U", ""} }, true );
+    // clear data
+    PostProcessConstants consts; reinterpret_cast<vaVector4ui&>(consts.Param1).x = clearValue;
+    m_PPConstants->Upload( renderContext, &consts, sizeof(consts) );
+    // setup dispatch
+    vaComputeItem computeItem;
+    computeItem.ComputeShader = m_CSClearUAV_Buff_1U;
+    computeItem.SetDispatch( (uint32)(buffer->GetElementCount() + 63) / 64 );
+    return renderContext.ExecuteSingleItem( computeItem, vaRenderOutputs::FromUAVs( buffer ), nullptr );
 }

@@ -8,16 +8,19 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "Rendering/vaRenderMesh.h"
-#include "Rendering/vaRenderMaterial.h"
+#include "Rendering\vaRenderMesh.h"
+#include "Rendering\vaRenderMaterial.h"
 
-#include "Core/System/vaFileTools.h"
+#include "Core\System\vaFileTools.h"
 
 #include "vaSceneComponents.h"
 #include "vaSceneComponentsUI.h"
 #include "vaSceneSystems.h"
 
 #include "Rendering/vaDebugCanvas.h"
+
+#include "IntegratedExternals\vaImguiIntegration.h"
+#include "IntegratedExternals\imgui\imgui_internal.h"
 
 using namespace Vanilla;
 
@@ -164,7 +167,7 @@ void LightPoint::Validate( entt::registry &, entt::entity )
 {
     ValidateColor( );
 
-    Size            = vaMath::Max( 1e-5f, Size );
+    Radius          = vaMath::Max( 1e-5f, Radius );
     Range           = vaMath::Max( 1e-5f, Range );
     SpotInnerAngle  = vaMath::Clamp( SpotInnerAngle, 0.0f, VA_PIf );
     SpotOuterAngle  = vaMath::Clamp( SpotOuterAngle, SpotInnerAngle, VA_PIf );
@@ -191,4 +194,22 @@ void RenderCamera::FromCameraBase( entt::registry & registry, entt::entity entit
 void RenderCamera::ToCameraBase( const entt::registry & registry, entt::entity entity, vaCameraBase & destination )
 {
     registry; entity; destination;
+}
+
+void SimpleScript::UITick( UIArgs & )
+{
+    ImGui::InputText( "TypeName", &TypeName );
+    ImGui::InputText( "Parameters", &Parameters );
+}
+
+void SimpleScript::Validate( )
+{
+//    TypeName == vaStringTools::ToLower(TypeName);
+}
+
+bool SimpleScript::Serialize( vaSerializer & serializer )
+{
+    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "TypeName", TypeName ) );
+    VERIFY_TRUE_RETURN_ON_FALSE( serializer.Serialize<string>( "Parameters", Parameters ) );
+    return true;
 }

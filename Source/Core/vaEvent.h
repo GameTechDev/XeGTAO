@@ -50,8 +50,8 @@ namespace Vanilla
         vaEvent( )                  { }
         ~vaEvent( )                 { assert( m_recursionDepth == 0 ); }
 
-        vaEvent( const vaEvent & )                  = delete;
-        vaEvent & operator = ( const vaEvent & )    = delete;
+        //vaEvent( const vaEvent & copy )                  = delete;
+        //vaEvent & operator = ( const vaEvent & )    = delete;
 
     public:
         template <typename ... ArgsType >

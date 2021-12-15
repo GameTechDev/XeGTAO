@@ -30,26 +30,31 @@ namespace Vanilla
         void                        DestroyTagged( entt::registry & registry );
         bool                        IsBeingDestroyed( const entt::registry & registry, entt::entity entity );
 
-        // For these to work, entities must have Scene::Relationsip
-        bool                        SetParent( entt::registry & registry, entt::entity child, entt::entity parent ); 
+        // For these to work, entities must have Scene::Relationsip; if maintainWorldTransform, will attempt to readjust child's local transform with regards to new parent's world to maintains previous world transform. 
+        bool                        SetParent( entt::registry & registry, entt::entity child, entt::entity parent, bool maintainWorldTransform );
         entt::entity                GetParent( const entt::registry & registry, entt::entity entity );
         bool                        CanSetParent( entt::registry & registry, entt::entity child, entt::entity parent ); 
         void                        DisconnectChildren( entt::registry & registry, entt::entity parent );
         void                        DisconnectRelationship( entt::registry & registry, entt::entity entity );
-        // TODO: templated 'CallableType' version to avoid std::function overhead; recursive option for visiting all children (children's children)
+        // Visit all entity's children but this does not recursively visit children's children (add if required)
+        // TODO: for performance, templated 'CallableType' version to avoid std::function overhead
         void                        VisitChildren( const entt::registry & registry, entt::entity entity, std::function<void( entt::entity child, int index, entt::entity parent )> visitor );
         void                        VisitChildren( const entt::registry & registry, entt::entity entity, std::function<void( entt::entity child )> visitor );
         // This will visit all the parents, and the direction is defined by 'fromRoot' (if 'true', it starts from the root and stops with the entity's parent)
         void                        VisitParents( const entt::registry & registry, entt::entity entity, std::function<void( entt::entity parent )> visitor, bool fromRoot = false );
         int                         UpdateRelationshipDepthsRecursive( entt::registry & registry, entt::entity entity );    // return max Depth
 
+        // Set (also sets dirty)
+        void                        MoveToWorld( entt::registry & registry, entt::entity entity, vaMatrix4x4 & newWorldTransform );
+
+        // Check if the entity or any of its parents recursively have ComponentType
+        template<typename ComponentType>
+        bool                        HasOrParentsHave( const entt::registry & registry, entt::entity entity );
+
         // goes through all components and add all references to the list
         void                        ListReferences( const entt::registry & registry, entt::entity entity, std::vector<Scene::EntityReference*> & referenceList );
 
-        // Copy an entity (or a subtree - 'recursive' param) from one registry to another; if 'remapUIDsAndRefs' enabled, new Scene::UID-s will be generated and all Scene::EntityReference updated
-        entt::entity                Copy( entt::registry & dstRegistry, const entt::registry & srcRegistry, entt::entity srcEntity, bool recursive );
-
-        // Search by Scene::Name; Names are not unique and don't have to be part of an entity; if entt::null then search from the root; this function is not particularly fast (there is no 'index' of names)
+        // Search by Scene::Name; Names are not unique and don't have to be part of an entity; if entt::null then search from the root; not case-sensitive; this function is not particularly fast (there is no 'index' of names)
         entt::entity                FindFirstByName( const entt::registry & registry, const string & name, entt::entity startEntity = entt::null, bool recursive = false );
 
         // If changing local transform, call this to make sure it's propagated to TransformWorld as well as child entities
@@ -57,13 +62,21 @@ namespace Vanilla
         void                        SetTransformDirtyRecursiveUnsafe( entt::registry & registry, entt::entity entity );     // same as SetTransformDirtyRecursive but does not check for relationship
 
         // Load/Save to JSON format using a hierarchical representation; entities can be skipped by returning false from the 'filter', but it will also skip their children.
-        bool                        SaveJSON( entt::registry & registry, const string & filePath, std::function<bool( entt::entity entity )> filter = nullptr );
-        bool                        LoadJSON( entt::registry & registry, const string & filePath );
+        bool                        JSONSave( entt::registry & registry, const string & filePath, std::function<bool( entt::entity entity )> filter = nullptr );
+        bool                        JSONLoad( entt::registry & registry, const string & filePath );
 
+        // Load/Save a subtree to JSON format using a hierarchical representation
+        string                      JSONSaveSubtree( entt::registry & registry, entt::entity entity );
+        int                         JSONLoadSubtree( const string & jsonData, entt::registry & registry, entt::entity parentEntity, bool regenerateUIDs = true );
+        // Test whether a text looks like a subtree JSON format
+        bool                        JSONIsSubtree( const char * text );
         // Name helpers
         const string &              GetName( const entt::registry & registry, entt::entity entity );
         string                      GetNameAndID( const entt::registry & registry, entt::entity entity );
         string                      GetIDString( const entt::registry & registry, entt::entity entity );
+        
+        // Returns Identity if no transform
+        inline vaMatrix4x4          GetWorldTransform( const entt::registry & registry, entt::entity entity )                   { auto trans = registry.try_get<Scene::TransformWorld>(entity); if( trans == nullptr ) return vaMatrix4x4::Identity; return *trans; }
 
         // reactive handling of components needed based on other components
         // template<typename ComponentType>
@@ -74,6 +87,11 @@ namespace Vanilla
         void                        UpdateTransforms( entt::registry & registry, entt::entity entity, class UniqueStaticAppendConsumeList & outBoundsDirtyList ) noexcept;
 
         void                        UIHighlight( entt::registry & registry, entt::entity entity );
+
+        // Use VisitChildren to count all children recursively (not including parent entity)
+        inline int                  CountChildren( const entt::registry & registry, entt::entity entity, bool recursive )       { int count = 0; Scene::VisitChildren( registry, entity, [&]( entt::entity child ) { count++; if(recursive) count += CountChildren( registry, child, recursive ); } ); return count; }
+        // Use VisitChildren to tag all children for destruction : you still need to DestroyTagged(registry) if you want immediate destruction
+        inline void                 TagDestroyChildren( entt::registry & registry, entt::entity entity, bool recursive )        { Scene::VisitChildren( registry, entity, [&]( entt::entity child ) { registry.emplace_or_replace<Scene::DestroyTag>( child ); if(recursive) TagDestroyChildren( registry, child, recursive ); } ); }
 
         // Allows adding entities to this list in a multithreaded way; have to reset it before use to pre-allocate storage
         // and reset values to 0.
@@ -113,7 +131,7 @@ namespace Vanilla
         //////////////////////////////////////////////////////////////////////////
 
         // since I don't know how to do a templated visitor, let's just do one overload...
-        inline void                     VisitChildren( const entt::registry& registry, entt::entity parent, std::function<void( entt::entity child )> visitor )
+        inline void                     VisitChildren( const entt::registry & registry, entt::entity parent, std::function<void( entt::entity child )> visitor )
         {
             return VisitChildren( registry, parent, [visitor](entt::entity child, int, entt::entity ) { visitor(child); } );
         }
@@ -168,5 +186,22 @@ namespace Vanilla
                 List.Append( entity );
             return !wasIn;
         }
+
+        template<typename ComponentType>
+        inline bool HasOrParentsHave( const entt::registry & registry, entt::entity entity )
+        {
+            int typeIndex = Scene::Components::TypeIndex<ComponentType>( );
+            if( typeIndex == -1 )
+            { assert( false ); return false; }
+            if( Scene::Components::Has( typeIndex, registry, entity ) )
+                return true;
+            bool retVal = false;
+            VisitParents( registry, entity, [&](entt::entity parent )
+            {
+                retVal |= Scene::Components::Has( typeIndex, registry, parent );
+            } );
+            return retVal;
+        }
+
     }
 }

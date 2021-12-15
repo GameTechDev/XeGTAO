@@ -20,7 +20,7 @@
 #define FFX_PARALLELSORT_SORT_BITS_PER_PASS		4
 #define	FFX_PARALLELSORT_SORT_BIN_COUNT			(1 << FFX_PARALLELSORT_SORT_BITS_PER_PASS)
 #define FFX_PARALLELSORT_ELEMENTS_PER_THREAD	4
-#define FFX_PARALLELSORT_THREADGROUP_SIZE		128
+#define FFX_PARALLELSORT_THREADGROUP_SIZE		256
 
 //////////////////////////////////////////////////////////////////////////
 // ParallelSort constant buffer parameters:
@@ -41,8 +41,19 @@
 		int32_t  NumBlocksPerThreadGroup;
 		uint32_t NumThreadGroups;
 		uint32_t NumThreadGroupsWithAdditionalBlocks;
+
 		uint32_t NumReduceThreadgroupPerBin;
 		uint32_t NumScanValues;
+
+        // extended by Vanilla
+        uint32_t NumThreadGroupsToRun;
+        uint32_t NumReducedThreadGroupsToRun;
+    };
+
+    struct FFX_DispatchIndirectBuffer
+    {
+        uint32_t CountScatterArgs[4];
+        uint32_t ReduceScanArgs[4];
 	};
 
 	void FFX_ParallelSort_CalculateScratchResourceSize(uint32_t MaxNumKeys, uint32_t& ScratchBufferSize, uint32_t& ReduceScratchBufferSize)
@@ -95,10 +106,20 @@
 		uint NumThreadGroupsWithAdditionalBlocks;
 		uint NumReduceThreadgroupPerBin;
 		uint NumScanValues;
-	};
+    
+        // extended by Vanilla
+        uint NumThreadGroupsToRun;
+        uint NumReducedThreadGroupsToRun;
+    };
+
+    struct FFX_DispatchIndirectBuffer
+    {
+        int4 CountScatterArgs;
+        int4 ReduceScanArgs;
+    };
 
 	groupshared uint gs_FFX_PARALLELSORT_Histogram[FFX_PARALLELSORT_THREADGROUP_SIZE * FFX_PARALLELSORT_SORT_BIN_COUNT];
-	void FFX_ParallelSort_Count_uint(uint localID, uint groupID, FFX_ParallelSortCB CBuffer, uint ShiftBit, StructuredBuffer<uint> SrcBuffer, RWStructuredBuffer<uint> SumTable)
+	void FFX_ParallelSort_Count_uint(uint localID, uint groupID, FFX_ParallelSortCB CBuffer, uint ShiftBit, StructuredBuffer<uint> SrcBuffer, RWStructuredBuffer<uint> SumTable, StructuredBuffer<uint> SrcPayload)
 	{
 		// Start by clearing our local counts in LDS
 		for (int i = 0; i < FFX_PARALLELSORT_SORT_BIN_COUNT; i++)
@@ -131,11 +152,27 @@
 
 			// Pre-load the key values in order to hide some of the read latency
 			uint srcKeys[FFX_PARALLELSORT_ELEMENTS_PER_THREAD];
-			srcKeys[0] = SrcBuffer[DataIndex];
-			srcKeys[1] = SrcBuffer[DataIndex + FFX_PARALLELSORT_THREADGROUP_SIZE];
-			srcKeys[2] = SrcBuffer[DataIndex + (FFX_PARALLELSORT_THREADGROUP_SIZE * 2)];
-			srcKeys[3] = SrcBuffer[DataIndex + (FFX_PARALLELSORT_THREADGROUP_SIZE * 3)];
+#ifdef VA_GPUSORT_FIRST_PASS_INIT_INDICES
+//            if( ShiftBit == 0 ) // first pass, init to 0, 1, ...
+            {
+			    srcKeys[0] = SrcBuffer[DataIndex];
+			    srcKeys[1] = SrcBuffer[DataIndex + FFX_PARALLELSORT_THREADGROUP_SIZE];
+			    srcKeys[2] = SrcBuffer[DataIndex + (FFX_PARALLELSORT_THREADGROUP_SIZE * 2)];
+			    srcKeys[3] = SrcBuffer[DataIndex + (FFX_PARALLELSORT_THREADGROUP_SIZE * 3)];
+            }
+#else
+//            else
+            {
+                srcKeys[0] = SrcBuffer[SrcPayload[DataIndex]];
+                srcKeys[1] = SrcBuffer[SrcPayload[DataIndex + FFX_PARALLELSORT_THREADGROUP_SIZE]];
+                srcKeys[2] = SrcBuffer[SrcPayload[DataIndex + (FFX_PARALLELSORT_THREADGROUP_SIZE * 2)]];
+                srcKeys[3] = SrcBuffer[SrcPayload[DataIndex + (FFX_PARALLELSORT_THREADGROUP_SIZE * 3)]];
+            }
+#endif
 
+#if FFX_PARALLELSORT_ELEMENTS_PER_THREAD != 4
+#error stuff below doesn't work without this set as 4
+#endif
 			for (uint i = 0; i < FFX_PARALLELSORT_ELEMENTS_PER_THREAD; i++)
 			{
 				if (DataIndex < CBuffer.NumKeys)
@@ -310,11 +347,8 @@
 	groupshared uint gs_FFX_PARALLELSORT_LocalHistogram[FFX_PARALLELSORT_SORT_BIN_COUNT];
 	// Scratch area for algorithm
 	groupshared uint gs_FFX_PARALLELSORT_LDSScratch[FFX_PARALLELSORT_THREADGROUP_SIZE];
-	void FFX_ParallelSort_Scatter_uint(uint localID, uint groupID, FFX_ParallelSortCB CBuffer, uint ShiftBit, StructuredBuffer<uint> SrcBuffer, RWStructuredBuffer<uint> DstBuffer, RWStructuredBuffer<uint> SumTable
-#ifdef kRS_ValueCopy
-										,StructuredBuffer<uint> SrcPayload, RWStructuredBuffer<uint> DstPayload
-#endif // kRS_ValueCopy
-	)
+	void FFX_ParallelSort_Scatter_uint(uint localID, uint groupID, FFX_ParallelSortCB CBuffer, uint ShiftBit, StructuredBuffer<uint> SrcBuffer, /*RWStructuredBuffer<uint> DstBuffer, */
+        RWStructuredBuffer<uint> SumTable, StructuredBuffer<uint> SrcPayload, RWStructuredBuffer<uint> DstPayload )
 	{
 		// Load the sort bin threadgroup offsets into LDS for faster referencing
 		if (localID < FFX_PARALLELSORT_SORT_BIN_COUNT)
@@ -346,32 +380,33 @@
 		{
 			uint DataIndex = BlockIndex;
 			
-			// Pre-load the key values in order to hide some of the read latency
-			uint srcKeys[FFX_PARALLELSORT_ELEMENTS_PER_THREAD];
-			srcKeys[0] = SrcBuffer[DataIndex];
-			srcKeys[1] = SrcBuffer[DataIndex + FFX_PARALLELSORT_THREADGROUP_SIZE];
-			srcKeys[2] = SrcBuffer[DataIndex + (FFX_PARALLELSORT_THREADGROUP_SIZE * 2)];
-			srcKeys[3] = SrcBuffer[DataIndex + (FFX_PARALLELSORT_THREADGROUP_SIZE * 3)];
-
-#ifdef kRS_ValueCopy
+//#ifdef kRS_ValueCopy
 			uint srcValues[FFX_PARALLELSORT_ELEMENTS_PER_THREAD];
-#ifdef kRS_InitValueAsIndex
-			if( ShiftBit == 0 )
-			{
-				srcValues[0] = DataIndex;
-				srcValues[1] = DataIndex + FFX_PARALLELSORT_THREADGROUP_SIZE;
-				srcValues[2] = DataIndex + (FFX_PARALLELSORT_THREADGROUP_SIZE * 2);
-				srcValues[3] = DataIndex + (FFX_PARALLELSORT_THREADGROUP_SIZE * 3);
-			}
-			else
+#ifdef VA_GPUSORT_FIRST_PASS_INIT_INDICES
+            //if( ShiftBit == 0 ) // first pass, init to 0, 1, ...
+            {
+                srcValues[0] = DataIndex;
+                srcValues[1] = DataIndex + FFX_PARALLELSORT_THREADGROUP_SIZE;
+                srcValues[2] = DataIndex + (FFX_PARALLELSORT_THREADGROUP_SIZE * 2);
+                srcValues[3] = DataIndex + (FFX_PARALLELSORT_THREADGROUP_SIZE * 3);
+            }
+            //else
+#else
+            {
+                srcValues[0] = SrcPayload[DataIndex];
+			    srcValues[1] = SrcPayload[DataIndex + FFX_PARALLELSORT_THREADGROUP_SIZE];
+			    srcValues[2] = SrcPayload[DataIndex + (FFX_PARALLELSORT_THREADGROUP_SIZE * 2)];
+			    srcValues[3] = SrcPayload[DataIndex + (FFX_PARALLELSORT_THREADGROUP_SIZE * 3)];
+            }
 #endif
-			{
-				srcValues[0] = SrcPayload[DataIndex];
-				srcValues[1] = SrcPayload[DataIndex + FFX_PARALLELSORT_THREADGROUP_SIZE];
-				srcValues[2] = SrcPayload[DataIndex + (FFX_PARALLELSORT_THREADGROUP_SIZE * 2)];
-				srcValues[3] = SrcPayload[DataIndex + (FFX_PARALLELSORT_THREADGROUP_SIZE * 3)];
-			}
-#endif // kRS_ValueCopy
+//#endif // kRS_ValueCopy
+
+            // Pre-load the key values in order to hide some of the read latency
+            uint srcKeys[FFX_PARALLELSORT_ELEMENTS_PER_THREAD];
+            srcKeys[0] = SrcBuffer[srcValues[0]];//SrcBuffer[DataIndex];
+            srcKeys[1] = SrcBuffer[srcValues[1]];//SrcBuffer[DataIndex + FFX_PARALLELSORT_THREADGROUP_SIZE];
+            srcKeys[2] = SrcBuffer[srcValues[2]];//SrcBuffer[DataIndex + (FFX_PARALLELSORT_THREADGROUP_SIZE * 2)];
+            srcKeys[3] = SrcBuffer[srcValues[3]];//SrcBuffer[DataIndex + (FFX_PARALLELSORT_THREADGROUP_SIZE * 3)];
 
 			for (int i = 0; i < FFX_PARALLELSORT_ELEMENTS_PER_THREAD; i++)
 			{
@@ -380,9 +415,9 @@
 					gs_FFX_PARALLELSORT_LocalHistogram[localID] = 0;
 
 				uint localKey = (DataIndex < CBuffer.NumKeys ? srcKeys[i] : 0xffffffff);
-#ifdef kRS_ValueCopy
+//#ifdef kRS_ValueCopy
 				uint localValue = (DataIndex < CBuffer.NumKeys ? srcValues[i] : 0);
-#endif // kRS_ValueCopy
+//#endif // kRS_ValueCopy
 
 				// Sort the keys locally in LDS
 				for (uint bitShift = 0; bitShift < FFX_PARALLELSORT_SORT_BITS_PER_PASS; bitShift += 2)
@@ -425,7 +460,7 @@
 					// Wait for everyone to catch up
 					GroupMemoryBarrierWithGroupSync();
 
-#ifdef kRS_ValueCopy
+//#ifdef kRS_ValueCopy
 					// Re-arrange the values if we have them (store, sync, load)
 					gs_FFX_PARALLELSORT_LDSSums[keyOffset] = localValue;
 					GroupMemoryBarrierWithGroupSync();
@@ -433,7 +468,7 @@
 
 					// Wait for everyone to catch up
 					GroupMemoryBarrierWithGroupSync();
-#endif // kRS_ValueCopy
+//#endif // kRS_ValueCopy
 				}
 
 				// Need to recalculate the keyIndex on this thread now that values have been copied around the thread group
@@ -466,11 +501,11 @@
 
 				if (totalOffset < CBuffer.NumKeys)
 				{
-					DstBuffer[totalOffset] = localKey;
+					//DstBuffer[totalOffset] = localKey;
 
-#ifdef kRS_ValueCopy
+//#ifdef kRS_ValueCopy
 					DstPayload[totalOffset] = localValue;
-#endif // kRS_ValueCopy
+//#endif // kRS_ValueCopy
 				}
 
 				// Wait for everyone to catch up

@@ -52,6 +52,64 @@ vaRenderingModule * vaRenderingModuleRegistrar::CreateModule( const std::string 
     return ret;
 }
 
-//void vaRenderingTools::IHO_Draw( ) 
-//{ 
-//}
+void vaShaderItemGlobals::Validate( ) const
+{
+#ifdef _DEBUG
+    for( int i = 0; i < ShaderResourceViews.size(); i++ )
+    {  if( ShaderResourceViews[i] != nullptr ) assert( (ShaderResourceViews[i]->GetBindSupportFlags() & vaResourceBindSupportFlags::ShaderResource ) != 0 ); }
+    for( int i = 0; i < ConstantBuffers.size(); i++ )
+    {  if( ConstantBuffers[i] != nullptr ) assert( (ConstantBuffers[i]->GetBindSupportFlags() & vaResourceBindSupportFlags::ConstantBuffer ) != 0 ); }
+    for( int i = 0; i < UnorderedAccessViews.size(); i++ )
+    {  if( UnorderedAccessViews[i] != nullptr ) assert( (UnorderedAccessViews[i]->GetBindSupportFlags() & vaResourceBindSupportFlags::ShaderResource ) != 0 ); }
+    if( RaytracingAcceleationStructSRV != nullptr )
+        assert( (RaytracingAcceleationStructSRV->GetBindSupportFlags() & vaResourceBindSupportFlags::RaytracingAccelerationStructure) != 0 );
+#endif
+}
+
+void vaGraphicsItem::Validate( ) const
+{
+#ifdef _DEBUG
+    for( int i = 0; i < ShaderResourceViews.size(); i++ )
+    {  if( ShaderResourceViews[i] != nullptr ) assert( (ShaderResourceViews[i]->GetBindSupportFlags() & vaResourceBindSupportFlags::ShaderResource ) != 0 ); }
+    for( int i = 0; i < ConstantBuffers.size(); i++ )
+    {  if( ConstantBuffers[i] != nullptr ) assert( (ConstantBuffers[i]->GetBindSupportFlags() & vaResourceBindSupportFlags::ConstantBuffer ) != 0 ); }
+    if( VertexBuffer != nullptr )
+        assert( (VertexBuffer->GetBindSupportFlags() & vaResourceBindSupportFlags::VertexBuffer) != 0 );
+    if( IndexBuffer != nullptr )
+        assert( (IndexBuffer->GetBindSupportFlags() & vaResourceBindSupportFlags::IndexBuffer) != 0 );
+#endif
+}
+
+void vaComputeItem::Validate( ) const
+{
+    assert( ComputeShader != nullptr );
+    for( int i = 0; i < ShaderResourceViews.size(); i++ )
+    {  if( ShaderResourceViews[i] != nullptr ) assert( (ShaderResourceViews[i]->GetBindSupportFlags() & vaResourceBindSupportFlags::ShaderResource ) != 0 ); }
+    for( int i = 0; i < ConstantBuffers.size(); i++ )
+    {  if( ConstantBuffers[i] != nullptr ) assert( (ConstantBuffers[i]->GetBindSupportFlags() & vaResourceBindSupportFlags::ConstantBuffer ) != 0 ); }
+
+    switch( ComputeType )
+    {
+    case( vaComputeItem::Dispatch ): 
+        // No threads will be dispatched, because at least one of {ThreadGroupCountX, ThreadGroupCountY, ThreadGroupCountZ} is 0. This is probably not intentional?
+        assert( DispatchParams.ThreadGroupCountX != 0 && DispatchParams.ThreadGroupCountY != 0 && DispatchParams.ThreadGroupCountZ != 0 );
+        break;
+    case( vaComputeItem::DispatchIndirect ): 
+    {   
+        assert( DispatchIndirectParams.BufferForArgs != nullptr );
+    } break;
+    default:
+        assert( false );
+        break;
+    }
+
+}
+
+void vaRaytraceItem::Validate( ) const
+{
+    assert( RayGen != "" );
+    for( int i = 0; i < ShaderResourceViews.size(); i++ )
+    {  if( ShaderResourceViews[i] != nullptr ) assert( (ShaderResourceViews[i]->GetBindSupportFlags() & vaResourceBindSupportFlags::ShaderResource ) != 0 ); }
+    for( int i = 0; i < ConstantBuffers.size(); i++ )
+    {  if( ConstantBuffers[i] != nullptr ) assert( (ConstantBuffers[i]->GetBindSupportFlags() & vaResourceBindSupportFlags::ConstantBuffer ) != 0 ); }
+}

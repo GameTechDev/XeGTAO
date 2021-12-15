@@ -123,7 +123,8 @@ void vaGTAO::UIPanelTick( vaApplicationBase & )
         if( m_enableReferenceRTAO && m_outputBentNormals )
         {
             m_enableReferenceRTAO = false;
-            VA_LOG( "Sorry, ground truth for bent normals path not implemented yet" );
+            VA_LOG_WARNING( "Sorry, ground truth for bent normals path not implemented yet." );
+            VA_LOG_WARNING( "Please switch to 'XeGTAO' only (without bent normals) to enable RTAO!" );
         }
 
         if( !m_enableReferenceRTAO )
@@ -468,6 +469,7 @@ vaDrawResultFlags vaGTAO::ComputeReferenceRTAO( vaRenderDeviceContext & renderCo
     raytraceAO.ShaderLibrary            = m_referenceRTAOShaders;
     raytraceAO.RayGen        = "AORaygen";
     raytraceAO.AnyHit        = ""; // if empty, material hit test will be used
+    raytraceAO.MaterialAnyHit= "GenericAlphaTest";
     raytraceAO.ClosestHit    = "AOClosestHit";
     raytraceAO.Miss          = "AOMiss";
     raytraceAO.MaxRecursionDepth        = 1; // <-> switched to looped path tracing approach, no recursion needed <-> REF_RTAO_MAX_BOUNCES+2;   // +2 is because first bounce is the primary camera ray (not yet computing AO)

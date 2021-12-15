@@ -7,6 +7,8 @@
     <LocalIBLNormalBasedBias>0</LocalIBLNormalBasedBias>
     <LocalIBLBasedBias>1</LocalIBLBasedBias>
     <IndexOfRefraction>1.5</IndexOfRefraction>
+    <NEETranslucent>true</NEETranslucent>
+    <NEETranslucentAlpha>0.2</NEETranslucentAlpha>
     <LayerMode>3</LayerMode>
     <DecalSortOrder>0</DecalSortOrder>
     <Class>SpecGlossPBR</Class>
@@ -18,7 +20,7 @@
             <Properties>
                 <Value>
                     <type>4</type>
-                    <Value>{0.603827,0.603827,0.603827,0.080000}</Value>
+                    <Value>{0.603827,0.603827,0.603827,0.200000}</Value>
                 </Value>
                 <Min>
                     <type>4</type>
@@ -123,7 +125,7 @@
             <Properties>
                 <Value>
                     <type>3</type>
-                    <Value>{0.073239,0.073239,0.073239}</Value>
+                    <Value>{1.000000,1.000000,1.000000}</Value>
                 </Value>
                 <Min>
                     <type>3</type>
@@ -144,7 +146,7 @@
             <Properties>
                 <Value>
                     <type>2</type>
-                    <Value>0.2</Value>
+                    <Value>0.050000001</Value>
                 </Value>
                 <Min>
                     <type>2</type>

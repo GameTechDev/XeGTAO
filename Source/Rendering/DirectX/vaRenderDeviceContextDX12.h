@@ -182,8 +182,8 @@ namespace Vanilla
         void                                PostWorkCleanupWorkerThread( );
         void                                PostWorkCleanupMainThread( );
 
-        // virtual std::pair< vaRenderDeviceDX12::TransientGPUDescriptorHeap*, int >
-        //                                     AllocateSRVUAVHeapDescriptors( int numberOfDescriptors ) override;
+        // Does not do anything for worker context (and is possibly invalid)
+        virtual void                        Flush( ) override                                                   { assert( false ); }
 
     public:
         // // incorrect use of a Worker - there are no cached outputs because there can be no outputs associated
@@ -233,7 +233,7 @@ namespace Vanilla
         void                                QueueResourceStateTransition( const vaFramePtr<vaShaderResourceDX12> & resource, int workerIndex, D3D12_RESOURCE_STATES target, uint32 subResIndex = -1 );
 
         // Executes the command list on the main queue. Cannot be called between BeginItems/EndItems
-        void                                Flush( );
+        virtual void                        Flush( ) override;
 
     protected:
         void                                ExecuteCommandList( );

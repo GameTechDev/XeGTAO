@@ -61,24 +61,46 @@ vaSerializer::~vaSerializer( )
     }
 }
 
-vaSerializer vaSerializer::OpenRead( const string & filePath, const string & assertType )
+vaSerializer vaSerializer::OpenReadFile( const string & filePath, const string & assertType )
 {
-    json j = json::parse(vaFileTools::ReadText( filePath ), nullptr, false);
+    json j = json::parse( vaFileTools::ReadText( filePath ), nullptr, false );
     if( j == "" )
-        VA_WARN( "vaSerializer::OpenRead( %s ): unable to read file.", filePath.c_str() );
+    {
+        //VA_WARN( "vaSerializer::OpenReadFile( %s ): unable to read file or json was unable to parse inputs", filePath.c_str() );
+        return vaSerializer( );
+    }
     
     vaSerializer retVal( std::move(j), true );
     assert( assertType == "" || assertType == retVal.Type() ); assertType;
     return retVal;
 }
 
-bool vaSerializer::Write( vaStream & stream )
+vaSerializer vaSerializer::OpenReadString( const string & jsonData, const string & assertType )
 {
-    string dump = m_json.dump(4, ' ');
+    json j = json::parse( jsonData, nullptr, false );
+    if( j == "" )
+    {
+        //VA_WARN( "vaSerializer::OpenReadString( ): json unable to parse inputs." );
+        return vaSerializer( );
+    }
+
+    vaSerializer retVal( std::move(j), true );
+    assert( assertType == "" || assertType == retVal.Type() ); assertType;
+    return retVal;
+}
+
+string vaSerializer::Dump( ) const
+{
+    return m_json.dump(4, ' ');
+}
+
+bool vaSerializer::Write( vaStream & stream ) const
+{
+    string dump = Dump();
     return stream.Write( dump.data(), dump.size() );
 }
 
-bool vaSerializer::Write( const string & filePath )
+bool vaSerializer::Write( const string & filePath ) const
 {
     assert( m_isWriting );
     vaFileStream outFile;

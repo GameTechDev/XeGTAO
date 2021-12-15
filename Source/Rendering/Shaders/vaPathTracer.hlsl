@@ -20,18 +20,11 @@
 
 #include "Lighting/vaLighting.hlsl"
 
-#if VA_USE_RAY_SORTING
-[numthreads(32, 1, 1)] void CSKickoff( const uint pathIndex : SV_DispatchThreadID )  {} // dummy
 
 [shader("raygeneration")]
 void RaygenKickoff()
 {
     uint pathIndex = DispatchRaysIndex().x;
-#else
-[numthreads(32, 1, 1)]
-void CSKickoff( const uint pathIndex : SV_DispatchThreadID ) 
-{
-#endif
 
     //    if( DebugOnce( ) )
     //        DebugDraw2DText( float2( 500, 100 ), float4( 1, 0, 1, 1 ), 42 );
@@ -41,15 +34,17 @@ void CSKickoff( const uint pathIndex : SV_DispatchThreadID )
     if( pathIndex >= g_pathTracerConsts.MaxPathCount )
         return;
 
-#if 0   // naive 
-    uint2 pixelPos = uint2( pathIndex % g_pathTracerConsts.ViewportX, pathIndex / g_pathTracerConsts.ViewportX );
-#else   // tiny 8x8 or so tiles
-    uint tileSize = VA_PATH_TRACER_DISPATCH_TILE_SIZE;
-    uint tileIndex      = pathIndex / (tileSize*tileSize);
-    uint tilePixelIndex = pathIndex % (tileSize*tileSize);
-    uint tileCountX = (g_pathTracerConsts.ViewportX + tileSize - 1) / tileSize;
-    uint2 pixelPos = uint2( (tileIndex % tileCountX) * tileSize + tilePixelIndex % tileSize, (tileIndex / tileCountX) * tileSize + tilePixelIndex / tileSize );
-#endif
+    // in theory this should not be required
+    // g_pathSortKeys[pathIndex] = VA_PATH_TRACER_INACTIVE_PATH_KEY;
+
+    uint2 pixelPos = PathIndexToPixelPos( pathIndex );
+
+    bool outOfViewport  = any( pixelPos >= uint2(g_pathTracerConsts.ViewportX, g_pathTracerConsts.ViewportY) );
+    if( outOfViewport )
+    {
+        g_pathSortKeys[pathIndex] = VA_PATH_TRACER_INACTIVE_PATH_KEY;
+        return;
+    }
 
     // Seed based on current pixel (no AA yet, that's intentional)
     uint  hashSeed = Hash32( pixelPos.x );
@@ -76,6 +71,7 @@ void CSKickoff( const uint pathIndex : SV_DispatchThreadID )
     }
 
     // debug draw for rays
+#if VA_PATH_TRACER_ENABLE_VISUAL_DEBUGGING
     const bool debugDrawRays = ((g_pathTracerConsts.Flags & VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_VIZ) != 0) && IsUnderCursorRange( pixelPos, int2(g_pathTracerConsts.DebugPathVizDim, g_pathTracerConsts.DebugPathVizDim) );
     const bool debugDrawRayDetails = ((g_pathTracerConsts.Flags & VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_VIZ) != 0) && IsUnderCursorRange( pixelPos, int2(1, 1) );
 
@@ -86,28 +82,23 @@ void CSKickoff( const uint pathIndex : SV_DispatchThreadID )
         if( ((pixelPos.x == 0 || pixelPos.x == g_pathTracerConsts.ViewportX - 1)    && (pixelPos.y % step == 0) ) || ((pixelPos.y == 0 || pixelPos.y == g_pathTracerConsts.ViewportY - 1 )  && (pixelPos.x % step == 0) ) )
             DebugDraw3DLine( rayOrigin, rayOrigin + rayDir * length, float4( 1, 0.5, 0, 0.8 ) );
     }
+#else
+    const bool debugDrawRays = false; const bool debugDrawRayDetails = false;
+#endif
 
     uint flags = (g_pathTracerConsts.Flags & ~VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_VIZ) | (debugDrawRays?VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_VIZ:0) | (debugDrawRayDetails?VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_DETAIL_VIZ:0)
                 | ( ( g_pathTracerConsts.MaxBounces == 0 )?VA_PATH_TRACER_FLAG_LAST_BOUNCE:0);
 
     // this is stored in UAVs
     ShaderPathPayload pathPayload;
-    //pathPayload.Barycentrics        = float2(0,0);
-    //pathPayload.InstanceIndex       = 0xFFFFFFFF;
-    //pathPayload.PrimitiveIndex      = 0xFFFFFFFF;
-    pathPayload.PixelPos            = pixelPos.xy;
+    pathPayload.PixelPosPacked      = PackU2( pixelPos );
+    //pathPayload.PackedConeInfo      = PackF2( rayConeSpreadAngle, 0.0 );
     pathPayload.ConeSpreadAngle     = rayConeSpreadAngle;
     pathPayload.ConeWidth           = 0;                        // it's 0 at pinhole camera focal point
-    pathPayload.AccumulatedRadiance = float3( 0, 0, 0 );
     pathPayload.HashSeed            = hashSeed;
     pathPayload.Beta                = float3( 1, 1, 1 );
     pathPayload.Flags               = flags;
-#if !VA_USE_RAY_SORTING
-    pathPayload.NextRayOrigin       = rayOrigin;
-    pathPayload.NextRayDirection    = rayDir;
-#endif
     pathPayload.BounceIndex         = 0;
-    // pathPayload.AccumulatedRayTravel= 0;
     pathPayload.LastSpecularness    = 1.0;
     pathPayload.PathSpecularness    = 1.0;
     pathPayload.MaxRoughness        = 0.0;
@@ -118,10 +109,10 @@ void CSKickoff( const uint pathIndex : SV_DispatchThreadID )
     if( !g_pathTracerConsts.PerBounceSortEnabled )
         g_pathListSorted[ pathIndex ] = pathIndex;
 
-#if VA_USE_RAY_SORTING
     // this gets sent through the path tracing API
     ShaderMultiPassRayPayload rayPayloadLocal;
     rayPayloadLocal.PathIndex       = pathIndex;
+    //rayPayloadLocal.PackedConeInfo  = pathPayload.PackedConeInfo;
     rayPayloadLocal.ConeSpreadAngle = pathPayload.ConeSpreadAngle;
     rayPayloadLocal.ConeWidth       = pathPayload.ConeWidth;
 
@@ -131,102 +122,111 @@ void CSKickoff( const uint pathIndex : SV_DispatchThreadID )
     nextRay.TMin        = 0.0;
     nextRay.TMax        = 1000000.0;
 
+    // reset color to 0 at the start
+    if( g_pathTracerConsts.IsFirstAccumSample() )    // reset every sample for this debug viz
+        g_radianceAccumulation[pixelPos.xy] = float4( 0, 0, 0, 0 );
+
     const uint missShaderIndex      = 0;    // normal (primary) miss shader
     TraceRay( g_raytracingScene, RAY_FLAG_NONE/*RAY_FLAG_CULL_BACK_FACING_TRIANGLES*/, ~0, 0, 0, missShaderIndex, nextRay, rayPayloadLocal );
-#else
-    //g_pathListSorted[pathIndex]     = pathIndex; // no need to do it, done on the CPU side
-#endif
-}
-
-[numthreads(1, 1, 1)]
-void CSTickCounters( )
-{
-    // not dynamically updating for now
-    //g_pathTracerControl[0].CurrentRayCount  = g_pathTracerControl[0].NextRayCount;
-    //g_pathTracerControl[0].NextRayCount     = 0;
 }
 
 [shader("raygeneration")]
 void Raygen()
 {
     uint pathListIndex = DispatchRaysIndex().x;
-    if( pathListIndex >= g_pathTracerConsts.MaxPathCount ) // g_pathTracerControl[0].CurrentRayCount )
+    //if( pathListIndex >= g_pathTracerConsts.MaxPathCount ) // g_pathTracerControl[0].CurrentRayCount )
+    if( pathListIndex >= g_pathTracerControl[0] )
         return;
 
-    uint pathIndex = g_pathListSorted[pathListIndex];
+    const uint pathIndex = g_pathListSorted[pathListIndex];
 
-    uint2 pixelPos = g_pathPayloads[pathIndex].PixelPos;
-    //ShaderPathPayload pathPayload = g_pathPayloads[pathIndex];
 
-    bool stopped   = (g_pathPayloads[pathIndex].Flags & VA_PATH_TRACER_FLAG_STOPPED) != 0;
+    const uint2 pixelPos = UnpackU2( g_pathPayloads[pathIndex].PixelPosPacked ); // g_pathPayloads[pathIndex].PixelPos;
 
-    // pathIndex can be > number of pixel when rounding up to right/bottom border tile size, so mark those out of screen pixels as invalid
-    [branch]
-    if( stopped || any( pixelPos >= uint2(g_pathTracerConsts.ViewportX, g_pathTracerConsts.ViewportY) ) )
+#if 0
+    bool stopped        = g_pathSortKeys[pathIndex] == VA_PATH_TRACER_INACTIVE_PATH_KEY;// (g_pathPayloads[pathIndex].Flags & VA_PATH_TRACER_FLAG_STOPPED) != 0;
+    bool outOfViewport  = any( pixelPos >= uint2(g_pathTracerConsts.ViewportX, g_pathTracerConsts.ViewportY) );
+
+    DebugAssert( !stopped, 50, 50 );
+    DebugAssert( !outOfViewport, 51, 51 );
+    //DebugAssert( g_pathSortKeys[pathIndex] != VA_PATH_TRACER_INACTIVE_PATH_KEY );
+#endif
+
+    // not required if sorted because dead paths avoided with the counter
+    if( !g_pathTracerConsts.PerBounceSortEnabled && g_pathSortKeys[pathIndex] == VA_PATH_TRACER_INACTIVE_PATH_KEY )
         return;
 
     // this gets sent through the path tracing API
     ShaderMultiPassRayPayload rayPayloadLocal;
     rayPayloadLocal.PathIndex       = pathIndex;
+    //rayPayloadLocal.PackedConeInfo  = g_pathPayloads[pathIndex].PackedConeInfo;
     rayPayloadLocal.ConeSpreadAngle = g_pathPayloads[pathIndex].ConeSpreadAngle;
     rayPayloadLocal.ConeWidth       = g_pathPayloads[pathIndex].ConeWidth;
 
-#if VA_USE_RAY_SORTING
     RayDesc nextRay;
     nextRay.Origin      = float3(0,0,0);
     nextRay.Direction   = float3(0,0,0);
     nextRay.TMin        = 0.0;
     nextRay.TMax        = 0.0;
 
-    const uint missShaderIndex      = VA_RAYTRACING_SHADER_MISS_CALLABLES_SHADE_OFFSET + g_pathGeometryHitPayloads[pathIndex].MaterialIndex;
+    const uint shaderTableIndex = g_materialConstants[ g_pathGeometryHitPayloads[pathIndex].MaterialIndex ].ShaderTableIndex;
+    const uint missShaderIndex  = VA_RAYTRACING_SHADER_MISS_CALLABLES_SHADE_OFFSET + shaderTableIndex;
     TraceRay( g_nullAccelerationStructure, RAY_FLAG_NONE, 0, 0, 0, missShaderIndex, nextRay, rayPayloadLocal );
-#else
-    RayDesc nextRay;
-    nextRay.Origin      = g_pathPayloads[pathIndex].NextRayOrigin;
-    nextRay.Direction   = g_pathPayloads[pathIndex].NextRayDirection;
-    nextRay.TMin        = 0.0;
-    nextRay.TMax        = 1000000.0;
-
-    const uint missShaderIndex      = 0;    // normal (primary) miss shader
-    TraceRay( g_raytracingScene, RAY_FLAG_NONE/*RAY_FLAG_CULL_BACK_FACING_TRIANGLES*/, ~0, 0, 0, missShaderIndex, nextRay, rayPayloadLocal );
-#endif
 }
 
+
 [shader("miss")] // this one gets called with TraceRay::MissShaderIndex 1
-void MissVisibility( inout ShaderMultiPassRayPayload rayPayloadLocal )
+void MissVisibility( inout ShaderMultiPassRayPayload rayPayload )
 {
-    rayPayloadLocal.PathIndex = 1; // returning with the flag set means that we've missed so the visibility query is true!
+    uint pathIndex = VA_PATH_TRACER_VISIBILITY_RAY_MASK & rayPayload.PathIndex;
+    const uint2 pixelPos = UnpackU2( g_pathPayloads[ rayPayload.PathIndex ].PixelPosPacked );
+
+    float3 values = Unpack_R11G11B10_FLOAT( rayPayload.PackedValues );
+
+    // Accumulate to global! (except if we've finished accumulating and just looping on empty)
+    if( !g_pathTracerConsts.IgnoreResults() )
+        //g_radianceAccumulation[pixelPos.xy].rgb += rayPayload.Values / g_globals.PreExposureMultiplier;   // <- keeping the preexposure multiplication here in case we decide to go to low precision storage in the future
+        g_radianceAccumulation[pixelPos.xy].rgb += values.rgb / g_globals.PreExposureMultiplier;   // <- keeping the preexposure multiplication here in case we decide to go to low precision storage in the future
 }
 
 [shader("miss")] // this one gets called with TraceRay::MissShaderIndex 0
-void Miss( inout ShaderMultiPassRayPayload rayPayloadLocal )
+void MissSky( inout ShaderMultiPassRayPayload rayPayloadLocal )
 {
     ShaderPathPayload pathPayload = g_pathPayloads[ rayPayloadLocal.PathIndex ];
 
+#if VA_PATH_TRACER_ENABLE_VISUAL_DEBUGGING
     const bool debugDrawRays = (pathPayload.Flags & VA_PATH_TRACER_FLAG_SHOW_DEBUG_PATH_VIZ) != 0;
+#else
+    const bool debugDrawRays = false;
+#endif
 
     // we need this for outputting depth - path tracing will actually end
     float3 nextRayOrigin = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
 
-#if !VA_USE_RAY_SORTING
-    pathPayload.NextRayOrigin = nextRayOrigin;
-#endif
+// #if !VA_PATH_TRACER_USE_RAY_SORTING
+//     pathPayload.NextRayOrigin = nextRayOrigin;
+// #endif
 
-    PathTracerOutputAUX( pathPayload.PixelPos, pathPayload, nextRayOrigin, float3(1,1,1), float3(0,0,1),
-        ComputeScreenMotionVectors( pathPayload.PixelPos + float2(0.5, 0.5), nextRayOrigin, nextRayOrigin, float2(0,0) ).xy );
+    const uint2 pixelPos = UnpackU2( pathPayload.PixelPosPacked ); // pathPayload.PixelPos; 
+
+    PathTracerOutputAUX( pixelPos, pathPayload.BounceIndex, nextRayOrigin, float3(1,1,1), float3(0,0,1),
+        ComputeScreenMotionVectors( pixelPos + float2(0.5, 0.5), nextRayOrigin, nextRayOrigin, float2(0,0) ).xy );
 
     // // stop any further bounces
     // not needed anymore - this is the default
     // pathPayload.NextRayDirection = float3( 0, 0, 0 );
 
+    // float coneSpreadAngle; float coneWidth; UnpackF2( pathPayload.PackedConeInfo, coneSpreadAngle, coneWidth );
+    float coneSpreadAngle = pathPayload.ConeSpreadAngle; float coneWidth = pathPayload.ConeWidth;
+
     // we'll need it for debugging purposes
-    float endRayConeWidth = pathPayload.ConeWidth + RayTCurrent() * (pathPayload.ConeSpreadAngle/* + betaAngle*/);
+    float endRayConeWidth = coneWidth + RayTCurrent() * (coneSpreadAngle/* + betaAngle*/);
 
     if( debugDrawRays )
     {
         float4 rayDebugColor = float4( GradientRainbow( pathPayload.BounceIndex / 6.0 ), 0.5 );
         DebugDraw3DCylinder( WorldRayOrigin( ), nextRayOrigin, 
-            pathPayload.ConeWidth * 0.5, endRayConeWidth * 0.5, rayDebugColor );
+            coneWidth * 0.5, endRayConeWidth * 0.5, rayDebugColor );
     }
 
     // light that comes from sky :)
@@ -248,14 +248,30 @@ void Miss( inout ShaderMultiPassRayPayload rayPayloadLocal )
     if( pathPayload.BounceIndex > 0 )
         skyRadiance += g_lighting.AmbientLightFromDistantIBL.rgb * g_globals.PreExposureMultiplier;
 
-    // standard path trace accumulation
-    pathPayload.AccumulatedRadiance  += RadianceCombineAndFireflyClamp( pathPayload.PathSpecularness, pathPayload.Beta, skyRadiance );
+    // firefly filtering (which should be luminance-based, not per-channel - something to do in the future)
+    const float3 fireflyClampThreshold = ComputeFireflyClampThreshold( pathPayload.PathSpecularness );
+    float3 newRadiance = min( fireflyClampThreshold, pathPayload.Beta * skyRadiance );
+
+    // Add radiance! (except if we've finished accumulating and just looping on empty)
+    if( !g_pathTracerConsts.IgnoreResults() )
+        g_radianceAccumulation[pixelPos.xy].rgb += newRadiance / g_globals.PreExposureMultiplier;   // <- keeping the preexposure multiplication here in case we decide to go to low precision storage in the future
 
     // hitting the skybox - we can't be bouncing anymore, just call it quits!
-    PathTracerCommit( rayPayloadLocal.PathIndex, pathPayload );
+    PathTracerFinalize( rayPayloadLocal.PathIndex, pathPayload.Flags );
 }
 
-#if VA_USE_RAY_SORTING
+[numthreads(64, 1, 1)] 
+void CSFinalize( const uint pathIndex : SV_DispatchThreadID )
+{
+    if( pathIndex >= g_pathTracerConsts.MaxPathCount ) // g_pathTracerControl[0].CurrentRayCount )
+        return;
+
+    const ShaderPathPayload pathPayload = g_pathPayloads[ pathIndex ];
+    const uint2 pixelPos = UnpackU2( pathPayload.PixelPosPacked ); // g_pathPayloads[pathIndex].PixelPos;
+
+    if( g_pathTracerConsts.DebugViewType == PathTracerDebugViewType::BounceIndex )
+        g_radianceAccumulation[pixelPos.xy].x = pathPayload.BounceIndex; // asfloat( PackF2( float2(0.702, 655351.0) ) ); //pathPayload.BounceIndex;
+}
 
 [shader("closesthit")]
 void ClosestHit( inout ShaderMultiPassRayPayload rayPayloadLocal, in BuiltInTriangleIntersectionAttributes attr )
@@ -268,11 +284,14 @@ void ClosestHit( inout ShaderMultiPassRayPayload rayPayloadLocal, in BuiltInTria
     geometryHitPayload.MaterialIndex    = InstanceID( );
     g_pathGeometryHitPayloads[rayPayloadLocal.PathIndex] = geometryHitPayload;
     
-    // sort by material indices only; if changing, search for 'const uint32 maxSortKey' in vaPathTRacer.cpp
+    // if changing sorting behaviour, search for 'const uint32 maxSortKey' in vaPathTRacer.cpp
+#if 1   // sort by material indices only <- this is faster as it also effectively sorts by textures
     g_pathSortKeys[rayPayloadLocal.PathIndex] = geometryHitPayload.MaterialIndex+1;
-}
-
+#else   // sort by shader table index only - even weaker than sorting by material indices
+    const uint shaderTableIndex = g_materialConstants[ geometryHitPayload.MaterialIndex ].ShaderTableIndex;
+    g_pathSortKeys[rayPayloadLocal.PathIndex] = shaderTableIndex+1;
 #endif
+}
 
 // // if you want to override material-specific ones - not used except for testing
 // [shader("anyhit")]
@@ -321,7 +340,8 @@ void PSWriteToOutput( const in float4 position : SV_Position, out float4 outColo
     float viewspaceDepth = pixelData.w; //g_viewspaceDepthSRV[ pixCoord ];
 
     float accumFrameCount = min( g_pathTracerConsts.AccumFrameCount+1, g_pathTracerConsts.AccumFrameTargetCount );
-    /*float4*/ outColor.rgb = (pixelData.rgb / accumFrameCount) * g_globals.PreExposureMultiplier;
+    pixelData.rgb /= accumFrameCount;
+    /*float4*/ outColor.rgb = pixelData.rgb * g_globals.PreExposureMultiplier;
     outColor.a = 1.0;
 
 //    if( underMouseCursor )
@@ -335,6 +355,9 @@ void PSWriteToOutput( const in float4 position : SV_Position, out float4 outColo
             outColor.rgb = GradientHeatMap( /*sqrt*/( bounceIndex / (float)g_pathTracerConsts.MaxBounces ) );
             if( underMouseCursor )
                 DebugDraw2DText( pixCoord + float2( 10, -16 ), float4( 1, 0, 1, 1 ), bounceIndex );
+            //float4 test = float4( UnpackF2( asuint(g_radianceAccumulationSRV[ pixCoord ].x) ), 0, 0 );
+            //if( underMouseCursor )
+            //    DebugDraw2DText( pixCoord + float2( 10, -16 ), float4( 1, 0, 1, 1 ), test );
         }
         else if( g_pathTracerConsts.DebugViewType == PathTracerDebugViewType::ViewspaceDepth )
         {
@@ -342,16 +365,9 @@ void PSWriteToOutput( const in float4 position : SV_Position, out float4 outColo
             if( underMouseCursor )
                 DebugDraw2DText( pixCoord + float2( 10, -16 ), float4( 1, 0, 1, 1 ), viewspaceDepth );
         }
-        else if( g_pathTracerConsts.DebugViewType == PathTracerDebugViewType::MaterialID || g_pathTracerConsts.DebugViewType == PathTracerDebugViewType::ShaderID )
-        {
-            uint val = asuint(g_radianceAccumulationSRV[ pixCoord ].x);
-            outColor.rgb = GradientRainbow( Hash32ToFloat( Hash32(val) ) );
-            if( underMouseCursor )
-                DebugDraw2DText( pixCoord + float2( 10, -16 ), float4( 1, 0, 1, 1 ), val );
-        }
         else if( (uint)g_pathTracerConsts.DebugViewType >= (uint)PathTracerDebugViewType::SurfacePropsBegin && (uint)g_pathTracerConsts.DebugViewType <= (uint)PathTracerDebugViewType::SurfacePropsEnd )
         {
-            outColor.rgb = g_radianceAccumulationSRV[ pixCoord ].rgb;
+            outColor.rgb = pixelData.rgb;
             outColor.a = 0;
             if( underMouseCursor )
                 DebugDraw2DText( pixCoord + float2( 10, -16 ), float4( 1, 0, 1, 1 ), outColor );
@@ -393,19 +409,6 @@ void PSWriteToOutput( const in float4 position : SV_Position, out float4 outColo
         }
 
     }
-
-    //if( g_pathTracerConsts.EnableCrosshairDebugViz )
-    //{
-    //    int2 cursorPos = int2(g_globals.CursorViewportPosition.xy);
-    //    if( pixCoord.x == cursorPos.x || pixCoord.y == cursorPos.y )
-    //    {
-    //        if( underMouseCursor )
-    //            DebugDraw2DText( pixCoord + float2( 10, -16 ), float4( 1, 0, 1, 1 ), outColor );
-    //        if( length(float2(cursorPos) - float2(pixCoord)) < 1.5 )
-    //            outColor.rgb = saturate( float3( 2, 1, 1 ) - normalize(outColor.rgb) );
-    //    }
-    //
-    //}
 
     outColor.rgb = HDRClamp( outColor.rgb );
 

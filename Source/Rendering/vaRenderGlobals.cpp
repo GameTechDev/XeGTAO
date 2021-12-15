@@ -21,6 +21,7 @@
 #include "IntegratedExternals/vaImguiIntegration.h"
 
 #include "Core/vaInput.h"
+#include "Core/vaApplicationBase.h"
 
 #include "Scene/vaScene.h"
 
@@ -32,13 +33,14 @@
 
 #include "Rendering/vaSceneRaytracing.h"
 
+
 using namespace Vanilla;
 
 /////////////////////////////////////////////////////////////////////////////
 // this is for right/middle click context menu
 struct UIContextItem
 {
-    vaScene *                   Scene   = nullptr;
+    weak_ptr<vaScene>           Scene;
     entt::entity                Entity  = entt::null;
     weak_ptr<struct vaAssetRenderMesh>
                                 RenderMeshAsset;
@@ -255,7 +257,8 @@ void vaRenderGlobals::UpdateAndSetToGlobals( vaRenderDeviceContext & renderConte
     // Only clear before first time it's used this frame!
     if( m_shaderFeedbackStartedFrame < GetRenderDevice( ).GetCurrentFrameIndex( ) )
     {
-        m_shaderFeedbackStaticGPU[currentWriteIndex]->ClearUAV( renderContext, 0u );
+        ShaderFeedbackStatic initStatic; memset( &initStatic, 0, sizeof(initStatic) );
+        m_shaderFeedbackStaticGPU[currentWriteIndex]->UploadSingle<ShaderFeedbackStatic>( renderContext, initStatic, 0 );
         m_shaderFeedbackStartedFrame = GetRenderDevice( ).GetCurrentFrameIndex( );
     }
     assert( shaderItemGlobals.UnorderedAccessViews[SHADERGLOBAL_SHADER_FEEDBACK_STATIC_UAV_SLOT] == nullptr );
@@ -297,8 +300,8 @@ void vaRenderGlobals::ProcessShaderFeedback( vaRenderDeviceContext& renderContex
     if( m_shaderFeedbackStartedFrame == GetRenderDevice( ).GetCurrentFrameIndex( ) )
     {
         int currentWriteIndex = GetRenderDevice( ).GetCurrentFrameIndex( ) % _countof( m_shaderFeedbackStaticGPU );
-        m_shaderFeedbackStaticCPU[currentWriteIndex]->CopyFrom( renderContext, *m_shaderFeedbackStaticGPU[currentWriteIndex], m_shaderFeedbackStaticGPU[currentWriteIndex]->GetDataSize() );
-        m_shaderFeedbackDynamicCPU[currentWriteIndex]->CopyFrom( renderContext, *m_shaderFeedbackDynamicGPU[currentWriteIndex], m_shaderFeedbackDynamicGPU[currentWriteIndex]->GetDataSize() );
+        m_shaderFeedbackStaticCPU[currentWriteIndex]->CopyFrom( renderContext, *m_shaderFeedbackStaticGPU[currentWriteIndex], 0, 0, m_shaderFeedbackStaticGPU[currentWriteIndex]->GetDataSize() );
+        m_shaderFeedbackDynamicCPU[currentWriteIndex]->CopyFrom( renderContext, *m_shaderFeedbackDynamicGPU[currentWriteIndex], 0, 0, m_shaderFeedbackDynamicGPU[currentWriteIndex]->GetDataSize() );
         m_shaderFeedbackStaticCPUHasData[currentWriteIndex] = true;
     }
 
@@ -562,8 +565,13 @@ void vaRenderGlobals::UIPanelTickAlways( vaApplicationBase& application )
                 UIContextItem outItem;
 
                 outItem.Scene   = vaScene::FindByRuntimeID( inItem.OriginInfo.SceneID );
+
                 outItem.Entity  = entt::null;
-                if( outItem.Scene != nullptr && outItem.Scene->Registry().valid( entt::entity(inItem.OriginInfo.EntityID) ) )
+                auto scene = outItem.Scene.lock();
+                if( scene != nullptr )
+                    m_uiLastScene = outItem.Scene;
+
+                if( scene != nullptr && scene->Registry().valid( entt::entity(inItem.OriginInfo.EntityID) ) )
                     outItem.Entity  = entt::entity(inItem.OriginInfo.EntityID);
 
                 if( inItem.OriginInfo.MeshAssetID != DrawOriginInfo::NullSceneRuntimeID )
@@ -596,12 +604,23 @@ void vaRenderGlobals::UIPanelTickAlways( vaApplicationBase& application )
         // ImGui::Separator( );
 
         //ImGui::Text( "Stuff under cursor: " );
+        string indexstr;
         for( int i = 0; i < (int)s_ui_contextItems.size( ); i++ )
         {
-            auto& item = s_ui_contextItems[i];
-            ImGui::Text( "%d:", i );
+            auto& item = s_ui_contextItems[i]; indexstr = vaStringTools::Format( "%d:", i );
+            ImGui::Text( indexstr.c_str() );
             ImGui::SameLine();
             ImGui::TextColored( ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled), " world pos: {%.3f, %.3f, %.3f}, view depth: %.3f", item.WorldspacePos.x, item.WorldspacePos.y, item.WorldspacePos.z, item.ViewspaceDepth );
+
+            auto scene = item.Scene.lock();
+            if( scene == nullptr )
+            { assert( false ); continue; }
+
+            if( ImGuiEx_SameLineSmallButtons( indexstr.c_str(), {"[marker]"}, {{false}}, false, {"Set scene helper marker to this position"} ) == 0 )
+            {
+                scene->UISetMarker( vaMatrix4x4::FromTranslation( item.WorldspacePos ) );
+                ImGui::CloseCurrentPopup( );
+            }
 
             VA_GENERIC_RAII_SCOPE( ImGui::Indent( ); , ImGui::Unindent( ); );
             VA_GENERIC_RAII_SCOPE( ImGui::PushID( i ); , ImGui::PopID( ); );
@@ -614,17 +633,17 @@ void vaRenderGlobals::UIPanelTickAlways( vaApplicationBase& application )
             }
             else
             {
-                string info = vaStringTools::Format( "Entity:    %s", Scene::GetNameAndID( item.Scene->Registry( ), item.Entity ).c_str( ) );
+                string info = vaStringTools::Format( "Entity:    %s", Scene::GetNameAndID( scene->Registry( ), item.Entity ).c_str( ) );
                 if( ImGui::BeginMenu( info.c_str( ), true ) )
                 {
                     if( ImGui::MenuItem( "Highlight in scene view", nullptr, false, true ) )
                     {
-                        item.Scene->UIHighlight( item.Entity );
+                        scene->UIHighlight( item.Entity );
                         ImGui::CloseCurrentPopup( );
                     }
                     if( ImGui::MenuItem( "Open properties", nullptr, false, true ) )
                     {
-                        item.Scene->UIOpenProperties( item.Entity );
+                        scene->UIOpenProperties( item.Entity );
                         ImGui::CloseCurrentPopup( );
                     }
                     ImGui::EndMenu( );
@@ -665,8 +684,19 @@ void vaRenderGlobals::UIPanelTickAlways( vaApplicationBase& application )
             ImGui::Separator( );
         }
         if( s_ui_contextItems.size( ) == 0 )
+        {
             ImGui::Text( "(no items of interest - possibly just skybox/background)" );
-        //ImGui::Separator( );
+            ImGui::Separator( );
+        }
+        auto scene = m_uiLastScene.lock();
+        ImGui::Text( "Scene helper marker: " );
+        int buttonPress = ImGuiEx_SameLineSmallButtons( indexstr.c_str(), {"[unset]", "[set to camera]"}, {scene == nullptr || scene->UIGetMarker() == vaMatrix4x4::Degenerate, scene == nullptr}, false, {"Unset scene helper marker", "Set scene helper marker to camera"} );
+        if( scene != nullptr && buttonPress == 0 )
+            scene->UISetMarker( vaMatrix4x4::Degenerate );
+        if( scene != nullptr && buttonPress == 1 )
+            scene->UISetMarker( application.GetUICamera().GetWorldMatrix() );
+
+
         ImGui::TextColored( ImGui::GetStyleColorVec4( ImGuiCol_TextDisabled ), "Use middle mouse button or Ctrl+Enter to switch camera mode" );
     }
 #endif

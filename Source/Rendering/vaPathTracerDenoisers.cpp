@@ -395,9 +395,8 @@ void vaDenoiserOptiX::VanillaToDenoiser( vaRenderDeviceContext & renderContext, 
 
 void vaDenoiserOptiX::Denoise( vaRenderDeviceContext & renderContext )
 {
-    // there must be a better way to sync?
-    AsFullDX12( renderContext ).Flush( );                           // submit all work on render context
-    AsDX12( renderContext.GetRenderDevice() ).SyncGPU( true );      // sync!
+    renderContext.Flush( );                     // submit all work on render context
+    renderContext.GetRenderDevice().SyncGPU( ); // sync!
     
     VA_TRACE_CPUGPU_SCOPE( OptiXDenoise, renderContext );           // will clash with flush/sync and not give correct data
 

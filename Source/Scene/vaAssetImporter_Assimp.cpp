@@ -1258,7 +1258,7 @@ static bool ProcessSceneNodes( const aiScene* loadedScene, LoadingTempStorage & 
         case( aiLightSource_POINT ):
         {
             auto & newLight = outScene.Registry( ).emplace<Scene::LightPoint>( lightEntity, lightBase );
-            newLight.Size           = std::max( 0.0001f, light.mSize.Length() );
+            newLight.Radius         = std::max( 0.0001f, light.mSize.Length() );
             newLight.Range          = std::sqrtf(10000.0f * lightBase.Intensity); // not sure what to do about this - we don't use light.mAttenuationConstant/mAttenuationLinear/mAttenuationQuadratic
             newLight.SpotInnerAngle = 0.0f;
             newLight.SpotOuterAngle = 0.0f;
@@ -1267,7 +1267,7 @@ static bool ProcessSceneNodes( const aiScene* loadedScene, LoadingTempStorage & 
         case( aiLightSource_SPOT ):
         {
             auto & newLight = outScene.Registry( ).emplace<Scene::LightPoint>( lightEntity, lightBase );
-            newLight.Size           = std::max( 0.0001f, light.mSize.Length() );
+            newLight.Radius         = std::max( 0.0001f, light.mSize.Length() );
             newLight.Range          = std::sqrtf(10000.0f * lightBase.Intensity); // not sure what to do about this - we don't use light.mAttenuationConstant/mAttenuationLinear/mAttenuationQuadratic
             newLight.SpotInnerAngle = light.mAngleInnerCone; assert( light.mAngleInnerCone <= VA_PIf );
             newLight.SpotOuterAngle = light.mAngleOuterCone; assert( light.mAngleOuterCone <= VA_PIf );

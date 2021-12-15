@@ -7,6 +7,8 @@
     <LocalIBLNormalBasedBias>0.69999999</LocalIBLNormalBasedBias>
     <LocalIBLBasedBias>-1</LocalIBLBasedBias>
     <IndexOfRefraction>1.00029</IndexOfRefraction>
+    <NEETranslucent>false</NEETranslucent>
+    <NEETranslucentAlpha>0.1</NEETranslucentAlpha>
     <LayerMode>0</LayerMode>
     <DecalSortOrder>0</DecalSortOrder>
     <Class>SpecGlossPBR</Class>

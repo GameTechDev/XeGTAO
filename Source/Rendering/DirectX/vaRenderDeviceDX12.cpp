@@ -215,6 +215,7 @@ vaRenderDeviceDX12::~vaRenderDeviceDX12( void )
 
     m_defaultGraphicsRootSignature.Reset();
     m_defaultComputeRootSignature.Reset();
+    m_simpleDispatchIndirectCommandSig.Reset();
 
     // for( int i = 0; i < vaRenderDevice::c_BackbufferCount; i++ )
     //     for( int j = 0; j < c_defaultTransientDescriptorHeapsPerFrame; j++ )
@@ -667,7 +668,7 @@ bool vaRenderDeviceDX12::Initialize( const std::vector<wstring> & shaderSearchPa
         m_nullSamplerView.CreateNull();
     }
 
-        // Create the root signature.
+    // Create the root signature.
     {
         D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
 
@@ -686,7 +687,7 @@ bool vaRenderDeviceDX12::Initialize( const std::vector<wstring> & shaderSearchPa
         //   them into two tables: global (for vaShaderItemGlobals) and 'less global' (for vaGraphicsItem and vaComputeItem).
         // * Then come SRVs. These will be bindless.
 
-        D3D12_ROOT_DESCRIPTOR_FLAGS  rootDescFlags = D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC;
+        D3D12_ROOT_DESCRIPTOR_FLAGS  rootDescFlags = D3D12_ROOT_DESCRIPTOR_FLAG_DATA_VOLATILE; // D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC
         D3D12_DESCRIPTOR_RANGE_FLAGS descRangeFlags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE;     // D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE
 
         constexpr int padding = 0; //10;
@@ -755,6 +756,22 @@ bool vaRenderDeviceDX12::Initialize( const std::vector<wstring> & shaderSearchPa
         V( m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_defaultComputeRootSignature)) );
         V( m_defaultGraphicsRootSignature->SetName( L"DefaultGraphicsRootSignature" ) );
         V( m_defaultComputeRootSignature->SetName( L"DefaultGraphicsRootSignature" ) );
+    }
+
+    // used for DispatchIndirect-like draws
+    {
+        // Each command consists of a CBV update and a DrawInstanced call.
+        D3D12_INDIRECT_ARGUMENT_DESC argumentDescs[1] = {};
+        argumentDescs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
+
+        D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};
+        commandSignatureDesc.pArgumentDescs     = argumentDescs;
+        commandSignatureDesc.NumArgumentDescs   = _countof(argumentDescs);
+        commandSignatureDesc.ByteStride         = sizeof(D3D12_DISPATCH_ARGUMENTS);
+        commandSignatureDesc.NodeMask           = 0;
+
+        V( m_device->CreateCommandSignature(&commandSignatureDesc, /*m_rootSignature.Get()*/nullptr, IID_PPV_ARGS(&m_simpleDispatchIndirectCommandSig)) );
+        m_simpleDispatchIndirectCommandSig->SetName( L"SimpleDispatchIndirectCommandSig" );
     }
 
     // device contexts

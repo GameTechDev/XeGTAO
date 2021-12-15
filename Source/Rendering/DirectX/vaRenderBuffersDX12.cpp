@@ -476,7 +476,7 @@ bool vaRenderBufferDX12::CreateInternal( uint64 elementCount, uint32 structByteS
 
     if( ((flags & vaRenderBufferFlags::Readback) != 0 ) && ((flags & vaRenderBufferFlags::Upload) != 0) )
         { assert( false ); return false; }  // can't have upload and readback at the same time
-    if( ((flags & vaRenderBufferFlags::VertexIndexBuffer) != 0 ) && ((flags & vaRenderBufferFlags::RaytracingAccelerationStructure) != 0) )
+    if( ((flags & (vaRenderBufferFlags::VertexIndexBuffer | vaRenderBufferFlags::ConstantBuffer)) != 0 ) && ((flags & vaRenderBufferFlags::RaytracingAccelerationStructure) != 0) )
         { assert( false ); return false; }  // raytracing acc struct doesn't mix with others
     if( (((flags & vaRenderBufferFlags::Readback) != 0 ) || ((flags & vaRenderBufferFlags::Upload) != 0)) &&
         (((flags & vaRenderBufferFlags::RaytracingAccelerationStructure) != 0 ) || ((flags & vaRenderBufferFlags::VertexIndexBuffer) != 0)))
@@ -484,7 +484,7 @@ bool vaRenderBufferDX12::CreateInternal( uint64 elementCount, uint32 structByteS
 
     m_flags                         = flags;
     m_dataSize                      = (uint64)elementCount * structByteSize;
-    m_elementByteSize                = structByteSize;
+    m_elementByteSize               = structByteSize;
     m_elementCount                  = elementCount;
     m_resourceFormat                = resourceFormat;
     m_resourceName                  =  vaStringTools::SimpleWiden(name);
@@ -516,14 +516,22 @@ bool vaRenderBufferDX12::CreateInternal( uint64 elementCount, uint32 structByteS
         resourceAccessFlags = vaResourceAccessFlags::CPUWrite;
         initialResourceState = D3D12_RESOURCE_STATE_GENERIC_READ;
     }
-    if( ( flags & vaRenderBufferFlags::VertexIndexBuffer ) != 0 )
+    if( ( flags & (vaRenderBufferFlags::VertexIndexBuffer | vaRenderBufferFlags::ConstantBuffer) ) != 0 )
     {
         assert( !IsUpload() && !IsReadback() );
         initialResourceState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_INDEX_BUFFER;
     }
+    if( ( flags & vaRenderBufferFlags::ConstantBuffer ) != 0 )
+    {
+        assert( m_elementCount == 1 ); // only 1 supported for now
+        assert( m_resourceFormat == vaResourceFormat::Unknown );
+        assert( m_elementByteSize > 0 );
+        //const uint32 alignmentRequirement = 64;
+        //assert( (m_elementByteSize % alignmentRequirement) == 0 );  // unfortunately, vaRenderBuffer must use type that is aligned to HW requirement (no padding)
+    }
 
     D3D12_HEAP_TYPE heapType = HeapTypeDX12FromAccessFlags( resourceAccessFlags );
-    D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES;
+    D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_NONE; //D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES;
     if( (flags & vaRenderBufferFlags::Shared) != 0 )
         heapFlags |= D3D12_HEAP_FLAG_SHARED;
     CD3DX12_HEAP_PROPERTIES heapProps(heapType);
@@ -743,31 +751,36 @@ void vaRenderBufferDX12::AdoptResourceState( vaRenderDeviceContextBaseDX12 & con
     m_rsth.RSTHAdoptResourceState( context, target ); 
 }
 
-void vaRenderBufferDX12::ClearUAV( vaRenderDeviceContext & renderContext, const vaVector4ui & clearValue )
-{
-    assert( !IsReadback() );
-    assert( !IsUpload() );
+// void vaRenderBufferDX12::ClearUAV( vaRenderDeviceContext & renderContext, const vaVector4ui & clearValue )
+// {
+//     assert( !IsReadback() );
+//     assert( !IsUpload() );
+// 
+//     assert( GetRenderDevice( ).IsFrameStarted( ) );
+//     // see https://www.gamedev.net/forums/topic/672063-d3d12-clearunorderedaccessviewfloat-fails/ for the reason behind the mess below
+//     assert( m_uavSimple.IsCreated( ) ); if( !m_uavSimple.IsCreated( ) ) return;
+//     TransitionResource( AsDX12( renderContext ), D3D12_RESOURCE_STATE_UNORDERED_ACCESS );
+//     AsDX12( renderContext ).GetCommandList( )->ClearUnorderedAccessViewUint( m_uavSimple.GetCPUReadableGPUHandle( ), m_uavSimple.GetCPUReadableCPUHandle( ), m_resource.Get( ), &clearValue.x, 0, nullptr );
+//     // manually transitioning states below means we might mess up the render target states cache
+//     AsDX12( renderContext ).ResetCachedOutputs( );
+// }
 
-    assert( GetRenderDevice( ).IsFrameStarted( ) );
-    // see https://www.gamedev.net/forums/topic/672063-d3d12-clearunorderedaccessviewfloat-fails/ for the reason behind the mess below
-    assert( m_uavSimple.IsCreated( ) ); if( !m_uavSimple.IsCreated( ) ) return;
-    TransitionResource( AsDX12( renderContext ), D3D12_RESOURCE_STATE_UNORDERED_ACCESS );
-    AsDX12( renderContext ).GetCommandList( )->ClearUnorderedAccessViewUint( m_uavSimple.GetCPUReadableGPUHandle( ), m_uavSimple.GetCPUReadableCPUHandle( ), m_resource.Get( ), &clearValue.x, 0, nullptr );
-    // manually transitioning states below means we might mess up the render target states cache
-    AsDX12( renderContext ).ResetCachedOutputs( );
-}
-
-void vaRenderBufferDX12::CopyFrom( vaRenderDeviceContext & renderContext, vaRenderBuffer & source, uint64 dataSizeInBytes )
+void vaRenderBufferDX12::CopyFrom( vaRenderDeviceContext & renderContext, vaRenderBuffer & source, uint64 dstOffsetInBytes, uint64 srcOffsetInBytes, uint64 dataSizeInBytes )
 {
     //VA_TRACE_CPUGPU_SCOPE( RenderBufferCopyFrom, renderContext );
 
     if( dataSizeInBytes == -1 )
     {
+        assert( dstOffsetInBytes == 0 ); assert( srcOffsetInBytes == 0 );
         assert( GetDataSize() == source.GetDataSize() );
         dataSizeInBytes = GetDataSize();
     }
 
     vaRenderBufferDX12 * srcDX12 = source.SafeCast<vaRenderBufferDX12*>();
+
+    assert( (int64)dataSizeInBytes <= (int64)GetDataSize()          - (int64)dstOffsetInBytes );
+    assert( (int64)dataSizeInBytes <= (int64)srcDX12->GetDataSize() - (int64)srcOffsetInBytes );
+    assert( dataSizeInBytes != 0 );
     
     // src can't be readback! (doesn't make any sense)
     assert( !srcDX12->IsReadback() );
@@ -775,18 +788,25 @@ void vaRenderBufferDX12::CopyFrom( vaRenderDeviceContext & renderContext, vaRend
 
     if( !IsReadback() )
         m_rsth.RSTHTransition( AsDX12( renderContext ), D3D12_RESOURCE_STATE_COPY_DEST );
-    assert( m_dataSize >= source.GetDataSize() );
+    // assert( m_dataSize >= source.GetDataSize() );
 
     if( !srcDX12->IsUpload() )
         srcDX12->TransitionResource( AsDX12( renderContext ), D3D12_RESOURCE_STATE_COPY_SOURCE );
 
-    assert( dataSizeInBytes != 0 );
-    assert( dataSizeInBytes <= GetDataSize() && dataSizeInBytes <= srcDX12->GetDataSize() );
-
-    AsDX12( renderContext ).GetCommandList( ).Get( )->CopyBufferRegion( m_resource.Get( ), 0, srcDX12->m_resource.Get( ), 0, dataSizeInBytes );
+    AsDX12( renderContext ).GetCommandList( ).Get( )->CopyBufferRegion( m_resource.Get( ), dstOffsetInBytes, srcDX12->m_resource.Get( ), srcOffsetInBytes, dataSizeInBytes );
 
     //AsDX12( renderContext ).GetCommandList( ).Get( )->CopyResource( m_resource.Get( ), srcDX12->m_resource.Get( ) ); dataSizeInBytes;
 }
+
+vaResourceBindSupportFlags vaRenderBufferDX12::GetBindSupportFlags( ) const 
+{ 
+    vaResourceBindSupportFlags ret = vaResourceBindSupportFlags::None;
+    ret |= (!IsReadback())?(vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess):(vaResourceBindSupportFlags::None); 
+    ret |= ((m_flags & vaRenderBufferFlags::RaytracingAccelerationStructure) != 0)?(vaResourceBindSupportFlags::RaytracingAccelerationStructure):(vaResourceBindSupportFlags::None);
+    ret |= ((m_flags & vaRenderBufferFlags::ConstantBuffer) != 0)?(vaResourceBindSupportFlags::ConstantBuffer):(vaResourceBindSupportFlags::None);
+    ret |= ((m_flags & vaRenderBufferFlags::VertexIndexBuffer) != 0)?(vaResourceBindSupportFlags::VertexBuffer | vaResourceBindSupportFlags::IndexBuffer):(vaResourceBindSupportFlags::None);
+    return ret;
+};
 
 // since this is the only CUDA user so far, do it like this
 #ifndef VA_OPTIX_DENOISER_ENABLED

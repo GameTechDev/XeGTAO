@@ -411,10 +411,10 @@ void DebugDraw3DArrow( float3 worldPosFrom, float3 worldPosTo, float worldRadius
 }
 
 // this isn't really too useful
-//void DebugDraw3DCone( float3 worldPosFrom, float3 worldPosTo, float halfAngle, float4 color )
-//{
-//    DebugDraw3DCylinder( worldPosFrom, worldPosTo, 0, length(worldPosTo-worldPosFrom) * tan( halfAngle ), color );
-//}
+void DebugDraw3DCone( float3 worldPosFrom, float3 worldPosTo, float halfAngle, float4 color )
+{
+    DebugDraw3DCylinder( worldPosFrom, worldPosTo, 0, length(worldPosTo-worldPosFrom) * tan( halfAngle ), color );
+}
 
 void DebugDraw3DSphereCone( float3 worldCenter, float3 worldDirection, float worldRadius, float halfAngle, float4 color )
 {

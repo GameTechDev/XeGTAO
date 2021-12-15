@@ -30,21 +30,30 @@ IBLs / GI (global illumination) / near field far field GI:
  * 2018: Horizon-Based Indirect Lighting (HBIL) https://github.com/Patapom/GodComplex/blob/master/Tests/TestHBIL/2018%20Mayaux%20-%20Horizon-Based%20Indirect%20Lighting%20(HBIL).pdf - https://drive.google.com/file/d/1fmceYuM5J2s8puNHZ9o4OF3YjqzIvmRR/view
 
 Lighting (SH, etc.):
+ * 2020 Temporal Sample Reuse for Next Event Estimation and Path Guiding for Real-Time Path Tracing: https://cg.ivd.kit.edu/tsr_nee_pg_rtpt.php
  * 2021: Learning to Cluster for Rendering with Many Lights, Siggraph 2021: https://bulbaberry.xyz/publications/lcr-sa-2021/
- * 2015: Manifold Next Event Estimation: https://www.ics.uci.edu/~yug10/projects/translucent/papers/Hanika_et_al-2015-Computer_Graphics_Forum.pdf
- * 2019: Next Event Estimation in Quake II RTX, short but sweet: https://developer.nvidia.com/blog/conquering-noisy-images-in-ray-tracing-with-next-event-estimation/
  * 2019: GI - Lighting Grid Hierarchy http://www.cemyuksel.com/research/lgh/real-time_rendering_with_lgh_i3d2019.pdf
  * 2017: "Ambient Dice" https://pdfs.semanticscholar.org/a016/5b3d48fe36568706ec4387acdfdc7c6624ac.pdf
  * 2018: Importance Sampling of Many Lights with Adaptive Tree Splitting - http://www.aconty.com/pdf/many-lights-hpg2018.pdf
  * 2019: Stochastic Lightcuts - http://www.cemyuksel.com/research/stochasticlightcuts/
  * 2020: Real-Time Stochastic Lightcuts - http://www.cemyuksel.com/research/stochasticlightcuts/realtime_stochastic_lightcuts.pdf
- * Nonsingular Point Light Attenuation - http://www.cemyuksel.com/research/pointlightattenuation/
+ * Nonsingular Point Light Attenuation (spherical lights) - http://www.cemyuksel.com/research/pointlightattenuation/
  * 2016: Real-Time Polygonal-Light Shading with Linearly Transformed Cosines https://eheitzresearch.wordpress.com/415-2/
  * 2020: Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting: https://research.nvidia.com/sites/default/files/pubs/2020-07_Spatiotemporal-reservoir-resampling/ReSTIR.pdf
  * 2021: ReSTIR GI: Path Resampling for Real-Time Path Tracing: https://d1qx31qr3h6wln.cloudfront.net/publications/ReSTIR%20GI.pdf
  * 2021: SIGGRAPH 21: Global Illumination Based on Surfels: https://www.ea.com/seed/news/siggraph21-global-illumination-surfels, https://media.contentapi.ea.com/content/dam/ea/seed/presentations/seed-siggraph21-surfel-gi.pdf
+ * 2017: Analytical lights, (Eric Heitz and Stephen Hill) [slides] [code], https://blog.selfshadow.com/publications/s2017-shading-course/#course_content
+ * 2013: Unreal Karis 
+ * 2021: BRDF Importance Sampling for Polygonal Lights https://cg.ivd.kit.edu/publications/2021/polygonal_lights/peters2021-brdf_importance_sampling_for_polygonal_lights-paper.pdf
+ * 2017: siggraph, Real-Time Line- and Disk-Light Shading (Eric Heitz and Stephen Hill) [slides] [code], https://blog.selfshadow.com/publications/s2017-shading-course/#course_content
+
+Next Event Estimation:
+ * 2017: Overview: https://www.ics.uci.edu/~yug10/projects/translucent/update_20170915.html
+ * 2015: Manifold Next Event Estimation: https://www.ics.uci.edu/~yug10/projects/translucent/papers/Hanika_et_al-2015-Computer_Graphics_Forum.pdf
+ * 2019: Next Event Estimation in Quake II RTX, short but sweet: https://developer.nvidia.com/blog/conquering-noisy-images-in-ray-tracing-with-next-event-estimation/
 
 Noise and Sampling:
+ * 2020: Screen-Space Blue-Noise Diffusion of Monte Carlo Sampling Error via Hierarchical Ordering of Pixels: https://dl.acm.org/doi/pdf/10.1145/3414685.3417881, https://abdallagafar.com/publications/zsampler/ 
  * pbrt Chapter 7 Sampling
  * Practical Hash-based Owen Scrambling: http://www.jcgt.org/published/0009/04/01/ 
  * Examples in shadertoy of the above Owen Scrambling: https://www.reddit.com/r/GraphicsProgramming/comments/l1go2r/owenscrambled_sobol_02_sequences_shadertoy/
@@ -73,6 +82,8 @@ Path tracing:
  * (2006) Filter Importance Sampling - essential for anti aliasing - http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.183.3579&rep=rep1&type=pdf
  * (2020) MJP's reference path tracer https://github.com/TheRealMJP/DXRPathTracer
  * (2021) Improved Shader and Texture Level of Detail Using Ray Cones - https://jcgt.org/published/0010/01/01/
+ * (2021) Optimised Path Space Regularisation - https://weiphil.github.io/portfolio/#/publications/opsr
+ * (2018) A Unified Manifold Framework for Efficient BRDF Sampling based on Parametric Mixture Models - https://elek.pub/projects/EGSR2018/HerholzEGSR2018.pdf
 
 Importance sampling
  * Sampling the GGX Distribution of Visible Normals: (lecture slides http://jcgt.org/published/0007/04/01/slides.pdf) paper, code: http://jcgt.org/published/0007/04/01/
@@ -176,6 +187,9 @@ Algorithms:
 Machine learning:
  * (    ) Adaptive Movement Estimation - ADAM (gradient descent): https://machinelearningmastery.com/adam-optimization-from-scratch/ (tutorial)
 
+Ray marching, etc:
+ * (2007) Chapter 18. Relaxed Cone Stepping for Relief Mapping: https://developer.nvidia.com/gpugems/gpugems3/part-iii-rendering/chapter-18-relaxed-cone-stepping-relief-mapping
+
  Particles:
   * https://www.rigzsoft.co.uk/purchase-timelinefx/
   * Beyond Emitters: Shader and Surface Driven GPU Particle FX Techniques https://youtu.be/yG4ChOPyC-4
@@ -211,3 +225,6 @@ Concurrency (C++ & CPU)
 
 Assets/data/meshes
  * FBX -> glTF https://github.com/facebookincubator/FBX2glTF
+
+Vulkan:
+ * My personal hell of translating DXIL to SPIR-V : https://themaister.net/blog/2021/11/07/my-personal-hell-of-translating-dxil-to-spir-v-part-3/

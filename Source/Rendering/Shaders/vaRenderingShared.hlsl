@@ -130,6 +130,41 @@ float SpecPowerToRoughness(in float s)
 // Various utility
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+float3 SphericalToCartesian( float azimuthAngle, float polarAngle )
+{
+    float3 outVector;
+    outVector.x = sin( polarAngle ) * cos( azimuthAngle );
+    outVector.y = sin( polarAngle ) * sin( azimuthAngle );
+    outVector.z = cos( polarAngle );
+    return outVector;
+}
+
+float IntersectRaySphere( float3 rayOrigin, float3 rayDir, float3 spherePos, float sphereRadius )
+{
+    float3 e = rayOrigin - spherePos;
+    float3 d = rayDir;
+
+    float a = 1.0;
+    float b = 2.0 * dot(d,e);
+    float c = dot(e,e) - sphereRadius*sphereRadius;
+
+    float det = b*b - 4.0*a*c;
+
+    if (det <= 0.0) {
+        return 0.0f;
+    }
+
+    return (-b - sqrt(det)) / (2.0 * a);
+}
+
+//float3 NearestRaySphere( float3 rayOrigin, float3 rayDir, float3 spherePos, float sphereRadius )
+//{
+//    float3 surfaceToCenter = spherePos - rayOrigin;
+//    float3 centerToRay = dot( surfaceToCenter, rayDir ) * rayDir - surfaceToCenter;
+//    return surfaceToCenter + centerToRay * saturate( sphereRadius / length(centerToRay) );
+//}
+
 void ReOrthogonalizeFrame( inout float3x3 frame, uniform const bool preserveHandedness )
 {
     frame[1] = normalize( frame[1] - frame[2]*dot(frame[1], frame[2]) );
@@ -176,6 +211,15 @@ void ComputeOrthonormalBasis( float3 n, out float3 b1, out float3 b2 )
     b1 = float3(1.0f + sign * n.x * n.x * a, sign * b, -sign * n.x);
     b2 = float3(b, sign + n.y * n.y * a, -n.y);
 }
+
+// same as above, just returning the matrix
+float3x3 ComputeOrthonormalBasis( float3 n )
+{
+    float3x3 ret; ret[2] = n;
+    ComputeOrthonormalBasis( n, ret[0], ret[1] );
+    return ret;
+}
+
 
 // https://github.com/mmikk/Papers-Graphics-3D/blob/master/sgp.pdf - mikktspace!
 float3x3 GenBasisTB( float3 worldNormal, float3 worldPos, float2 texST )
@@ -456,5 +500,20 @@ float FresnelDielectric( float eta, float cosThetaI, out float cosThetaT )
 
     return 0.5 * (Rs * Rs + Rp * Rp);
 }
+
+// see https://www.pbr-book.org/3ed-2018/Monte_Carlo_Integration/Importance_Sampling
+float BalanceHeuristic(int nf, float fPdf, int ng, float gPdf) 
+{
+    float f = nf * fPdf;
+    float g = ng * gPdf;
+    return (f) / (f + g);
+}
+float PowerHeuristic(int nf, float fPdf, int ng, float gPdf) 
+{
+    float f = nf * fPdf;
+    float g = ng * gPdf;
+    return (f * f) / (f * f + g * g);
+}
+
 
 #endif // #ifdef VA_RENDERINGSHARED_HLSL_INCLUDED

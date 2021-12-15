@@ -235,7 +235,7 @@ namespace Vanilla
         EmissiveMaterialDriverUpdateWorkNode( const string & name, vaScene & scene, const std::vector<string> & predecessors, const std::vector<string> & successors ) 
             : Scene( scene ), View( scene.Registry().view<std::add_const_t<Scene::EmissiveMaterialDriver>>( ) ),
             vaSceneAsync::WorkNode( name, predecessors, successors, Scene::AccessPermissions::ExportPairLists<
-                const Scene::TransformWorld, const Scene::LightPoint, Scene::EmissiveMaterialDriver >() ) { }
+                const Scene::Relationship, const Scene::TransformWorld, const Scene::LightPoint, const Scene::DisableLightingRecursiveTag, Scene::EmissiveMaterialDriver >() ) { }
 
         // Asynchronous narrow processing; called after ExecuteWide, returned std::pair<uint, uint> will be used to immediately repeat ExecuteWide if non-zero
         virtual std::pair<uint, uint>   ExecuteNarrow( const uint32 pass, vaSceneAsync::ConcurrencyContext & ) override
@@ -264,7 +264,22 @@ namespace Vanilla
                     }
                     else
                     {
-                        emissiveDriver.EmissiveMultiplier = referenceLight->Color * (referenceLight->Intensity * referenceLight->FadeFactor * emissiveDriver.ReferenceLightMultiplier);
+                        float enabledK = Scene::HasOrParentsHave<Scene::DisableLightingRecursiveTag>( Scene.CRegistry(), emissiveDriver.ReferenceLightEntity )?(0.0f):(1.0f);
+
+                        if( emissiveDriver.AssumeUniformUnitSphere )
+                        {
+                            // referenceLight->Intensity is measured in 'Radiant Intensity' (Watts per steradian), while emissive surface is measured in 'Irradiance' (Radiant Exitance), which is W/m^2, which are equivalent on unit sphere (1 m^2 subtends one steradian)
+                            // Assuming unit sphere, we want all of the point light falling on 1 m^2 (or 1 steradian) to disperse uniformly (not using lambertian emitters at the moment).
+                            // A cone that subtends 1 steradian has an angle of 65.54 degrees (https://en.wikipedia.org/wiki/Steradian) so expanding the light from it to 180 degrees:
+                            emissiveDriver.ReferenceLightMultiplier = 65.54f / 180.0f;
+                            
+                            // And then take mesh scaling, if any, into account: surface grows with the square of the radius, so divide by it for the Radiant Exitance to remain the same
+                            const vaMatrix4x4 & world = Scene.CRegistry().get<Scene::TransformWorld>( emissiveDriver.ReferenceLightEntity );
+                            float uniformScale = (world.GetAxisX( ).Length() + world.GetAxisY( ).Length() + world.GetAxisZ( ).Length()) / 3.0f;
+                            emissiveDriver.ReferenceLightMultiplier /= uniformScale*uniformScale;
+                        }
+
+                        emissiveDriver.EmissiveMultiplier = referenceLight->Color * (referenceLight->Intensity * referenceLight->FadeFactor * emissiveDriver.ReferenceLightMultiplier * enabledK);
                     }
                 }
             }
@@ -276,20 +291,20 @@ using namespace Vanilla;
 
 int vaScene::s_instanceCount = 0;
 
-static std::unordered_map<uint64, vaScene*>         s_sceneInstances;
+static std::unordered_map<uint64, std::weak_ptr<vaScene>>         s_sceneInstances;
 
-vaScene * vaScene::FindByRuntimeID( uint64 runtimeID )
+std::shared_ptr<vaScene> vaScene::FindByRuntimeID( uint64 runtimeID )
 {
     auto it = s_sceneInstances.find( runtimeID );
     if( it == s_sceneInstances.end() )
     {
         assert( false );
-        return nullptr;
+        return std::shared_ptr<vaScene>();
     }
-    return it->second;
+    return it->second.lock();
 }
 
-vaScene::vaScene( const string & name, const vaGUID UID )
+vaScene::vaScene( const string & name, const vaGUID & UID )
     : vaUIPanel( "Scene", 1, !VA_MINIMAL_UI_BOOL, vaUIPanel::DockLocation::DockedLeft, "Scenes" ),
     m_async( *this )
 {
@@ -385,9 +400,6 @@ vaScene::vaScene( const string & name, const vaGUID UID )
 
     for( auto & workNodes : m_asyncWorkNodes )
         m_async.AddWorkNode( workNodes );
-
-
-    s_sceneInstances.insert( {RuntimeIDGet( ), this} );
 }
 
 void vaScene::ClearAll( )
@@ -419,7 +431,7 @@ vaScene::~vaScene( )
 {
     s_sceneInstances.erase( RuntimeIDGet() );
     if( s_sceneInstances.size() == 0 )
-        std::swap( s_sceneInstances, std::unordered_map<uint64, vaScene*>() );
+        std::swap( s_sceneInstances, std::unordered_map<uint64, std::weak_ptr<vaScene>>() );
 
     if( IsTicking( ) )
         TickEnd( );
@@ -506,7 +518,7 @@ entt::entity vaScene::CreateEntity( const string & name, const vaMatrix4x4 & loc
 
     if( parent != entt::null )
     {
-        SetParent( entity, parent );
+        SetParent( entity, parent, false );
     }
 
     SetTransformDirtyRecursive( entity );
@@ -544,11 +556,11 @@ void vaScene::OnRelationshipDestroy( entt::registry & registry, entt::entity ent
     Scene::DisconnectRelationship( registry, entity );
 }
 
-void vaScene::SetParent( entt::entity child, entt::entity parent )
+void vaScene::SetParent( entt::entity child, entt::entity parent, bool maintainWorldTransform )
 {
     assert( vaThreading::IsMainThread( ) && m_registry.ctx<Scene::AccessPermissions>().GetState( ) != Scene::AccessPermissions::State::Concurrent );
 
-    Scene::SetParent( m_registry, child, parent );
+    Scene::SetParent( m_registry, child, parent, maintainWorldTransform );
 }
 
 void vaScene::UIHighlight( entt::entity entity )
@@ -584,18 +596,32 @@ void vaScene::UIOpenProperties( entt::entity entity, int preferredPropPanel )
 bool vaScene::SaveJSON( const string & filePath )
 {
     Scene::DestroyTagged( m_registry ); // <- don't save any of the about to be destroyed ones
-    bool ret = Scene::SaveJSON( m_registry, filePath );
+    bool ret = Scene::JSONSave( m_registry, filePath );
     if( ret )
+    {
         m_storagePath = filePath;
+        VA_LOG_SUCCESS( "Scene file saved to %s", filePath.c_str() );
+    }
+    else
+    {
+        VA_LOG_ERROR( "Unable to save scene file to %s", filePath.c_str() );
+    }
     return ret;
 }
 
 bool vaScene::LoadJSON( const string & filePath )
 {
     ClearAll();
-    bool ret = Scene::LoadJSON( m_registry, filePath );
+    bool ret = Scene::JSONLoad( m_registry, filePath );
     if( ret )
+    {
         m_storagePath = filePath;
+        VA_LOG_SUCCESS( "Scene loaded from %s", filePath.c_str() );
+    }
+    else
+    {
+        VA_LOG_ERROR( "Unable to load scene file from %s", filePath.c_str() );
+    }
     return ret;
 }
 
@@ -659,8 +685,21 @@ void vaScene::UIPanelTick( vaApplicationBase& application )
 
     if( ImGui::CollapsingHeader( "Systems", /*ImGuiTreeNodeFlags_DefaultOpen*/ 0 ) )
     {
+        VA_GENERIC_RAII_SCOPE( ImGui::Indent();, ImGui::Unindent(); );
+
         if( ImGui::Button( "Dump systems graph", {-1, 0} ) )
             m_async.ScheduleGraphDump( );
+        
+        if( m_uiMarker == vaMatrix4x4::Degenerate ) 
+            ImGui::Text( "UI marker not set" );
+        else
+        {
+            ImGui::Text( "UI marker:" );
+            VA_GENERIC_RAII_SCOPE( ImGui::Indent();, ImGui::Unindent(); );
+            ImGuiEx_Transform( "Marker", m_uiMarker, false, false );
+        }
+
+        ImGui::Separator();
     }
 
 
@@ -954,7 +993,7 @@ void vaScene::UIPanelTick( vaApplicationBase& application )
         if( acceptedDragDrop )
         {
             assert( Scene::CanSetParent( m_registry, currentDragDrop.Entity, acceptedDragDropTargetEntity ) );
-            SetParent( currentDragDrop.Entity, acceptedDragDropTargetEntity );
+            SetParent( currentDragDrop.Entity, acceptedDragDropTargetEntity, true );
         }
 
         ImGui::Columns( 1 );
@@ -964,7 +1003,8 @@ void vaScene::UIPanelTick( vaApplicationBase& application )
 
         if( ImGui::BeginPopup( "RightClickEntityContextMenu" ) )
         {
-            if( m_uiEntityContextMenuEntity != entt::null && !m_registry.valid( m_uiEntityContextMenuEntity ) )
+            if( ( m_uiEntityContextMenuEntity != entt::null && !m_registry.valid( m_uiEntityContextMenuEntity ) )   // invalid entity
+                || (m_uiEntityContextMenuEntity == entt::null && m_uiEntityContextMenuDepth != 0) )                 // Non-hierarchical top item
                 ImGui::CloseCurrentPopup( );
             else
             {
@@ -987,7 +1027,20 @@ void vaScene::UIPanelTick( vaApplicationBase& application )
                         auto newEntity = CreateEntity( "New entity", vaMatrix4x4::Identity );
                         UIOpenRename( newEntity );
                     }
-                }
+
+                    ImGui::Separator( );
+
+                    const char * clipboardText = ImGui::GetClipboardText( );
+                    bool pasteEnabled = Scene::JSONIsSubtree( clipboardText );
+                    if( ImGui::MenuItem( "Paste subtree here", nullptr, false, pasteEnabled ) && pasteEnabled )
+                    {
+                        int createdCount = Scene::JSONLoadSubtree( clipboardText, m_registry, entt::null, true );
+                        if( createdCount <= 0 )
+                            VA_LOG_WARNING( "Entity subtree paste failed - error in decoding or etc." );
+                        else
+                            VA_LOG( "Entity subtree paste succeeded, %d new entities added", createdCount );
+                    }
+               }
                 else
                 {
                     bool popupExpandCollapse = false;
@@ -1018,12 +1071,43 @@ void vaScene::UIPanelTick( vaApplicationBase& application )
                             if( ImGui::MenuItem( "Yes, unparent", NULL, false, true ) )
                             {
                                 ImGui::CloseCurrentPopup( );
-                                SetParent( m_uiEntityContextMenuEntity, entt::null );
+                                SetParent( m_uiEntityContextMenuEntity, entt::null, true );
                             }
                             if( ImGui::MenuItem( "No, cancel", NULL, false, true ) )
                                 ImGui::CloseCurrentPopup( );
                             ImGui::EndMenu( );
                         }
+                        if( ImGui::BeginMenu( "Move", true ) )
+                        {
+                            if( ImGui::MenuItem( "To UI marker", NULL, false, m_uiMarker != vaMatrix4x4::Degenerate ) )
+                            {
+                                Scene::MoveToWorld( m_registry, m_uiEntityContextMenuEntity, m_uiMarker );
+                                ImGui::CloseCurrentPopup( );
+                            }
+                            ImGui::EndMenu( );
+                        }
+                        ImGui::Separator( );
+
+                        if( ImGui::MenuItem( "Copy subtree", NULL, false, true ) )
+                        {
+                            ImGui::CloseCurrentPopup( );
+                            string data = Scene::JSONSaveSubtree( m_registry, m_uiEntityContextMenuEntity );
+                            ImGui::SetClipboardText( data.c_str() );
+                        }
+                        //ImGui::SetTooltip( "Copies the node and it's child nodes recursively to clipboard (JSON text format)" );
+
+                        const char * clipboardText = ImGui::GetClipboardText( );
+                        bool pasteEnabled = Scene::JSONIsSubtree( clipboardText );
+                        if( ImGui::MenuItem( "Paste subtree here", nullptr, false, pasteEnabled ) && pasteEnabled )
+                        {
+                            int createdCount = Scene::JSONLoadSubtree( clipboardText, m_registry, m_uiEntityContextMenuEntity, true );
+                            if( createdCount <= 0 )
+                                VA_LOG_WARNING( "Entity subtree paste failed - error in decoding or etc." );
+                            else
+                                VA_LOG( "Entity subtree paste succeeded, %d new entities added", createdCount );
+                        }
+                        //ImGui::SetTooltip( "Paste a previously copies subtree from clipboard; entity Scene::UID-s will be re-created and internal references re-linked; external->subtree references to the subtree will thus be broken, but subtree->external references will remain valid if copy-pasting from/to same scene" );
+
                         ImGui::Separator( );
 
                     } );
@@ -1057,6 +1141,9 @@ void vaScene::UIPanelTickAlways( vaApplicationBase & application )
     assert( vaThreading::IsMainThread( ) && m_registry.ctx<Scene::AccessPermissions>().GetState( ) != Scene::AccessPermissions::State::Concurrent );
 
     application;
+
+    vaDebugCanvas2D & canvas2D = application.GetCanvas2D( );
+    vaDebugCanvas3D & canvas3D = application.GetCanvas3D( );
 
     // renaming
     {
@@ -1123,9 +1210,6 @@ void vaScene::UIPanelTickAlways( vaApplicationBase & application )
 
     // Draw 2D/3D UI of selected
     {
-        vaDebugCanvas2D & canvas2D = application.GetCanvas2D( );
-        vaDebugCanvas3D & canvas3D = application.GetCanvas3D( );
-
         m_registry.view<Scene::UIEntityTreeSelectedTag>( ).each( [ & ]( entt::entity entity )
         {
             for( int typeIndex = 0; typeIndex < Scene::Components::TypeCount( ); typeIndex++ )
@@ -1140,6 +1224,14 @@ void vaScene::UIPanelTickAlways( vaApplicationBase & application )
         //canvas3D.DrawArrow( {0,0,0}, {10,0,0}, 0.5f, 0x10000000, 0x80FFFFFF, 0x8000FFFF );
     }
 
+    // UI marker
+    {
+        if( m_uiMarker != vaMatrix4x4::Degenerate )
+        {
+            canvas3D.DrawAxis( m_uiMarker.GetTranslation(), 0.2f );
+            canvas3D.DrawText3D( canvas2D, m_uiMarker.GetTranslation(), { 0, 20.0f }, 0xFFFFFFFF, 0x00000000, "marker" );
+        }
+    }
 
 }
 
@@ -1160,8 +1252,19 @@ void vaScene::TickBegin( float deltaTime, int64 applicationTickIndex )
 
     {
         VA_TRACE_CPU_SCOPE( DestroyTagged );
-        // Delete all entities tagged with DestroyTag - THIS IS THE ONLY PLACE WHERE ENTITIES CAN GET DESTROYED (other than in the destructor and before saving.. and maybe some other place :P)!
+        // Delete all entities tagged with DestroyTag - THIS IS THE ONLY PLACE WHERE ENTITIES CAN GET DESTROYED (other than in the destructor and before saving.. and maybe some other place :P but definitely not between m_async.Begin and m_async.End)!
         Scene::DestroyTagged( m_registry );
+    }
+
+    {
+        VA_TRACE_CPU_SCOPE( SimpleScripts );
+        
+        m_registry.view<Scene::SimpleScript>( ).each( [ & ]( entt::entity entity, Scene::SimpleScript & simpleScript )
+        {
+            auto it = m_simpleScripts.find( vaStringTools::ToLower(simpleScript.TypeName) );
+            if( it != m_simpleScripts.end() )
+                it->second.Invoke( *this, simpleScript.TypeName, entity, simpleScript, deltaTime, applicationTickIndex );
+        } );
     }
 
     {
@@ -1184,4 +1287,23 @@ void vaScene::TickEnd( )
     }
 
     m_currentTickDeltaTime     = -1.0f;
+}
+
+std::shared_ptr<vaScene> vaScene::Create( const string & name, const vaGUID & UID )
+{
+    std::shared_ptr<vaScene> ptr = std::shared_ptr<vaScene>( new vaScene( name, UID ) );
+    s_sceneInstances.insert( {ptr->RuntimeIDGet( ), ptr->GetSharedPtr() } );
+    return ptr;
+}
+
+void vaScene::RegisterSimpleScript( const string & _typeName, const weak_ptr<void> & aliveToken, const Scene::SimpleScriptCallbackType & callback )
+{
+    string typeName = vaStringTools::ToLower( _typeName );
+    auto it = m_simpleScripts.find( typeName );
+    if( it == m_simpleScripts.end() )
+        m_simpleScripts.insert( std::pair<string, Scene::SimpleScriptCallbackEventType>(typeName, Scene::SimpleScriptCallbackEventType()) );
+    it = m_simpleScripts.find( typeName ); // yeah yeah not required, use insert above blah blah
+    if( it == m_simpleScripts.end() )
+    { assert( false ); return; }
+    it->second.AddWithToken( aliveToken, callback );
 }

@@ -152,6 +152,7 @@ namespace Vanilla
         DepthStencil                = (1 << 5),
         UnorderedAccess             = (1 << 6),
         Shared                      = (1 << 7),     // for sharing with non-D3D12 APIs
+        RaytracingAccelerationStructure = (1 << 8),
     };
     BITFLAG_ENUM_CLASS_HELPER( vaResourceBindSupportFlags );
 

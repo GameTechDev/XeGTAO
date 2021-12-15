@@ -110,6 +110,8 @@ namespace Vanilla
 
         entt::entity                                m_uiPopupRename                     = entt::null;
 
+        vaMatrix4x4                                 m_uiMarker                          = vaMatrix4x4::Degenerate;
+
 
         //////////////////////////////////////////////////////////////////////////
 
@@ -143,6 +145,9 @@ namespace Vanilla
         std::vector<shared_ptr<vaSceneAsync::WorkNode>> 
                                                     m_asyncWorkNodes;
 
+        std::unordered_map<string, Scene::SimpleScriptCallbackEventType>
+                                                    m_simpleScripts;
+
     public:
         //////////////////////////////////////////////////////////////////////////
         // Signals
@@ -154,9 +159,14 @@ namespace Vanilla
         vaEvent<void( vaScene & scene, float deltaTime, int64 applicationTickIndex )>
                                                     e_TickEnd;
         //////////////////////////////////////////////////////////////////////////
+    private:
+        vaScene( const string & name, const vaGUID & UID );
     public:
-        vaScene( const string & name = "UnnamedScene", const vaGUID UID = vaGUID::Create() );
         virtual ~vaScene( );
+
+        // to correctly make 'enable_shared_from_this' work
+        static std::shared_ptr<vaScene>             Create( const string & name = "UnnamedScene", const vaGUID & UID = vaGUID::Create() );
+        std::shared_ptr<vaScene>                    GetSharedPtr( )                                     { return shared_from_this(); }
 
     public:
         const vaGUID &                              UID( ) const                                        { return m_registry.ctx<Scene::UID>(); }
@@ -190,6 +200,8 @@ namespace Vanilla
 
         vaSceneAsync &                              Async( )                                            { return m_async; }
 
+        void                                        RegisterSimpleScript( const string & typeName, const weak_ptr<void> & aliveToken, const Scene::SimpleScriptCallbackType & callback );
+
     public:
         // This is the main async execution part - wraps Async( ), might get removed for direct access instead
         void                                        TickBegin( float deltaTime, int64 applicationTickIndex );
@@ -204,6 +216,10 @@ namespace Vanilla
         void                                        UIHighlight( entt::entity entity );
         void                                        UIOpenRename( entt::entity entity )                 { if( m_uiPopupRename != entt::null || !m_registry.valid(entity) ) { assert(false); return; }; m_uiPopupRename = entity; }
 
+        // vaMatrix4x4::Degenerate means no marker set
+        void                                        UISetMarker( const vaMatrix4x4 & transform )        { m_uiMarker = transform; }
+        const vaMatrix4x4 &                         UIGetMarker( ) const                                { return m_uiMarker; }
+
     public:
         // Transforms
         // const vaMatrix4x4 *                         GetTransformWorld( )
@@ -211,7 +227,7 @@ namespace Vanilla
 
     public:
         // Parent/child relationships
-        void                                        SetParent( entt::entity child, entt::entity parent );   // parent can be null - this then just breaks existing parent<->child link
+        void                                        SetParent( entt::entity child, entt::entity parent, bool maintainWorldTransform );   // parent can be null - this then just breaks existing parent<->child link
         void                                        UnparentChildren( entt::entity parent );                // breaks all children links from this parent
         void                                        VisitChildren( entt::entity parent, std::function<void( entt::entity child )> visitor )                                                     { return Scene::VisitChildren( m_registry, parent, visitor ); }
         void                                        VisitChildren( entt::entity parent, std::function<void( entt::entity child, int index, entt::entity parent )> visitor )                     { return Scene::VisitChildren( m_registry, parent, visitor ); }
@@ -236,7 +252,7 @@ namespace Vanilla
         void                                        OnDestroyTagChanged(entt::registry &, entt::entity);
 
     public:
-        static vaScene *                            FindByRuntimeID( uint64 runtimeID );
+        static std::shared_ptr<vaScene>             FindByRuntimeID( uint64 runtimeID );
 
         Scene::UIDRegistry &                        UIDRegistry( )                                      { return m_registry.ctx<Scene::UIDRegistry>(); }
     };

@@ -117,16 +117,8 @@ namespace Vanilla
         bool                                    m_hasTicked                     = false;
 
         /// temporary bistro animation stuff for testing verious temporal issues
-        bool                                    m_simpleBistroAnimAvailable     = false;
-        bool                                    m_simpleBistroAnimMoveObjs      = true;
-        bool                                    m_simpleBistroAnimSwingLight    = true;
-        bool                                    m_simpleBistroAnimAdvanceTime   = false;
-        double                                  m_simpleBistroAnimTime          = 0;
-        entt::entity                            m_simpleBistroAnimCeilingFan    = entt::null;
-        entt::entity                            m_simpleBistroAnimSpaceship     = entt::null;
-        entt::entity                            m_simpleBistroAnimSpaceshipLL   = entt::null;
-        entt::entity                            m_simpleBistroAnimSpaceshipLR   = entt::null;
-        entt::entity                            m_simpleBistroAnimCeilingLight  = entt::null;
+
+        shared_ptr<void>                        m_interactiveBistroContext      = nullptr;
         //////////////////////////////////////////////////////////////////////////
 
     public:
@@ -190,7 +182,8 @@ namespace Vanilla
         void                                    ScriptedDemo( vaApplicationBase & application ) ;
 
     private:
-        void                                    SimpleBistroAnimStuff( float deltaTime, bool sceneChanged );
+        void                                    InteractiveBistroTick( float deltaTime, bool sceneChanged );
+        void                                    InteractiveBistroUI( vaApplicationBase & application );
 
     };
 

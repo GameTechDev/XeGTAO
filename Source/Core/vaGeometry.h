@@ -363,6 +363,9 @@ namespace Vanilla
         // Transform vector by matrix.
         static vaVector4        Transform( const vaVector4 & v, const vaMatrix4x4 & mat );
 
+        // Transforms to/from uint colors
+        // Confusingly, these were originally named using ambiguous little-endian scheme so RGBA means A<<24|B<<16|G<<8|R
+        // This needs to change (reverse) with proper documentation and careful refactoring of all code that uses it.
         static vaVector4        FromBGRA( uint32 colour );
         static vaVector4        FromRGBA( uint32 colour );
         static vaVector4        FromABGR( uint32 colour );
@@ -626,6 +629,8 @@ namespace Vanilla
         // Matrix multiplication.  The result represents transformation b followed by transformation a.
         static vaMatrix3x3      Multiply( const vaMatrix3x3 & a, const vaMatrix3x3 & b );
 
+        static vaMatrix3x3      RotateFromTo( const vaVector3 & from, const vaVector3 & to );
+
         static string           ToString( const vaMatrix3x3 & a );
         static bool             FromString( const string & str, vaMatrix3x3 & outVal );
     };
@@ -647,6 +652,7 @@ namespace Vanilla
 
     public:
         static vaMatrix4x4      Identity;
+        static vaMatrix4x4      Degenerate;
 
     public:
         vaMatrix4x4( ) { };
@@ -1197,6 +1203,9 @@ namespace Vanilla
         static float            LinearToLuminance( const vaVector3 & colour )   { return colour.x * 0.2126f + colour.y * 0.7152f + colour.z * 0.0722f; }
 
         static void             NormalizeLuminance( vaVector3 & inoutColor, float & inoutIntensity );
+
+        static vaVector3        RGB2HSV( const vaVector3 & rgb );
+        static vaVector3        HSV2RGB( const vaVector3 & hsv );
     };
 
     // this should go into Containers but is cool here for now
@@ -1244,6 +1253,9 @@ namespace Vanilla
     inline float        vaLength( const vaVector2 & a )                                 { return a.Length(); }
     inline float        vaLength( const vaVector3 & a )                                 { return a.Length(); }
     inline float        vaLength( const vaVector4 & a )                                 { return a.Length(); }
+
+    inline void         ComputeOrthonormalBasis( const vaVector3 & n, vaVector3 & b1, vaVector3 & b2 ) { return vaVector3::ComputeOrthonormalBasis( n, b1, b2 ); }
+
 
 #include "vaGeometry.inl"
 

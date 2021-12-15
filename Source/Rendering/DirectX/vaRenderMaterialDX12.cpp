@@ -37,16 +37,18 @@ void vaRenderMaterialManagerDX12::UpdateAndSetToGlobals( vaRenderDeviceContext &
 
         // this doesn't necessarily mean any materials change but in most cases it does
         bool needsRebuild = false;//m_callableShaderTable == nullptr;
-        needsRebuild |= m_callablesTable.size() != m_materials.Size();
+        needsRebuild |= m_globalCallablesTable.size() != m_materials.Size();
 
         // resize to SIZE, not the count - using the sparse array setup!
-        m_callablesTable.resize( m_materials.Size() );
-        m_uniqueCallableLibraries.clear();
+        m_globalCallablesTable.resize( m_materials.Size() );
+
+        if( needsRebuild )
+            m_uniqueCallablesTable.clear();
 
         for( uint32 sparseIndex : m_materials.PackedArray( ) )
         {
             vaRenderMaterial & material = *m_materials.At( sparseIndex );
-            CallableShaders & entry = m_callablesTable[ sparseIndex ];
+            CallableShaders & entry = m_globalCallablesTable[ sparseIndex ];
 
             // We can update all materials here - even the ones that can't be rendered; this will reduce the differences between
             // the tables and reduce PSO rebuilds, but can be a lot more costly (will be performed for all loaded assets).
@@ -58,8 +60,10 @@ void vaRenderMaterialManagerDX12::UpdateAndSetToGlobals( vaRenderDeviceContext &
             needsRebuild |= ( material.UIDObject_GetUID() != entry.MaterialID );
             entry.MaterialID = material.UIDObject_GetUID();
 
-            vaFramePtr<vaShaderLibrary> shader; string uniqueID;
-            material.GetCallableShaderLibrary( shader, uniqueID );
+            vaFramePtr<vaShaderLibrary> shader; string uniqueID; int uniqueTableIndex;
+            material.GetCallableShaderLibrary( shader, uniqueID, uniqueTableIndex );
+            if( uniqueTableIndex >= m_uniqueCallablesTable.size() ) // can be increased by material.PreRenderUpdate above!
+                m_uniqueCallablesTable.resize( uniqueTableIndex+1 );
             int64 prevLibraryUniqueContentsID = entry.LibraryUniqueContentsID;
             vaShader::State state = (shader == nullptr)?( vaShader::State::Empty ):(AsDX12( *shader ).GetShader( entry.LibraryBlob, entry.LibraryUniqueContentsID ));
             if( state != vaShader::State::Cooked )
@@ -68,10 +72,24 @@ void vaRenderMaterialManagerDX12::UpdateAndSetToGlobals( vaRenderDeviceContext &
                 entry.LibraryUniqueContentsID = -1;
                 assert( entry.LibraryBlob == nullptr );
                 entry.Reset();
+                m_uniqueCallablesTable[uniqueTableIndex] = entry;
+                // AsDX12(material).SetCallableShaderTableIndex( 0 );
                 continue;
             }
             entry.UniqueIDString    = vaStringTools::SimpleWiden( uniqueID );
-            m_uniqueCallableLibraries.insert( {entry.LibraryBlob, sparseIndex} );
+
+            assert( uniqueTableIndex != -1 );
+            m_uniqueCallablesTable[uniqueTableIndex] = entry;
+            // // Ok now find unique, slot them into the table and that's it!
+            // auto res = m_uniqueCallablesMap.insert( {entry.LibraryBlob, 0} );
+            // if( res.second )
+            // {
+            //     res.first->second = (int)m_uniqueCallablesTable.size();
+            //     m_uniqueCallablesTable.push_back( entry );
+            // }
+            // Update unique index
+            // AsDX12(material).SetCallableShaderTableIndex( res.first->second );
+
             needsRebuild |= entry.LibraryUniqueContentsID != prevLibraryUniqueContentsID;
         }
 
@@ -81,6 +99,9 @@ void vaRenderMaterialManagerDX12::UpdateAndSetToGlobals( vaRenderDeviceContext &
 
         m_callableShaderTableLastFrameIndex = GetRenderDevice().GetCurrentFrameIndex();
     }
+
+
+
     vaRenderMaterialManager::UpdateAndSetToGlobals( renderContext, shaderItemGlobals, drawAttributes );
 }
 
@@ -88,15 +109,18 @@ void vaRenderMaterialManagerDX12::EndFrameCleanup( )
 {
     if( m_callableShaderTableLastFrameIndex == GetRenderDevice().GetCurrentFrameIndex() )
     {
-        for( int i = 0; i < m_callablesTable.size(); i++ )
-            m_callablesTable[i].Reset();
-        m_uniqueCallableLibraries.clear();
+        // clear is probably enough - no time to debug now :D
+        for( int i = 0; i < m_uniqueCallablesTable.size(); i++ )
+            m_uniqueCallablesTable[i].Reset();
+        m_uniqueCallablesTable.clear();
+        for( int i = 0; i < m_globalCallablesTable.size(); i++ )
+            m_globalCallablesTable[i].Reset();
     }
 }
 
 void RegisterRenderMaterialDX12( )
 {
-    //VA_RENDERING_MODULE_REGISTER( vaRenderDeviceDX12, vaRenderMaterial, vaRenderMaterialDX12 );
+    VA_RENDERING_MODULE_REGISTER( vaRenderDeviceDX12, vaRenderMaterial, vaRenderMaterialDX12 );
     VA_RENDERING_MODULE_REGISTER( vaRenderDeviceDX12, vaRenderMaterialManager, vaRenderMaterialManagerDX12 );
 }
 

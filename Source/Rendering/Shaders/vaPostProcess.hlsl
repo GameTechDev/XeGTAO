@@ -461,3 +461,16 @@ void CSGenerateMotionVectors( uint2 dispatchThreadID : SV_DispatchThreadID )
 }
 
 #endif
+
+#ifdef VA_POSTPROCESS_CLEAR_UAV_TEX2D_1F
+RWTexture2D<float>         g_clearTarget   : register( u0 );
+[numthreads(8, 8, 1)] void CSClearUAV_Tex2D_1F( uint2 dispatchThreadID : SV_DispatchThreadID ) { g_clearTarget[dispatchThreadID] = g_postProcessConsts.Param1.x; }
+#endif
+#ifdef VA_POSTPROCESS_CLEAR_UAV_TEX2D_4U
+RWBuffer<uint4>             g_clearTarget   : register( u0 );
+[numthreads(64, 1, 1)] void CSClearUAV_Buff_4U( uint dispatchThreadID : SV_DispatchThreadID ) { g_clearTarget[dispatchThreadID] = asuint(g_postProcessConsts.Param1.xyzw); }
+#endif
+#ifdef VA_POSTPROCESS_CLEAR_UAV_TEX2D_1U
+RWBuffer<uint>              g_clearTarget   : register( u0 );
+[numthreads(64, 1, 1)] void CSClearUAV_Buff_1U( uint dispatchThreadID : SV_DispatchThreadID ) { g_clearTarget[dispatchThreadID] = asuint(g_postProcessConsts.Param1.x); }
+#endif

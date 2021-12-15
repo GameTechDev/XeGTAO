@@ -96,17 +96,22 @@ namespace Vanilla
             void                            OnEmplace( entt::registry &, entt::entity );
         };
 
-        bool LoadJSON( entt::registry & registry, const string & filePath );
+        bool JSONLoad( entt::registry & registry, const string & filePath );
+        int JSONLoadSubtree( const string & jsonData, entt::registry & registry, entt::entity parentEntity, bool regenerateUIDs );
         struct SerializeArgs
         {
         private:
             friend class EntityReference;
-            friend bool Scene::LoadJSON( entt::registry & registry, const string & filePath );
+            friend struct EntitySerializeHelper;
+            friend bool Scene::JSONLoad( entt::registry & registry, const string & filePath );
+            friend int Scene::JSONLoadSubtree( const string & jsonData, entt::registry & registry, entt::entity parentEntity, bool regenerateUIDs );
             std::vector<std::pair<class EntityReference *, UID>>   
                                             LoadedReferences;
             const Scene::UIDRegistry &      UIDRegistry;
+            std::unordered_map< vaGUID, vaGUID, vaGUIDHasher > * const 
+                                            UIDRemapper = nullptr;
         public:
-            SerializeArgs( const Scene::UIDRegistry & uidRegistry ) : UIDRegistry( uidRegistry ) { }
+            SerializeArgs( const Scene::UIDRegistry & uidRegistry, std::unordered_map< vaGUID, vaGUID, vaGUIDHasher > * remapper = nullptr ) : UIDRegistry( uidRegistry ), UIDRemapper( remapper ) { }
         };
 
         // Reference to another entity that persists through serialization (via the use of UID or another approach)
@@ -230,7 +235,7 @@ namespace Vanilla
             static bool             HasUITypeInfo( int typeIndex );
             static const char *     UITypeInfo( int typeIndex );
 
-            static bool             Has( int typeIndex, entt::registry & registry, entt::entity entity );
+            static bool             Has( int typeIndex, const entt::registry & registry, entt::entity entity );
             static void             EmplaceOrReplace( int typeIndex, entt::registry & registry, entt::entity entity );
             static void             Remove( int typeIndex, entt::registry & registry, entt::entity entity );
 
@@ -288,7 +293,7 @@ namespace Vanilla
             bool        UIVisible;
             bool        UIAddRemoveResetDisabled;
 
-            std::function<bool( entt::registry & registry, entt::entity entity )>
+            std::function<bool( const entt::registry & registry, entt::entity entity )>
                         HasCallback                 = {};
             std::function<void( entt::registry & registry, entt::entity entity ) >
                         EmplaceOrReplaceCallback    = {};
@@ -511,7 +516,7 @@ namespace Vanilla
         
         typeInfo.TypeName           = typeName;
         typeInfo.NameID             = nameID;
-        typeInfo.HasCallback        = [ ] ( entt::registry & registry, entt::entity entity )    { return registry.any_of<ComponentType>( entity ); };
+        typeInfo.HasCallback        = [ ] ( const entt::registry & registry, entt::entity entity )    { return registry.any_of<ComponentType>( entity ); };
         typeInfo.EmplaceOrReplaceCallback 
                                     = [ ] ( entt::registry & registry, entt::entity entity )    { registry.emplace_or_replace<ComponentType>( entity ); };
         typeInfo.RemoveCallback     = [ ] ( entt::registry & registry, entt::entity entity )    { registry.remove<ComponentType>( entity ); };

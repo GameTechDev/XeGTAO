@@ -96,6 +96,8 @@ namespace Vanilla
         virtual void                        EndFrame( )  ;
         virtual void                        PostPresent( );             // called after EndFrame, and after Present was performed
 
+        virtual void                        Flush( )                                                                                            = 0;
+
         // platform-independent way of drawing items; it is immediate and begin/end items is there mostly for state caching; 
         // when present, 'drawAttributes' parameter represents global states like lighting; these are same for all items between BeginItems/EndItems
         virtual void                        BeginGraphicsItems( const vaRenderOutputs & renderOutputs, const vaDrawAttributes * drawAttributes );
@@ -138,6 +140,7 @@ namespace Vanilla
 
     inline vaDrawResultFlags vaRenderDeviceContext::ExecuteSingleItem( const vaGraphicsItem& renderItem, const vaRenderOutputs& renderOutputs, const vaDrawAttributes* drawAttributes ) 
     { 
+        renderItem.Validate();
         assert( m_itemsStarted == vaRenderTypeFlags::None ); 
         assert( !IsWorker() );
         BeginGraphicsItems( renderOutputs, drawAttributes ); 
@@ -148,6 +151,7 @@ namespace Vanilla
     }
     inline vaDrawResultFlags vaRenderDeviceContext::ExecuteSingleItem( const vaComputeItem& computeItem, const vaRenderOutputs & renderOutputs, const vaDrawAttributes* drawAttributes ) 
     { 
+        computeItem.Validate();
         assert( m_itemsStarted == vaRenderTypeFlags::None ); 
         assert( !IsWorker() );
         BeginComputeItems( renderOutputs, drawAttributes ); 
@@ -158,6 +162,7 @@ namespace Vanilla
     }
     inline vaDrawResultFlags vaRenderDeviceContext::ExecuteSingleItem( const vaRaytraceItem& raytraceItem, const vaRenderOutputs & renderOutputs, const vaDrawAttributes* drawAttributes ) 
     { 
+        raytraceItem.Validate();
         assert( m_itemsStarted == vaRenderTypeFlags::None ); 
         assert( !IsWorker() );
         BeginRaytraceItems( renderOutputs, drawAttributes ); 

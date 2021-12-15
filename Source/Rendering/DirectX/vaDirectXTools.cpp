@@ -1859,26 +1859,26 @@ bool vaRaytracePSODescDX12::FillPipelineStateDesc( CD3DX12_STATE_OBJECT_DESC & o
     assert( ItemMaterialCallable    .size() < vaRaytracePSODescDX12::c_maxNameBufferSize );
     assert( ItemMaterialMissCallable.size() < vaRaytracePSODescDX12::c_maxNameBufferSize );
 
-    const std::vector<vaRenderMaterialManagerDX12::CallableShaders> & materialCallablesTable = materialManager12.GetCallablesTable( );              // this is per-material
-    const std::unordered_map<vaFramePtr<vaShaderDataDX12>, uint32> & uniqueCallableLibraries = materialManager12.GetUniqueCallableLibraries( );     // this is per-material-shader - some materials share the same set of shaders
+    const std::vector<vaRenderMaterialManagerDX12::CallableShaders> & uniqueCallablesTable = materialManager12.GetUniqueCallablesTable( );        // this is NOT per-material as materials will often share identical shaders
 
-    // At the moment disallow incomplete raytracing PSO-s - all shaders must compile for any to work
-    for( auto matLibIt : uniqueCallableLibraries )
-    {
-        if( matLibIt.first == nullptr )
-        {
-            // null entry in shader table should be valid as per the specs
-            return false;
-            continue;
-        }
-        const vaRenderMaterialManagerDX12::CallableShaders & materialCallables = materialCallablesTable[matLibIt.second];
-        if( materialCallables.LibraryBlob == nullptr )
-        {
-            // to find out which material has broken shaders use this: materialCallables.MaterialID
-            VA_LOG( " ** Unable to build raytracing PSO - compile errors or waiting on all shaders to complete compiling (in which case, please wait a bit longer :) ) ** " );
-            return false;
-        }
-    }
+    // old, remove
+    //// At the moment disallow incomplete raytracing PSO-s - all shaders must compile for any to work
+    //for( auto matLibIt : uniqueCallablesTable )
+    //{
+    //    if( matLibIt.first == nullptr )
+    //    {
+    //        // null entry in shader table should be valid as per the specs
+    //        return false;
+    //        continue;
+    //    }
+    //    const vaRenderMaterialManagerDX12::CallableShaders & materialCallables = materialCallablesTable[matLibIt.second];
+    //    if( materialCallables.LibraryBlob == nullptr )
+    //    {
+    //        // to find out which material has broken shaders use this: materialCallables.MaterialID
+    //        VA_LOG( " ** Unable to build raytracing PSO - compile errors or waiting on all shaders to complete compiling (in which case, please wait a bit longer :) ) ** " );
+    //        return false;
+    //    }
+    //}
 
     // Create the subobjects that combine into a RTPSO
 
@@ -1906,16 +1906,11 @@ bool vaRaytracePSODescDX12::FillPipelineStateDesc( CD3DX12_STATE_OBJECT_DESC & o
     assert( MaterialsSLUniqueContentsID == materialManager12.GetCallablesTableID( ) );
 
     // Expose all material callables - anyhit/closesthit for hitgroups or standalone callables
-    for( auto matLibIt : uniqueCallableLibraries )
+    for( const vaRenderMaterialManagerDX12::CallableShaders & materialCallables : uniqueCallablesTable )
     {
-        if( matLibIt.first == nullptr )
-        {
-            // null entry in shader table should be valid as per the specs
-            return false;
-            continue;
-        }
-        const vaRenderMaterialManagerDX12::CallableShaders & materialCallables = materialCallablesTable[matLibIt.second];
-        assert( materialCallables.LibraryBlob == matLibIt.first );
+        if( materialCallables.LibraryBlob == nullptr )
+            continue;   // null should be valid
+
         auto libSubObj = outDesc.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>( );
         D3D12_SHADER_BYTECODE libdxil = CD3DX12_SHADER_BYTECODE( materialCallables.LibraryBlob->GetBufferPointer(), materialCallables.LibraryBlob->GetBufferSize() );
         libSubObj->SetDXILLibrary( &libdxil );
@@ -1980,7 +1975,7 @@ bool vaRaytracePSODescDX12::FillPipelineStateDesc( CD3DX12_STATE_OBJECT_DESC & o
 //     PrintStateObjectDesc( outDesc );
 // #endif
     VA_LOG( "===================================================================================================" );
-    VA_LOG( "Raytracing PSO rebuilt, number of materials: %d, number of unique hitgroups & callables: %d", (int)materialCallablesTable.size(), (int)uniqueCallableLibraries.size() );
+    VA_LOG( "Raytracing PSO rebuilt, number of materials: %d, number of unique hitgroups & callables (callable table size): %d", (int)materialManager12.Materials().Count(), (int)uniqueCallablesTable.size() );
     VA_LOG( "===================================================================================================" );
 
     return true;
@@ -2028,7 +2023,7 @@ void vaRaytracePSODX12::CreatePSO( vaRenderDeviceDX12 & device, ID3D12RootSignat
         assert( m_desc.MaterialsSLUniqueContentsID == materialManager12.GetCallablesTableID( ) );
         UINT shaderIdentifierSize = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
 
-        const std::vector<vaRenderMaterialManagerDX12::CallableShaders> & materialCallablesTable = materialManager12.GetCallablesTable( );
+        const std::vector<vaRenderMaterialManagerDX12::CallableShaders> & uniqueCallablesTable = materialManager12.GetUniqueCallablesTable( );
 
         {
             void * rayGenShaderIdentifier           = stateObjectProperties->GetShaderIdentifier( m_desc.ItemSLEntryRayGen.c_str() );
@@ -2059,7 +2054,7 @@ void vaRaytracePSODX12::CreatePSO( vaRenderDeviceDX12 & device, ID3D12RootSignat
 
             // Miss shader table
             {
-                UINT numShaderRecords = (m_desc.ItemMaterialMissCallable != L"")?(2+(UINT)materialCallablesTable.size() * vaRenderMaterialManagerDX12::CallableShaders::CallablesPerMaterial):(2); //(missShaderSecondaryIdentifier==nullptr)?(1):(2);
+                UINT numShaderRecords = (m_desc.ItemMaterialMissCallable != L"")?(2+(UINT)uniqueCallablesTable.size() * vaRenderMaterialManagerDX12::CallableShaders::CallablesPerMaterial):(2); //(missShaderSecondaryIdentifier==nullptr)?(1):(2);
                 UINT shaderRecordSize = shaderIdentifierSize;
                 ShaderTable missShaderTable( device, numShaderRecords, shaderRecordSize, "MissShaderTable" );
                 missShaderTable.PushBack( ShaderRecord( missShaderIdentifier, shaderIdentifierSize ) );
@@ -2072,9 +2067,9 @@ void vaRaytracePSODX12::CreatePSO( vaRenderDeviceDX12 & device, ID3D12RootSignat
                 // optional Miss-Callables
                 if( m_desc.ItemMaterialMissCallable != L"" )
                 {
-                    for( uint32 index = 0; index < materialCallablesTable.size(); index++ ) 
+                    for( uint32 index = 0; index < uniqueCallablesTable.size(); index++ ) 
                     {
-                        const vaRenderMaterialManagerDX12::CallableShaders & materialCallables = materialCallablesTable[index];
+                        const vaRenderMaterialManagerDX12::CallableShaders & materialCallables = uniqueCallablesTable[index];
                         if( materialCallables.LibraryBlob == nullptr )
                         {
                             // this is actually fine - it should never get referenced - only unique ones do
@@ -2098,13 +2093,13 @@ void vaRaytracePSODX12::CreatePSO( vaRenderDeviceDX12 & device, ID3D12RootSignat
 
         // Hit groups shader table
         {
-            UINT numShaderRecords = (UINT)materialCallablesTable.size();
+            UINT numShaderRecords = (UINT)uniqueCallablesTable.size();
             UINT shaderRecordSize = shaderIdentifierSize;
             ShaderTable hitGroupShaderTable( device, numShaderRecords, shaderRecordSize, "HitGroupShaderTable" );
 
-            for( uint32 index = 0; index < materialCallablesTable.size(); index++ ) 
+            for( uint32 index = 0; index < uniqueCallablesTable.size(); index++ ) 
             {
-                const vaRenderMaterialManagerDX12::CallableShaders & materialCallables = materialCallablesTable[index];
+                const vaRenderMaterialManagerDX12::CallableShaders & materialCallables = uniqueCallablesTable[index];
                 if( materialCallables.LibraryBlob == nullptr )
                 {
                     // this is actually fine - it should never get referenced - only unique ones do
@@ -2126,12 +2121,12 @@ void vaRaytracePSODX12::CreatePSO( vaRenderDeviceDX12 & device, ID3D12RootSignat
         // Callables shader table (if any)
         if( m_desc.ItemMaterialCallable != L"" )
         {
-            UINT numShaderRecords = (UINT)materialCallablesTable.size() * vaRenderMaterialManagerDX12::CallableShaders::CallablesPerMaterial;
+            UINT numShaderRecords = (UINT)uniqueCallablesTable.size() * vaRenderMaterialManagerDX12::CallableShaders::CallablesPerMaterial;
             UINT shaderRecordSize = shaderIdentifierSize;
             ShaderTable callableShaderTable( device, numShaderRecords, shaderRecordSize, "CallablesShaderTable" );
-            for( uint32 index = 0; index < materialCallablesTable.size(); index++ ) 
+            for( uint32 index = 0; index < uniqueCallablesTable.size(); index++ ) 
             {
-                const vaRenderMaterialManagerDX12::CallableShaders & materialCallables = materialCallablesTable[index];
+                const vaRenderMaterialManagerDX12::CallableShaders & materialCallables = uniqueCallablesTable[index];
                 if( materialCallables.LibraryBlob == nullptr )
                 {
                     inner->Incomplete = true;

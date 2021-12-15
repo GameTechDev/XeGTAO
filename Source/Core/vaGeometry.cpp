@@ -214,6 +214,42 @@ vaMatrix3x3 vaMatrix3x3::FromYawPitchRoll( float yaw, float pitch, float roll )
     return ret;
 }
 
+// "Efficiently building a matrix to rotate one vector to another"
+// http://cs.brown.edu/research/pubs/pdfs/1999/Moller-1999-EBA.pdf / https://dl.acm.org/doi/10.1080/10867651.1999.10487509
+// (using https://github.com/assimp/assimp/blob/master/include/assimp/matrix3x3.inl#L275 as a code reference as it seems to be best)
+vaMatrix3x3 vaMatrix3x3::RotateFromTo( const vaVector3 & from, const vaVector3 & to )
+{
+    const float e       = vaVector3::Dot(from, to);
+    const float f       = std::abs(e); //(e < 0)? -e:e;
+
+    // WARNING: This has not been tested
+    if( f > float( 1.0f - 1e-10f ) )
+        return vaMatrix3x3::Identity;
+
+    const vaVector3 v      = vaVector3::Cross( from, to );
+    /* ... use this hand optimized version (9 mults less) */
+    const float h       = (1.0f)/(1.0f + e);      /* optimization by Gottfried Chen */
+    const float hvx     = h * v.x;
+    const float hvz     = h * v.z;
+    const float hvxy    = hvx * v.y;
+    const float hvxz    = hvx * v.z;
+    const float hvyz    = hvz * v.y;
+
+    vaMatrix3x3 mtx;
+    mtx.m[0][0] = e + hvx * v.x;
+    mtx.m[1][0] = hvxy - v.z;
+    mtx.m[2][0] = hvxz + v.y;
+
+    mtx.m[0][1] = hvxy + v.z;
+    mtx.m[1][1] = e + h * v.y * v.y;
+    mtx.m[2][1] = hvyz - v.x;
+
+    mtx.m[0][2] = hvxz - v.y;
+    mtx.m[1][2] = hvyz + v.x;
+    mtx.m[2][2] = e + hvz * v.z;
+    return mtx;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // vaMatrix4x4
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -223,6 +259,11 @@ vaMatrix4x4 vaMatrix4x4::Identity = vaMatrix4x4( 1, 0, 0, 0,
     0, 1, 0, 0,
     0, 0, 1, 0,
     0, 0, 0, 1 );
+
+vaMatrix4x4 vaMatrix4x4::Degenerate = vaMatrix4x4( INFINITY, INFINITY, INFINITY, INFINITY,
+    INFINITY, INFINITY, INFINITY, INFINITY,
+    INFINITY, INFINITY, INFINITY, INFINITY,
+    INFINITY, INFINITY, INFINITY, INFINITY );
 
 string vaMatrix4x4::ToString( const vaMatrix4x4 & a )
 {
@@ -1639,4 +1680,60 @@ void vaColor::NormalizeLuminance( vaVector3 & inoutColor, float & inoutIntensity
         inoutColor /= luminance;
         inoutIntensity *= luminance;
     }
+}
+
+// Foley & van Dam p593 / http://lolengine.net/blog/2013/01/13/fast-rgb-to-hsv
+vaVector3 vaColor::RGB2HSV( const vaVector3 & rgb )
+{
+    float r = rgb.x, g = rgb.y, b = rgb.z;
+    float h,s, v;
+
+    float rgb_max = std::max(r, std::max(g, b));
+    float rgb_min = std::min(r, std::min(g, b));
+    float delta = rgb_max - rgb_min;
+    s = delta / (rgb_max + 1e-20f);
+    v = rgb_max;
+
+    float hue;
+    if (r == rgb_max)
+        hue = (g - b) / (delta + 1e-20f);
+    else if (g == rgb_max)
+        hue = 2 + (b - r) / (delta + 1e-20f);
+    else
+        hue = 4 + (r - g) / (delta + 1e-20f);
+    if (hue < 0)
+        hue += 6.f;
+    h = hue * (1.f / 6.f);
+    return {h,s,v};
+}
+
+// Foley & van Dam p593 / http://en.wikipedia.org/wiki/HSL_and_HSV
+vaVector3 vaColor::HSV2RGB( const vaVector3 & hsv )
+{
+    float h = hsv.x, s = hsv.y, v = hsv.z;
+    float out_r, out_g, out_b;
+    if (s == 0.0f)
+    {
+        // gray
+        out_r = out_g = out_b = v;
+        return {out_r, out_g, out_b};
+    }
+
+    h = fmodf(h, 1.0f) / (60.0f / 360.0f);
+    int   i = (int)h;
+    float f = h - (float)i;
+    float p = v * (1.0f - s);
+    float q = v * (1.0f - s * f);
+    float t = v * (1.0f - s * (1.0f - f));
+
+    switch (i)
+    {
+    case 0: out_r = v; out_g = t; out_b = p; break;
+    case 1: out_r = q; out_g = v; out_b = p; break;
+    case 2: out_r = p; out_g = v; out_b = t; break;
+    case 3: out_r = p; out_g = q; out_b = v; break;
+    case 4: out_r = t; out_g = p; out_b = v; break;
+    case 5: default: out_r = v; out_g = p; out_b = q; break;
+    }
+    return {out_r, out_g, out_b};
 }

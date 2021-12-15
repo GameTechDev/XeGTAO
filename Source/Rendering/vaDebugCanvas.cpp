@@ -757,19 +757,19 @@ void vaDebugCanvas3D::DrawSphereCone( const vaVector3 & center, const vaVector3 
     }
 }
 
-void vaDebugCanvas3D::DrawLightViz( const vaVector3 & center, const vaVector3 & direction, float size, float range, float coneInnerAngle, float coneOuterAngle, const vaVector3 & color )
+void vaDebugCanvas3D::DrawLightViz( const vaVector3 & center, const vaVector3 & direction, float radius, float range, float coneInnerAngle, float coneOuterAngle, const vaVector3 & color )
 {
     assert( coneInnerAngle <= coneOuterAngle );
     assert( coneOuterAngle <= VA_PIf );
 
     bool isSpotlight = !( ( (coneInnerAngle == 0) && (coneOuterAngle == 0) ) || ( coneInnerAngle >= (VA_PI-VA_EPSf) ) );
 
-    uint32 colorSolid = vaVector4::ToRGBA( vaVector4( vaVector3::LinearToSRGB( color ), 0.9f ) );
-    uint32 colorTrans = vaVector4::ToRGBA( vaVector4( vaVector3::LinearToSRGB( color ), 0.05f ) );
+    uint32 colorSolid = vaVector4::ToBGRA( vaVector4( vaVector3::LinearToSRGB( color ), 0.9f ) );
+    uint32 colorTrans = vaVector4::ToBGRA( vaVector4( vaVector3::LinearToSRGB( color ), 0.05f ) );
 
     if( isSpotlight )
     {
-        DrawSphereCone( center, direction, size,    coneOuterAngle, 0,          colorSolid );
+        DrawSphereCone( center, direction, radius,  coneOuterAngle, 0,          colorSolid );
         DrawSphereCone( center, direction, range,   coneInnerAngle, 0x80FF0000, colorTrans );
         DrawSphereCone( center, direction, range,   coneOuterAngle, 0x8000FF00, colorTrans );
 
@@ -797,7 +797,7 @@ void vaDebugCanvas3D::DrawLightViz( const vaVector3 & center, const vaVector3 & 
     }
     else
     {
-        DrawSphere( center, size, 0, colorSolid );
+        DrawSphere( center, radius, 0, colorSolid );
         DrawSphere( center, range, colorTrans, 0 );
     }
 
@@ -1180,4 +1180,19 @@ void vaDebugCanvas3D::Render( vaRenderDeviceContext & renderContext, const vaRen
 
     }
     CleanQueued( );
+}
+
+void vaDebugCanvas3D::DrawText3D( vaDebugCanvas2D & canvas2D, const vaVector3 & position3D, const vaVector2 & screenOffset, unsigned int penColor, unsigned int shadowColor, const char * text, ... )
+{
+    vaDirectXCanvas2D_FORMAT_STR( );
+    const vaVector4 worldPos = vaVector4(position3D,1);
+
+    vaMatrix4x4 viewProj = m_lastCamera.GetViewMatrix( ) * m_lastCamera.GetProjMatrix( );
+    vaVector4 pos = vaVector4::Transform(worldPos, viewProj); pos /= pos.w; pos.x = pos.x * 0.5f + 0.5f; pos.y = -pos.y * 0.5f + 0.5f;
+    if( pos.z > 0 ) // don't draw if behind near clipping plane
+    {
+        pos.x *= m_lastCamera.GetViewportWidth( ); pos.y *= m_lastCamera.GetViewportHeight( );
+        canvas2D.DrawText( pos.x + screenOffset.x, pos.y + screenOffset.y, penColor, shadowColor, szBuffer );
+    }
+
 }

@@ -28,9 +28,6 @@
 #include <optional>
 #include <map>
 
-// Bindless is now the only functional approach; old path left in for debugging/historical reasons and will be removed (unless DX11 support is desperately needed again for whatever reason)
-#define VA_MATERIAL_BINDLESS
-
 // Enabling this will forward most material constants and values through the material constant buffer (ShaderMaterialConstants) instead using macros; reduces number of
 // different shaders thus reducing compile times; the drawback is that the shader compiler can't optimize as well.
 #define VA_MATERIAL_FAVOR_FEWER_PERMUTATONS
@@ -270,6 +267,8 @@ namespace Vanilla
             float                       LocalIBLNormalBasedBias = 0;                // see vaSceneLighting.hlsl transitionNormalBias - it's super-hacky and temporary
             float                       LocalIBLBasedBias       = 0;
             float                       IndexOfRefraction       = 1.00029f;         // air at sea level - see https://www.pbr-book.org/3ed-2018/Reflection_Models/Specular_Reflection_and_Transmission#FresnelReflectance
+            bool                        NEETranslucent          = false;
+            float                       NEETranslucentAlpha     = 0.1f;
 
             MaterialSettings( ) { }
 
@@ -389,11 +388,13 @@ namespace Vanilla
 
         // sparseIndex in vaRenderMaterialManager::Materials()
         int                                             GetGlobalIndex( ) const                                         { return m_globalIndex; }
+        int                                             GetCallableShaderTableIndex( ) const;
 
         // few helpers (depend only on MaterialSettings)
         bool                                            IsTransparent( ) const                                          { assert( !(m_materialSettings.LayerMode == vaLayerMode::Decal) || !(m_materialSettings.LayerMode == vaLayerMode::Transparent)); return /*m_materialSettings.LayerMode == vaLayerMode::Decal || */ m_materialSettings.LayerMode == vaLayerMode::Transparent; }
         bool                                            IsAlphaTested( ) const                                          { return m_materialSettings.LayerMode == vaLayerMode::AlphaTest; }
         bool                                            IsDecal( ) const                                                { return m_materialSettings.LayerMode == vaLayerMode::Decal; }
+        bool                                            IsNEETranslucent( ) const                                       { return m_materialSettings.NEETranslucent && m_materialSettings.NEETranslucentAlpha < 1; }
         vaShadingRate                                   ComputeShadingRate( int baseShadingRate ) const;
 
         template< typename NodeType = Node >
@@ -454,7 +455,7 @@ namespace Vanilla
         void                                            GetShaderState_PS_RichPrepass( vaShader::State & outState, string & outErrorString );
 
         // for raytracing
-        bool                                            GetCallableShaderLibrary( vaFramePtr<vaShaderLibrary> & outLibrary, string & uniqueID );
+        bool                                            GetCallableShaderLibrary( vaFramePtr<vaShaderLibrary> & outLibrary, string & uniqueID, int & uniqueTableIndex );
 
     protected:
         vaFramePtr<vaVertexShader>                      GetVS( vaRenderMaterialShaderType shaderType );
@@ -558,6 +559,8 @@ namespace Vanilla
         // which case it will be made to be at unique. This (semi)persistence makes it work nice with global shader cache.
         uint32                              UniqueID            = 0;
         string                              UniqueIDString;             // this is seen from HLSL as VA_RM_SHADER_ID
+
+        int32                               TableIndex          = -1;
     };
 
     class vaRenderMaterialManager : public vaRenderingModule, public vaUIPanel
@@ -584,6 +587,8 @@ namespace Vanilla
                                                         m_cachedShaders;
         std::unordered_set< uint32 >                    m_cachedShadersUniqueIDs;
         std::shared_mutex                               m_cachedShadersMutex;
+        std::vector< weak_ptr<vaRenderMaterialCachedShaders> >
+                                                        m_cachedShadersTable;
         std::vector< pair< string, string > >           m_scratchShaderMacrosStorage;
 
         std::vector< pair< string, string > >           m_globalShaderMacros;

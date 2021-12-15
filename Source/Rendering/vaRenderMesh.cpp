@@ -674,12 +674,23 @@ vaRenderMeshManager::vaRenderMeshManager( const vaRenderingModuleParams & params
 void vaRenderMeshManager::PostCreateInitialize( )
 {
     // creates instance so any Scene referrering to it can find it; if faster startup times needed remove and handle on demand instead, somehow
-    UnitSphere( );
+    m_unitSphere[0] = vaRenderMesh::CreateSphere( GetRenderDevice(), vaMatrix4x4::Identity, 0, true, vaGUID("ee76827b-f32d-43f2-9cbf-9ea587b0c74c") );
+    m_unitSphere[1] = vaRenderMesh::CreateSphere( GetRenderDevice(), vaMatrix4x4::Identity, 1, true, vaGUID("ee76827b-f32d-43f2-9cbf-9ea587b0c74d") );
+    m_unitSphere[2] = vaRenderMesh::CreateSphere( GetRenderDevice(), vaMatrix4x4::Identity, 2, true, vaGUID("ee76827b-f32d-43f2-9cbf-9ea587b0c74e") );
+    static_assert( countof(m_unitSphere) == 3 );
+    m_unitCylinder[0] = vaRenderMesh::CreateCylinder( GetRenderDevice(), vaMatrix4x4::Identity, 1, 1, 1,  3, false, true, vaGUID("c9418662-bbd6-4c29-a821-1637bb03eb34") );
+    m_unitCylinder[1] = vaRenderMesh::CreateCylinder( GetRenderDevice(), vaMatrix4x4::Identity, 1, 1, 1,  6, false, true, vaGUID("c9418662-bbd6-4c29-a821-1637bb03eb35") );
+    m_unitCylinder[2] = vaRenderMesh::CreateCylinder( GetRenderDevice(), vaMatrix4x4::Identity, 1, 1, 1, 12, false, true, vaGUID("c9418662-bbd6-4c29-a821-1637bb03eb36") );
+    static_assert( countof(m_unitCylinder) == 3 );
 }
 
 vaRenderMeshManager::~vaRenderMeshManager( )
 {
-    m_unitSphere = nullptr;
+    // there's a reason for manually deleting meshes here, I just can't remember what it was. Maybe it holds a reference to a material which all must be gone by now? Who knows.
+    for( int i = 0; i < (int)countof(m_unitSphere); i++ )
+        m_unitSphere[i] = nullptr;
+    for( int i = 0; i < (int)countof(m_unitCylinder); i++ )
+        m_unitCylinder[i] = nullptr;
 
     m_isDestructing = true;
     //m_renderMeshesMap.clear();
@@ -1633,10 +1644,12 @@ vaDrawResultFlags vaRenderMeshManager::Draw( vaRenderDeviceContext & renderConte
     return retVal;
 }
 
-shared_ptr<vaRenderMesh> vaRenderMeshManager::UnitSphere( )
+shared_ptr<vaRenderMesh> vaRenderMeshManager::UnitSphere( int tessLevel )
 {
-    if( m_unitSphere == nullptr )
-        m_unitSphere = vaRenderMesh::CreateSphere( GetRenderDevice(), vaMatrix4x4::Identity, 2, true, vaGUID("ee76827b-f32d-43f2-9cbf-9ea587b0c74d") );
+    return m_unitSphere[tessLevel];
+}
 
-    return m_unitSphere;
+shared_ptr<vaRenderMesh> vaRenderMeshManager::UnitCylinder( int tessLevel )
+{
+    return m_unitCylinder[tessLevel];
 }

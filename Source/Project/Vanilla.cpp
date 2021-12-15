@@ -39,6 +39,8 @@
 #include "Rendering/Misc/vaZoomTool.h"
 #include "Rendering/Misc/vaImageCompareTool.h"
 
+#include "Rendering/vaPathTracer.h"
+
 //#include "Rendering/Misc/vaTextureReductionTestTool.h"
 
 #include <iomanip>
@@ -199,647 +201,43 @@ static string CameraFileName( int index )
     return fileName;
 }
 
-#pragma warning ( suppress: 4505 ) // unreferenced local function has been removed
-static void AddLumberyardTestLights( vaScene & scene, const vaGUID & unitSphereMeshID, const vaGUID & emissiveMaterial )
+entt::entity MakeSphereLight( vaRenderDevice & renderDevice, vaScene & scene, const string & name, const vaVector3 & position, float size, const vaVector3 & color, const float intensity, entt::entity parentEntity )
 {
-    scene; unitSphereMeshID; emissiveMaterial;
-#if 0
+    const vaGUID & unitSphereMeshID     = renderDevice.GetMeshManager().UnitSphere()->UIDObject_GetUID();
+    const vaGUID & emissiveMaterialID   = renderDevice.GetMaterialManager().GetDefaultEmissiveLightMaterial()->UIDObject_GetUID();
 
-    std::vector<vaVector3> list;
+    entt::entity lightEntity = scene.CreateEntity( name, vaMatrix4x4::FromScaleRotationTranslation( {size, size, size}, vaMatrix3x3::Identity, position ), parentEntity, 
+        unitSphereMeshID, emissiveMaterialID );
+
+    auto & newLight         = scene.Registry().emplace<Scene::LightPoint>( lightEntity );
+    newLight.Color          = color;
+    newLight.Intensity      = intensity;
+    newLight.FadeFactor     = 1.0f;
+    newLight.Radius         = 1.0f;
+    newLight.Range          = 5000.0f;
+    newLight.SpotInnerAngle = 0.0f;
+    newLight.SpotOuterAngle = 0.0f;
+    newLight.CastShadows    = false;
+
+    Scene::EmissiveMaterialDriver & emissiveDriver = scene.Registry().emplace<Scene::EmissiveMaterialDriver>( lightEntity );
+    emissiveDriver.ReferenceLightEntity    = Scene::EntityReference( scene.Registry(), lightEntity );
+    emissiveDriver.AssumeUniformUnitSphere = true;
     
-    list.push_back( vaVector3( 10.716f, -0.433f, 3.553f ) );
-    list.push_back( vaVector3( 10.405f, -0.597f, 3.532f ) );
-    list.push_back( vaVector3( 10.286f, -0.660f, 3.524f ) );
-    list.push_back( vaVector3( 10.166f, -0.724f, 3.516f ) );
-    list.push_back( vaVector3( 10.086f, -0.766f, 3.511f ) );
-    list.push_back( vaVector3( 9.968f, -0.829f, 3.503f ) );
-    list.push_back( vaVector3( 9.851f, -0.891f, 3.495f ) );
-    list.push_back( vaVector3( 9.770f, -0.934f, 3.489f ) );
-    list.push_back( vaVector3( 9.654f, -0.995f, 3.482f ) );
-    list.push_back( vaVector3( 9.538f, -1.057f, 3.474f ) );
-    list.push_back( vaVector3( 9.458f, -1.099f, 3.469f ) );
-    list.push_back( vaVector3( 9.342f, -1.161f, 3.461f ) );
-    list.push_back( vaVector3( 9.227f, -1.221f, 3.453f ) );
-    list.push_back( vaVector3( 9.113f, -1.282f, 3.445f ) );
-    list.push_back( vaVector3( 9.001f, -1.341f, 3.438f ) );
-    list.push_back( vaVector3( 8.888f, -1.401f, 3.430f ) );
-    list.push_back( vaVector3( 8.811f, -1.442f, 3.425f ) );
-    list.push_back( vaVector3( 8.699f, -1.501f, 3.418f ) );
-    list.push_back( vaVector3( 8.585f, -1.561f, 3.410f ) );
-    list.push_back( vaVector3( 8.471f, -1.622f, 3.402f ) );
-    list.push_back( vaVector3( 8.360f, -1.681f, 3.395f ) );
-    list.push_back( vaVector3( 8.249f, -1.740f, 3.388f ) );
-    list.push_back( vaVector3( 8.104f, -1.816f, 3.378f ) );
-    list.push_back( vaVector3( 8.029f, -1.856f, 3.373f ) );
-    list.push_back( vaVector3( 7.919f, -1.915f, 3.365f ) );
-    list.push_back( vaVector3( 7.807f, -1.974f, 3.358f ) );
-    list.push_back( vaVector3( 7.699f, -2.031f, 3.351f ) );
-    list.push_back( vaVector3( 7.591f, -2.089f, 3.343f ) );
-    list.push_back( vaVector3( 7.483f, -2.145f, 3.336f ) );
-    list.push_back( vaVector3( 7.376f, -2.202f, 3.329f ) );
-    list.push_back( vaVector3( 7.270f, -2.258f, 3.322f ) );
-    list.push_back( vaVector3( 7.131f, -2.332f, 3.313f ) );
-    list.push_back( vaVector3( 7.026f, -2.388f, 3.306f ) );
-    list.push_back( vaVector3( 6.919f, -2.444f, 3.298f ) );
-    list.push_back( vaVector3( 6.815f, -2.500f, 3.291f ) );
-    list.push_back( vaVector3( 6.710f, -2.555f, 3.284f ) );
-    list.push_back( vaVector3( 6.604f, -2.611f, 3.277f ) );
-    list.push_back( vaVector3( 6.434f, -2.701f, 3.266f ) );
-    list.push_back( vaVector3( 6.363f, -2.739f, 3.261f ) );
-    list.push_back( vaVector3( 6.292f, -2.777f, 3.256f ) );
-    list.push_back( vaVector3( 6.222f, -2.814f, 3.252f ) );
-    list.push_back( vaVector3( 6.153f, -2.850f, 3.247f ) );
-    list.push_back( vaVector3( 6.052f, -2.904f, 3.240f ) );
-    list.push_back( vaVector3( 6.004f, -3.061f, 3.233f ) );
-    list.push_back( vaVector3( 5.957f, -3.214f, 3.227f ) );
-    list.push_back( vaVector3( 5.910f, -3.367f, 3.220f ) );
-    list.push_back( vaVector3( 5.863f, -3.521f, 3.213f ) );
-    list.push_back( vaVector3( 5.815f, -3.676f, 3.207f ) );
-    list.push_back( vaVector3( 5.768f, -3.830f, 3.200f ) );
-    list.push_back( vaVector3( 5.705f, -3.950f, 3.193f ) );
-    list.push_back( vaVector3( 5.567f, -3.938f, 3.186f ) );
-    list.push_back( vaVector3( 5.415f, -3.891f, 3.180f ) );
-    list.push_back( vaVector3( 5.261f, -3.843f, 3.173f ) );
-    list.push_back( vaVector3( 5.110f, -3.797f, 3.166f ) );
-    list.push_back( vaVector3( 4.908f, -3.734f, 3.157f ) );
-    list.push_back( vaVector3( 4.756f, -3.687f, 3.151f ) );
-    list.push_back( vaVector3( 4.638f, -3.704f, 3.144f ) );
-    list.push_back( vaVector3( 4.554f, -3.789f, 3.137f ) );
-    list.push_back( vaVector3( 4.492f, -3.991f, 3.129f ) );
-    list.push_back( vaVector3( 4.394f, -4.043f, 3.122f ) );
-    list.push_back( vaVector3( 4.295f, -4.096f, 3.115f ) );
-    list.push_back( vaVector3( 4.234f, -4.293f, 3.107f ) );
-    list.push_back( vaVector3( 4.188f, -4.443f, 3.100f ) );
-    list.push_back( vaVector3( 4.142f, -4.594f, 3.094f ) );
-    list.push_back( vaVector3( 4.097f, -4.743f, 3.087f ) );
-    list.push_back( vaVector3( 4.065f, -4.847f, 3.083f ) );
-    list.push_back( vaVector3( 4.019f, -4.997f, 3.076f ) );
-    list.push_back( vaVector3( 3.974f, -5.144f, 3.069f ) );
-    list.push_back( vaVector3( 3.928f, -5.294f, 3.063f ) );
-    list.push_back( vaVector3( 3.882f, -5.443f, 3.056f ) );
-    list.push_back( vaVector3( 3.837f, -5.590f, 3.050f ) );
-    list.push_back( vaVector3( 3.778f, -5.782f, 3.042f ) );
-    list.push_back( vaVector3( 3.734f, -5.927f, 3.035f ) );
-    list.push_back( vaVector3( 3.689f, -6.072f, 3.029f ) );
-    list.push_back( vaVector3( 3.630f, -6.265f, 3.020f ) );
-    list.push_back( vaVector3( 3.587f, -6.407f, 3.014f ) );
-    list.push_back( vaVector3( 3.543f, -6.550f, 3.008f ) );
-    list.push_back( vaVector3( 3.439f, -6.646f, 3.000f ) );
-    list.push_back( vaVector3( 3.254f, -6.589f, 2.992f ) );
-    list.push_back( vaVector3( 3.115f, -6.546f, 2.986f ) );
-    list.push_back( vaVector3( 2.929f, -6.489f, 2.978f ) );
-    list.push_back( vaVector3( 2.801f, -6.400f, 2.973f ) );
-    list.push_back( vaVector3( 2.752f, -6.307f, 2.973f ) );
-    list.push_back( vaVector3( 2.687f, -6.184f, 2.973f ) );
-    list.push_back( vaVector3( 2.638f, -6.092f, 2.973f ) );
-    list.push_back( vaVector3( 2.589f, -6.000f, 2.973f ) );
-    list.push_back( vaVector3( 2.525f, -5.879f, 2.973f ) );
-    list.push_back( vaVector3( 2.476f, -5.787f, 2.973f ) );
-    list.push_back( vaVector3( 2.427f, -5.694f, 2.973f ) );
-    list.push_back( vaVector3( 2.363f, -5.573f, 2.973f ) );
-    list.push_back( vaVector3( 2.313f, -5.478f, 2.973f ) );
-    list.push_back( vaVector3( 2.261f, -5.380f, 2.973f ) );
-    list.push_back( vaVector3( 2.195f, -5.257f, 2.973f ) );
-    list.push_back( vaVector3( 2.146f, -5.163f, 2.973f ) );
-    list.push_back( vaVector3( 2.096f, -5.069f, 2.973f ) );
-    list.push_back( vaVector3( 2.046f, -4.975f, 2.973f ) );
-    list.push_back( vaVector3( 1.982f, -4.854f, 2.973f ) );
-    list.push_back( vaVector3( 1.933f, -4.761f, 2.973f ) );
-    list.push_back( vaVector3( 1.868f, -4.638f, 2.973f ) );
-    list.push_back( vaVector3( 1.818f, -4.545f, 2.973f ) );
-    list.push_back( vaVector3( 1.753f, -4.423f, 2.973f ) );
-    list.push_back( vaVector3( 1.705f, -4.331f, 2.973f ) );
-    list.push_back( vaVector3( 1.655f, -4.236f, 2.973f ) );
-    list.push_back( vaVector3( 1.590f, -4.114f, 2.973f ) );
-    list.push_back( vaVector3( 1.532f, -3.987f, 2.835f ) );
-    list.push_back( vaVector3( 1.475f, -3.862f, 2.697f ) );
-    list.push_back( vaVector3( 1.417f, -3.735f, 2.558f ) );
-    list.push_back( vaVector3( 1.374f, -3.640f, 2.454f ) );
-    list.push_back( vaVector3( 1.316f, -3.514f, 2.316f ) );
-    list.push_back( vaVector3( 1.254f, -3.388f, 2.244f ) );
-    list.push_back( vaVector3( 1.205f, -3.295f, 2.244f ) );
-    list.push_back( vaVector3( 1.139f, -3.171f, 2.244f ) );
-    list.push_back( vaVector3( 1.090f, -3.079f, 2.244f ) );
-    list.push_back( vaVector3( 1.025f, -2.956f, 2.244f ) );
-    list.push_back( vaVector3( 0.975f, -2.861f, 2.244f ) );
-    list.push_back( vaVector3( 0.910f, -2.739f, 2.244f ) );
-    list.push_back( vaVector3( 0.861f, -2.646f, 2.244f ) );
-    list.push_back( vaVector3( 0.796f, -2.523f, 2.244f ) );
-    list.push_back( vaVector3( 0.729f, -2.401f, 2.276f ) );
-    list.push_back( vaVector3( 0.679f, -2.307f, 2.276f ) );
-    list.push_back( vaVector3( 0.614f, -2.184f, 2.276f ) );
-    list.push_back( vaVector3( 0.549f, -2.061f, 2.276f ) );
-    list.push_back( vaVector3( 0.485f, -1.942f, 2.276f ) );
-    list.push_back( vaVector3( 0.436f, -1.848f, 2.276f ) );
-    list.push_back( vaVector3( 0.386f, -1.755f, 2.276f ) );
-    list.push_back( vaVector3( 0.322f, -1.633f, 2.276f ) );
-    list.push_back( vaVector3( 0.258f, -1.513f, 2.276f ) );
-    list.push_back( vaVector3( 0.209f, -1.420f, 2.276f ) );
-    list.push_back( vaVector3( 0.159f, -1.326f, 2.276f ) );
-    list.push_back( vaVector3( -2.971f, -17.451f, 5.401f ) );
-    list.push_back( vaVector3( -3.016f, -17.394f, 5.402f ) );
-    list.push_back( vaVector3( -3.042f, -17.361f, 5.403f ) );
-    list.push_back( vaVector3( -3.083f, -17.309f, 5.404f ) );
-    list.push_back( vaVector3( -3.126f, -17.254f, 5.405f ) );
-    list.push_back( vaVector3( -3.174f, -17.193f, 5.407f ) );
-    list.push_back( vaVector3( -3.224f, -17.129f, 5.408f ) );
-    list.push_back( vaVector3( -3.277f, -17.061f, 5.410f ) );
-    list.push_back( vaVector3( -3.335f, -16.988f, 5.411f ) );
-    list.push_back( vaVector3( -3.395f, -16.911f, 5.413f ) );
-    list.push_back( vaVector3( -3.458f, -16.830f, 5.415f ) );
-    list.push_back( vaVector3( -3.525f, -16.745f, 5.417f ) );
-    list.push_back( vaVector3( -3.592f, -16.660f, 5.419f ) );
-    list.push_back( vaVector3( -3.657f, -16.577f, 5.420f ) );
-    list.push_back( vaVector3( -3.722f, -16.494f, 5.422f ) );
-    list.push_back( vaVector3( -3.807f, -16.385f, 5.425f ) );
-    list.push_back( vaVector3( -3.870f, -16.304f, 5.426f ) );
-    list.push_back( vaVector3( -3.935f, -16.223f, 5.428f ) );
-    list.push_back( vaVector3( -3.999f, -16.140f, 5.430f ) );
-    list.push_back( vaVector3( -4.084f, -16.032f, 5.432f ) );
-    list.push_back( vaVector3( -4.147f, -15.952f, 5.434f ) );
-    list.push_back( vaVector3( -4.210f, -15.871f, 5.436f ) );
-    list.push_back( vaVector3( -4.276f, -15.786f, 5.438f ) );
-    list.push_back( vaVector3( -4.339f, -15.706f, 5.440f ) );
-    list.push_back( vaVector3( -4.403f, -15.625f, 5.441f ) );
-    list.push_back( vaVector3( -4.528f, -15.465f, 5.445f ) );
-    list.push_back( vaVector3( -4.594f, -15.382f, 5.447f ) );
-    list.push_back( vaVector3( -4.657f, -15.300f, 5.449f ) );
-    list.push_back( vaVector3( -4.722f, -15.218f, 5.450f ) );
-    list.push_back( vaVector3( -4.785f, -15.137f, 5.452f ) );
-    list.push_back( vaVector3( -4.869f, -15.030f, 5.455f ) );
-    list.push_back( vaVector3( -4.932f, -14.950f, 5.456f ) );
-    list.push_back( vaVector3( -4.995f, -14.869f, 5.458f ) );
-    list.push_back( vaVector3( -5.078f, -14.764f, 5.461f ) );
-    list.push_back( vaVector3( -5.140f, -14.684f, 5.462f ) );
-    list.push_back( vaVector3( -5.202f, -14.605f, 5.464f ) );
-    list.push_back( vaVector3( -5.342f, -14.427f, 5.468f ) );
-    list.push_back( vaVector3( -5.403f, -14.349f, 5.470f ) );
-    list.push_back( vaVector3( -5.484f, -14.246f, 5.472f ) );
-    list.push_back( vaVector3( -5.547f, -14.166f, 5.474f ) );
-    list.push_back( vaVector3( -5.627f, -14.063f, 5.476f ) );
-    list.push_back( vaVector3( -5.706f, -13.962f, 5.478f ) );
-    list.push_back( vaVector3( -5.788f, -13.859f, 5.481f ) );
-    list.push_back( vaVector3( -5.906f, -13.708f, 5.484f ) );
-    list.push_back( vaVector3( -5.986f, -13.605f, 5.486f ) );
-    list.push_back( vaVector3( -6.046f, -13.529f, 5.488f ) );
-    list.push_back( vaVector3( -6.126f, -13.427f, 5.490f ) );
-    list.push_back( vaVector3( -6.205f, -13.326f, 5.492f ) );
-    list.push_back( vaVector3( -6.284f, -13.225f, 5.495f ) );
-    list.push_back( vaVector3( -6.362f, -13.126f, 5.497f ) );
-    list.push_back( vaVector3( -6.422f, -13.050f, 5.498f ) );
-    list.push_back( vaVector3( -6.500f, -12.950f, 5.501f ) );
-    list.push_back( vaVector3( -6.577f, -12.851f, 5.503f ) );
-    list.push_back( vaVector3( -6.655f, -12.752f, 5.505f ) );
-    list.push_back( vaVector3( -6.732f, -12.654f, 5.507f ) );
-    list.push_back( vaVector3( -6.790f, -12.579f, 5.509f ) );
-    list.push_back( vaVector3( -6.866f, -12.482f, 5.511f ) );
-    list.push_back( vaVector3( -6.943f, -12.384f, 5.513f ) );
-    list.push_back( vaVector3( -7.021f, -12.285f, 5.515f ) );
-    list.push_back( vaVector3( -7.080f, -12.209f, 5.517f ) );
-    list.push_back( vaVector3( -7.160f, -12.108f, 5.519f ) );
-    list.push_back( vaVector3( -7.219f, -12.033f, 5.521f ) );
-    list.push_back( vaVector3( -7.295f, -11.935f, 5.523f ) );
-    list.push_back( vaVector3( -7.353f, -11.862f, 5.525f ) );
-    list.push_back( vaVector3( -7.428f, -11.766f, 5.527f ) );
-    list.push_back( vaVector3( -7.487f, -11.691f, 5.528f ) );
-    list.push_back( vaVector3( -7.564f, -11.593f, 5.531f ) );
-    list.push_back( vaVector3( -7.639f, -11.496f, 5.533f ) );
-    list.push_back( vaVector3( -7.716f, -11.399f, 5.535f ) );
-    list.push_back( vaVector3( -7.774f, -11.325f, 5.536f ) );
-    list.push_back( vaVector3( -7.849f, -11.229f, 5.539f ) );
-    list.push_back( vaVector3( -7.923f, -11.134f, 5.541f ) );
-    list.push_back( vaVector3( -7.981f, -11.061f, 5.542f ) );
-    list.push_back( vaVector3( -8.056f, -10.965f, 5.544f ) );
-    list.push_back( vaVector3( -8.129f, -10.872f, 5.547f ) );
-    list.push_back( vaVector3( -8.203f, -10.778f, 5.549f ) );
-    list.push_back( vaVector3( -8.277f, -10.683f, 5.551f ) );
-    list.push_back( vaVector3( -8.350f, -10.590f, 5.553f ) );
-    list.push_back( vaVector3( -8.424f, -10.496f, 5.555f ) );
-    list.push_back( vaVector3( -8.496f, -10.404f, 5.557f ) );
-    list.push_back( vaVector3( -8.569f, -10.311f, 5.559f ) );
-    list.push_back( vaVector3( -8.642f, -10.218f, 5.561f ) );
-    list.push_back( vaVector3( -8.714f, -10.125f, 5.563f ) );
-    list.push_back( vaVector3( -8.804f, -10.010f, 5.566f ) );
-    list.push_back( vaVector3( -8.877f, -9.917f, 5.568f ) );
-    list.push_back( vaVector3( -8.951f, -9.823f, 5.570f ) );
-    list.push_back( vaVector3( -9.025f, -9.728f, 5.572f ) );
-    list.push_back( vaVector3( -9.097f, -9.636f, 5.574f ) );
-    list.push_back( vaVector3( -9.171f, -9.542f, 5.576f ) );
-    list.push_back( vaVector3( -9.247f, -9.446f, 5.578f ) );
-    list.push_back( vaVector3( -9.321f, -9.351f, 5.580f ) );
-    list.push_back( vaVector3( -9.393f, -9.259f, 5.582f ) );
-    list.push_back( vaVector3( -9.465f, -9.167f, 5.584f ) );
-    list.push_back( vaVector3( -9.555f, -9.053f, 5.587f ) );
-    list.push_back( vaVector3( -9.628f, -8.960f, 5.589f ) );
-    list.push_back( vaVector3( -9.700f, -8.868f, 5.591f ) );
-    list.push_back( vaVector3( -9.788f, -8.755f, 5.593f ) );
-    list.push_back( vaVector3( -9.877f, -8.642f, 5.596f ) );
-    list.push_back( vaVector3( -9.948f, -8.551f, 5.570f ) );
-    list.push_back( vaVector3( -10.039f, -8.435f, 5.427f ) );
-    list.push_back( vaVector3( -10.131f, -8.318f, 5.284f ) );
-    list.push_back( vaVector3( -10.203f, -8.226f, 5.171f ) );
-    list.push_back( vaVector3( -10.277f, -8.131f, 5.055f ) );
-    list.push_back( vaVector3( -10.350f, -8.039f, 4.941f ) );
-    list.push_back( vaVector3( -10.405f, -7.968f, 4.855f ) );
-    list.push_back( vaVector3( -10.478f, -7.875f, 4.740f ) );
-    list.push_back( vaVector3( -10.551f, -7.783f, 4.627f ) );
-    list.push_back( vaVector3( -10.622f, -7.691f, 4.514f ) );
-    list.push_back( vaVector3( -10.695f, -7.598f, 4.400f ) );
-    list.push_back( vaVector3( -10.770f, -7.503f, 4.284f ) );
-    list.push_back( vaVector3( -10.842f, -7.411f, 4.171f ) );
-    list.push_back( vaVector3( -10.932f, -7.295f, 4.029f ) );
-    list.push_back( vaVector3( -11.005f, -7.203f, 3.915f ) );
-    list.push_back( vaVector3( -11.078f, -7.109f, 3.800f ) );
-    list.push_back( vaVector3( -11.167f, -6.996f, 3.662f ) );
-    list.push_back( vaVector3( -11.240f, -6.903f, 3.547f ) );
-    list.push_back( vaVector3( -11.312f, -6.812f, 3.436f ) );
-    list.push_back( vaVector3( -11.400f, -6.698f, 3.296f ) );
-    list.push_back( vaVector3( -11.472f, -6.607f, 3.184f ) );
-    list.push_back( vaVector3( -11.563f, -6.492f, 3.043f ) );
-    list.push_back( vaVector3( -11.635f, -6.399f, 2.930f ) );
-    list.push_back( vaVector3( -11.724f, -6.286f, 2.791f ) );
-    list.push_back( vaVector3( -11.795f, -6.196f, 2.679f ) );
-    list.push_back( vaVector3( -11.882f, -6.084f, 2.543f ) );
-    list.push_back( vaVector3( -11.968f, -5.974f, 2.408f ) );
-    list.push_back( vaVector3( -12.056f, -5.862f, 2.270f ) );
-    list.push_back( vaVector3( -12.142f, -5.753f, 2.215f ) );
-    list.push_back( vaVector3( -12.210f, -5.665f, 2.217f ) );
-    list.push_back( vaVector3( -12.296f, -5.556f, 2.219f ) );
-    list.push_back( vaVector3( -12.364f, -5.469f, 2.221f ) );
-    list.push_back( vaVector3( -12.434f, -5.380f, 2.223f ) );
-    list.push_back( vaVector3( -12.502f, -5.293f, 2.225f ) );
-    list.push_back( vaVector3( -12.570f, -5.207f, 2.227f ) );
-    list.push_back( vaVector3( -12.667f, -5.039f, 2.231f ) );
-    list.push_back( vaVector3( -12.652f, -4.919f, 2.232f ) );
-    list.push_back( vaVector3( -12.638f, -4.801f, 2.233f ) );
-    list.push_back( vaVector3( -12.614f, -4.607f, 2.236f ) );
-    list.push_back( vaVector3( -12.596f, -4.453f, 2.238f ) );
-    list.push_back( vaVector3( -12.577f, -4.296f, 2.240f ) );
-    list.push_back( vaVector3( -12.558f, -4.140f, 2.242f ) );
-    list.push_back( vaVector3( -12.535f, -3.949f, 2.244f ) );
-    list.push_back( vaVector3( -12.516f, -3.795f, 2.246f ) );
-    list.push_back( vaVector3( -12.497f, -3.640f, 2.248f ) );
-    list.push_back( vaVector3( -12.478f, -3.485f, 2.250f ) );
-    list.push_back( vaVector3( -12.404f, -3.354f, 2.251f ) );
-    list.push_back( vaVector3( -12.318f, -3.286f, 2.251f ) );
-    list.push_back( vaVector3( -12.228f, -3.216f, 2.251f ) );
-    list.push_back( vaVector3( -12.137f, -3.145f, 2.251f ) );
-    list.push_back( vaVector3( -12.047f, -3.074f, 2.251f ) );
-    list.push_back( vaVector3( -11.940f, -2.990f, 2.251f ) );
-    list.push_back( vaVector3( -11.854f, -2.923f, 2.251f ) );
-    list.push_back( vaVector3( -11.788f, -2.871f, 2.251f ) );
-    list.push_back( vaVector3( -11.681f, -2.787f, 2.251f ) );
-    list.push_back( vaVector3( -11.594f, -2.719f, 2.251f ) );
-    list.push_back( vaVector3( -11.506f, -2.650f, 2.251f ) );
-    list.push_back( vaVector3( -11.418f, -2.581f, 2.251f ) );
-    list.push_back( vaVector3( -11.311f, -2.497f, 2.251f ) );
-    list.push_back( vaVector3( -11.244f, -2.444f, 2.251f ) );
-    list.push_back( vaVector3( -11.176f, -2.391f, 2.251f ) );
-    list.push_back( vaVector3( -11.161f, -2.273f, 2.252f ) );
-    list.push_back( vaVector3( -11.142f, -2.114f, 2.254f ) );
-    list.push_back( vaVector3( -11.123f, -1.956f, 2.256f ) );
-    list.push_back( vaVector3( -11.109f, -1.837f, 2.258f ) );
-    list.push_back( vaVector3( -11.090f, -1.679f, 2.260f ) );
-    list.push_back( vaVector3( -11.066f, -1.484f, 2.262f ) );
-    list.push_back( vaVector3( -11.052f, -1.368f, 2.263f ) );
-    list.push_back( vaVector3( -11.037f, -1.245f, 2.265f ) );
-    list.push_back( vaVector3( -11.018f, -1.088f, 2.267f ) );
-    list.push_back( vaVector3( -10.999f, -0.933f, 2.269f ) );
-    list.push_back( vaVector3( -10.976f, -0.739f, 2.271f ) );
-    list.push_back( vaVector3( -10.952f, -0.546f, 2.274f ) );
-    list.push_back( vaVector3( -10.929f, -0.352f, 2.276f ) );
-    list.push_back( vaVector3( -10.910f, -0.195f, 2.278f ) );
-    list.push_back( vaVector3( -10.882f, 0.034f, 2.281f ) );
-    list.push_back( vaVector3( -10.863f, 0.190f, 2.283f ) );
-    list.push_back( vaVector3( -10.774f, 0.301f, 2.283f ) );
-    list.push_back( vaVector3( -10.685f, 0.371f, 2.283f ) );
-    list.push_back( vaVector3( -10.576f, 0.456f, 2.283f ) );
-    list.push_back( vaVector3( -10.468f, 0.541f, 2.283f ) );
-    list.push_back( vaVector3( -10.402f, 0.593f, 2.283f ) );
-    list.push_back( vaVector3( -10.333f, 0.647f, 2.283f ) );
-    list.push_back( vaVector3( -10.246f, 0.715f, 2.283f ) );
-    list.push_back( vaVector3( -10.158f, 0.784f, 2.283f ) );
-    list.push_back( vaVector3( -10.069f, 0.853f, 2.283f ) );
-    list.push_back( vaVector3( -9.959f, 0.940f, 2.283f ) );
-    list.push_back( vaVector3( -9.870f, 1.010f, 2.283f ) );
-    list.push_back( vaVector3( -9.780f, 1.080f, 2.283f ) );
-    list.push_back( vaVector3( -9.691f, 1.150f, 2.283f ) );
-    list.push_back( vaVector3( -9.579f, 1.237f, 2.283f ) );
-    list.push_back( vaVector3( -9.490f, 1.308f, 2.283f ) );
-    list.push_back( vaVector3( -9.379f, 1.394f, 2.283f ) );
-    list.push_back( vaVector3( -9.291f, 1.464f, 2.283f ) );
-    list.push_back( vaVector3( -9.201f, 1.534f, 2.283f ) );
-    list.push_back( vaVector3( -9.089f, 1.622f, 2.283f ) );
-    list.push_back( vaVector3( -8.998f, 1.693f, 2.283f ) );
-    list.push_back( vaVector3( -8.907f, 1.765f, 2.283f ) );
-    list.push_back( vaVector3( -8.818f, 1.834f, 2.283f ) );
-    list.push_back( vaVector3( -8.750f, 1.888f, 2.283f ) );
-    list.push_back( vaVector3( -8.661f, 1.957f, 2.283f ) );
-    list.push_back( vaVector3( -8.571f, 2.028f, 2.283f ) );
-    list.push_back( vaVector3( -8.459f, 2.115f, 2.283f ) );
-    list.push_back( vaVector3( -8.392f, 2.168f, 2.283f ) );
-    list.push_back( vaVector3( -8.303f, 2.238f, 2.283f ) );
-    list.push_back( vaVector3( -8.213f, 2.308f, 2.283f ) );
-    list.push_back( vaVector3( -8.102f, 2.396f, 2.283f ) );
-    list.push_back( vaVector3( -8.012f, 2.466f, 2.283f ) );
-    list.push_back( vaVector3( -7.922f, 2.537f, 2.283f ) );
-    list.push_back( vaVector3( -7.832f, 2.607f, 2.283f ) );
-    list.push_back( vaVector3( -7.743f, 2.677f, 2.283f ) );
-    list.push_back( vaVector3( -7.631f, 2.764f, 2.283f ) );
-    list.push_back( vaVector3( -7.542f, 2.834f, 2.283f ) );
-    list.push_back( vaVector3( -7.450f, 2.906f, 2.283f ) );
-    list.push_back( vaVector3( -7.358f, 2.979f, 2.283f ) );
-    list.push_back( vaVector3( -7.241f, 3.070f, 2.283f ) );
-    list.push_back( vaVector3( -7.149f, 3.143f, 2.283f ) );
-    list.push_back( vaVector3( -7.059f, 3.213f, 2.283f ) );
-    list.push_back( vaVector3( -6.946f, 3.302f, 2.283f ) );
-    list.push_back( vaVector3( -6.833f, 3.390f, 2.283f ) );
-    list.push_back( vaVector3( -6.720f, 3.479f, 2.283f ) );
-    list.push_back( vaVector3( -6.630f, 3.549f, 2.283f ) );
-    list.push_back( vaVector3( -6.562f, 3.603f, 2.283f ) );
-    list.push_back( vaVector3( -6.448f, 3.692f, 2.283f ) );
-    list.push_back( vaVector3( -6.353f, 3.766f, 2.283f ) );
-    list.push_back( vaVector3( -6.240f, 3.855f, 2.283f ) );
-    list.push_back( vaVector3( -6.150f, 3.926f, 2.283f ) );
-    list.push_back( vaVector3( -6.057f, 3.999f, 2.283f ) );
-    list.push_back( vaVector3( -5.944f, 4.090f, 2.172f ) );
-    list.push_back( vaVector3( -5.832f, 4.180f, 2.028f ) );
-    list.push_back( vaVector3( -5.740f, 4.255f, 1.909f ) );
-    list.push_back( vaVector3( -5.629f, 4.346f, 1.766f ) );
-    list.push_back( vaVector3( -5.516f, 4.438f, 1.620f ) );
-    list.push_back( vaVector3( -5.423f, 4.511f, 1.588f ) );
-    list.push_back( vaVector3( -5.308f, 4.601f, 1.588f ) );
-    list.push_back( vaVector3( -5.217f, 4.673f, 1.588f ) );
-    list.push_back( vaVector3( -5.123f, 4.746f, 1.588f ) );
-    list.push_back( vaVector3( -5.030f, 4.819f, 1.588f ) );
-    list.push_back( vaVector3( -4.960f, 4.874f, 1.588f ) );
-    list.push_back( vaVector3( -4.801f, 4.998f, 1.588f ) );
-    list.push_back( vaVector3( -4.732f, 5.053f, 1.588f ) );
-    list.push_back( vaVector3( -4.660f, 5.109f, 1.588f ) );
-    list.push_back( vaVector3( -4.612f, 5.147f, 1.588f ) );
-    list.push_back( vaVector3( -4.474f, 5.255f, 1.588f ) );
-    list.push_back( vaVector3( -4.404f, 5.310f, 1.588f ) );
-    list.push_back( vaVector3( -4.334f, 5.365f, 1.588f ) );
-    list.push_back( vaVector3( -4.264f, 5.420f, 1.588f ) );
-    list.push_back( vaVector3( -4.172f, 5.491f, 1.588f ) );
-    list.push_back( vaVector3( -4.082f, 5.562f, 1.588f ) );
-    list.push_back( vaVector3( -3.990f, 5.634f, 1.588f ) );
-    list.push_back( vaVector3( -3.898f, 5.706f, 1.588f ) );
-    list.push_back( vaVector3( -3.806f, 5.778f, 1.588f ) );
-    list.push_back( vaVector3( -3.694f, 5.866f, 1.588f ) );
-    list.push_back( vaVector3( -3.625f, 5.920f, 1.588f ) );
-    list.push_back( vaVector3( -3.514f, 5.984f, 1.587f ) );
-    list.push_back( vaVector3( -3.471f, 6.002f, 1.587f ) );
-    list.push_back( vaVector3( -3.423f, 6.022f, 1.586f ) );
-    list.push_back( vaVector3( -3.370f, 6.044f, 1.585f ) );
-    list.push_back( vaVector3( -3.312f, 6.069f, 1.584f ) );
-    list.push_back( vaVector3( -3.228f, 6.105f, 1.583f ) );
-    list.push_back( vaVector3( -3.160f, 6.134f, 1.582f ) );
-    list.push_back( vaVector3( -3.084f, 6.165f, 1.581f ) );
-    list.push_back( vaVector3( -2.978f, 6.211f, 1.579f ) );
-    list.push_back( vaVector3( -2.893f, 6.246f, 1.578f ) );
-    list.push_back( vaVector3( -2.803f, 6.284f, 1.576f ) );
-    list.push_back( vaVector3( -2.710f, 6.324f, 1.575f ) );
-    list.push_back( vaVector3( -2.581f, 6.379f, 1.573f ) );
-    list.push_back( vaVector3( -2.485f, 6.419f, 1.572f ) );
-    list.push_back( vaVector3( -2.358f, 6.473f, 1.570f ) );
-    list.push_back( vaVector3( -2.262f, 6.514f, 1.568f ) );
-    list.push_back( vaVector3( -2.134f, 6.568f, 1.566f ) );
-    list.push_back( vaVector3( -2.037f, 6.609f, 1.565f ) );
-    list.push_back( vaVector3( -1.909f, 6.663f, 1.563f ) );
-    list.push_back( vaVector3( -1.813f, 6.704f, 1.561f ) );
-    list.push_back( vaVector3( -1.682f, 6.759f, 1.559f ) );
-    list.push_back( vaVector3( -1.587f, 6.800f, 1.558f ) );
-    list.push_back( vaVector3( -1.461f, 6.853f, 1.556f ) );
-    list.push_back( vaVector3( -1.336f, 6.906f, 1.554f ) );
-    list.push_back( vaVector3( -1.243f, 6.946f, 1.552f ) );
-    list.push_back( vaVector3( -1.116f, 6.999f, 1.551f ) );
-    list.push_back( vaVector3( -0.992f, 7.052f, 1.549f ) );
-    list.push_back( vaVector3( -0.896f, 7.092f, 1.547f ) );
-    list.push_back( vaVector3( -0.771f, 7.145f, 1.545f ) );
-    list.push_back( vaVector3( -0.648f, 7.197f, 1.543f ) );
-    list.push_back( vaVector3( -0.525f, 7.249f, 1.541f ) );
-    list.push_back( vaVector3( -0.429f, 7.290f, 1.540f ) );
-    list.push_back( vaVector3( -0.307f, 7.342f, 1.538f ) );
-    list.push_back( vaVector3( -0.216f, 7.380f, 1.537f ) );
-    list.push_back( vaVector3( -0.096f, 7.431f, 1.535f ) );
-    list.push_back( vaVector3( 0.026f, 7.483f, 1.533f ) );
-    list.push_back( vaVector3( 0.146f, 7.534f, 1.531f ) );
-    list.push_back( vaVector3( 0.267f, 7.585f, 1.529f ) );
-    list.push_back( vaVector3( 0.390f, 7.637f, 1.527f ) );
-    list.push_back( vaVector3( 0.591f, 7.722f, 1.524f ) );
-    list.push_back( vaVector3( 0.682f, 7.761f, 1.523f ) );
-    list.push_back( vaVector3( 0.798f, 7.810f, 1.521f ) );
-    list.push_back( vaVector3( 0.887f, 7.848f, 1.520f ) );
-    list.push_back( vaVector3( 1.004f, 7.897f, 1.518f ) );
-    list.push_back( vaVector3( 1.124f, 7.948f, 1.516f ) );
-    list.push_back( vaVector3( 1.215f, 7.987f, 1.515f ) );
-    list.push_back( vaVector3( 1.333f, 8.036f, 1.513f ) );
-    list.push_back( vaVector3( 1.450f, 8.086f, 1.511f ) );
-    list.push_back( vaVector3( 1.537f, 8.123f, 1.510f ) );
-    list.push_back( vaVector3( 1.652f, 8.172f, 1.508f ) );
-    list.push_back( vaVector3( 1.767f, 8.221f, 1.506f ) );
-    list.push_back( vaVector3( 1.882f, 8.269f, 1.505f ) );
-    list.push_back( vaVector3( 1.995f, 8.317f, 1.503f ) );
-    list.push_back( vaVector3( 2.081f, 8.353f, 1.502f ) );
-    list.push_back( vaVector3( 2.197f, 8.402f, 1.500f ) );
-    list.push_back( vaVector3( 2.314f, 8.452f, 1.498f ) );
-    list.push_back( vaVector3( 2.427f, 8.500f, 1.496f ) );
-    list.push_back( vaVector3( 2.539f, 8.547f, 1.495f ) );
-    list.push_back( vaVector3( 2.651f, 8.595f, 1.493f ) );
-    list.push_back( vaVector3( 2.787f, 8.653f, 1.491f ) );
-    list.push_back( vaVector3( 2.899f, 8.700f, 1.489f ) );
-    list.push_back( vaVector3( 3.011f, 8.747f, 1.487f ) );
-    list.push_back( vaVector3( 3.147f, 8.805f, 1.485f ) );
-    list.push_back( vaVector3( 9.551f, 6.751f, 5.534f ) );
-    list.push_back( vaVector3( 9.490f, 6.726f, 5.516f ) );
-    list.push_back( vaVector3( 9.443f, 6.706f, 5.503f ) );
-    list.push_back( vaVector3( 9.367f, 6.675f, 5.482f ) );
-    list.push_back( vaVector3( 9.312f, 6.652f, 5.467f ) );
-    list.push_back( vaVector3( 9.225f, 6.617f, 5.443f ) );
-    list.push_back( vaVector3( 9.162f, 6.591f, 5.425f ) );
-    list.push_back( vaVector3( 9.060f, 6.549f, 5.397f ) );
-    list.push_back( vaVector3( 8.953f, 6.505f, 5.367f ) );
-    list.push_back( vaVector3( 8.877f, 6.474f, 5.345f ) );
-    list.push_back( vaVector3( 8.760f, 6.426f, 5.313f ) );
-    list.push_back( vaVector3( 8.641f, 6.377f, 5.280f ) );
-    list.push_back( vaVector3( 8.523f, 6.328f, 5.247f ) );
-    list.push_back( vaVector3( 8.478f, 6.215f, 5.225f ) );
-    list.push_back( vaVector3( 8.410f, 6.046f, 5.192f ) );
-    list.push_back( vaVector3( 8.342f, 5.875f, 5.159f ) );
-    list.push_back( vaVector3( 8.275f, 5.706f, 5.126f ) );
-    list.push_back( vaVector3( 8.229f, 5.591f, 5.104f ) );
-    list.push_back( vaVector3( 8.278f, 5.471f, 5.104f ) );
-    list.push_back( vaVector3( 8.327f, 5.351f, 5.104f ) );
-    list.push_back( vaVector3( 8.377f, 5.230f, 5.104f ) );
-    list.push_back( vaVector3( 8.394f, 5.187f, 5.104f ) );
-    list.push_back( vaVector3( 8.394f, 5.187f, 5.104f ) );
-    list.push_back( vaVector3( 8.394f, 5.187f, 5.104f ) );
-    list.push_back( vaVector3( 8.426f, 5.200f, 5.084f ) );
-    list.push_back( vaVector3( 8.482f, 5.223f, 5.048f ) );
-    list.push_back( vaVector3( 8.547f, 5.249f, 5.007f ) );
-    list.push_back( vaVector3( 8.622f, 5.280f, 4.959f ) );
-    list.push_back( vaVector3( 8.678f, 5.303f, 4.923f ) );
-    list.push_back( vaVector3( 8.770f, 5.341f, 4.865f ) );
-    list.push_back( vaVector3( 8.871f, 5.383f, 4.800f ) );
-    list.push_back( vaVector3( 8.944f, 5.413f, 4.754f ) );
-    list.push_back( vaVector3( 9.061f, 5.461f, 4.679f ) );
-    list.push_back( vaVector3( 9.146f, 5.496f, 4.625f ) );
-    list.push_back( vaVector3( 9.278f, 5.550f, 4.541f ) );
-    list.push_back( vaVector3( 9.424f, 5.610f, 4.448f ) );
-    list.push_back( vaVector3( 9.529f, 5.653f, 4.381f ) );
-    list.push_back( vaVector3( 9.685f, 5.717f, 4.281f ) );
-    list.push_back( vaVector3( 9.838f, 5.780f, 4.184f ) );
-    list.push_back( vaVector3( 9.941f, 5.822f, 4.118f ) );
-    list.push_back( vaVector3( 10.095f, 5.886f, 4.020f ) );
-    list.push_back( vaVector3( -3.797f, -2.068f, 0.627f ) );
-    list.push_back( vaVector3( -3.773f, -2.117f, 0.632f ) );
-    list.push_back( vaVector3( -3.738f, -2.190f, 0.638f ) );
-    list.push_back( vaVector3( -3.708f, -2.251f, 0.644f ) );
-    list.push_back( vaVector3( -3.686f, -2.297f, 0.648f ) );
-    list.push_back( vaVector3( -3.651f, -2.369f, 0.654f ) );
-    list.push_back( vaVector3( -3.625f, -2.422f, 0.659f ) );
-    list.push_back( vaVector3( -3.586f, -2.503f, 0.666f ) );
-    list.push_back( vaVector3( -3.544f, -2.590f, 0.674f ) );
-    list.push_back( vaVector3( -3.514f, -2.652f, 0.680f ) );
-    list.push_back( vaVector3( -3.468f, -2.748f, 0.688f ) );
-    list.push_back( vaVector3( -3.436f, -2.813f, 0.694f ) );
-    list.push_back( vaVector3( -3.310f, -3.073f, 0.717f ) );
-    list.push_back( vaVector3( -3.261f, -3.175f, 0.727f ) );
-    list.push_back( vaVector3( -3.228f, -3.242f, 0.733f ) );
-    list.push_back( vaVector3( -3.194f, -3.312f, 0.739f ) );
-    list.push_back( vaVector3( -3.145f, -3.414f, 0.748f ) );
-    list.push_back( vaVector3( -3.097f, -3.513f, 0.757f ) );
-    list.push_back( vaVector3( -3.064f, -3.581f, 0.763f ) );
-    list.push_back( vaVector3( -3.016f, -3.680f, 0.772f ) );
-    list.push_back( vaVector3( -2.967f, -3.780f, 0.781f ) );
-    list.push_back( vaVector3( -2.934f, -3.849f, 0.787f ) );
-    list.push_back( vaVector3( -2.885f, -3.949f, 0.796f ) );
-    list.push_back( vaVector3( -2.838f, -4.047f, 0.805f ) );
-    list.push_back( vaVector3( -2.790f, -4.146f, 0.814f ) );
-    list.push_back( vaVector3( -2.742f, -4.245f, 0.822f ) );
-    list.push_back( vaVector3( -2.709f, -4.312f, 0.828f ) );
-    list.push_back( vaVector3( -2.663f, -4.408f, 0.837f ) );
-    list.push_back( vaVector3( -2.615f, -4.505f, 0.846f ) );
-    list.push_back( vaVector3( -2.569f, -4.602f, 0.854f ) );
-    list.push_back( vaVector3( -2.522f, -4.697f, 0.863f ) );
-    list.push_back( vaVector3( -2.476f, -4.793f, 0.871f ) );
-    list.push_back( vaVector3( -2.430f, -4.889f, 0.880f ) );
-    list.push_back( vaVector3( -2.383f, -4.984f, 0.889f ) );
-    list.push_back( vaVector3( -2.337f, -5.079f, 0.897f ) );
-    list.push_back( vaVector3( -2.291f, -5.175f, 0.906f ) );
-    list.push_back( vaVector3( -2.245f, -5.270f, 0.914f ) );
-    list.push_back( vaVector3( -2.214f, -5.334f, 0.920f ) );
-    list.push_back( vaVector3( -2.167f, -5.431f, 0.929f ) );
-    list.push_back( vaVector3( -2.122f, -5.524f, 0.937f ) );
-    list.push_back( vaVector3( -2.075f, -5.620f, 0.946f ) );
-    list.push_back( vaVector3( -2.029f, -5.715f, 0.954f ) );
-    list.push_back( vaVector3( -1.983f, -5.810f, 0.963f ) );
-    list.push_back( vaVector3( -1.938f, -5.904f, 0.971f ) );
-    list.push_back( vaVector3( -1.892f, -5.998f, 0.979f ) );
-    list.push_back( vaVector3( -1.861f, -6.061f, 0.985f ) );
-    list.push_back( vaVector3( -1.815f, -6.156f, 0.994f ) );
-    list.push_back( vaVector3( -1.770f, -6.249f, 1.002f ) );
-    list.push_back( vaVector3( -1.725f, -6.341f, 1.010f ) );
-    list.push_back( vaVector3( -1.679f, -6.436f, 1.019f ) );
-    list.push_back( vaVector3( -1.635f, -6.528f, 1.027f ) );
-    list.push_back( vaVector3( -1.575f, -6.651f, 1.038f ) );
-    list.push_back( vaVector3( -1.531f, -6.742f, 1.046f ) );
-    list.push_back( vaVector3( -1.487f, -6.833f, 1.054f ) );
-    list.push_back( vaVector3( -1.401f, -7.010f, 1.070f ) );
-    list.push_back( vaVector3( -1.357f, -7.101f, 1.078f ) );
-    list.push_back( vaVector3( -1.301f, -7.217f, 1.089f ) );
-    list.push_back( vaVector3( -1.257f, -7.307f, 1.097f ) );
-    list.push_back( vaVector3( -1.213f, -7.398f, 1.105f ) );
-    list.push_back( vaVector3( -1.169f, -7.488f, 1.113f ) );
-    list.push_back( vaVector3( -1.125f, -7.579f, 1.121f ) );
-    list.push_back( vaVector3( -1.068f, -7.697f, 1.132f ) );
-    list.push_back( vaVector3( -1.012f, -7.813f, 1.142f ) );
-    list.push_back( vaVector3( -0.970f, -7.899f, 1.150f ) );
-    list.push_back( vaVector3( -0.927f, -7.988f, 1.158f ) );
-    list.push_back( vaVector3( -0.884f, -8.076f, 1.165f ) );
-    list.push_back( vaVector3( -0.829f, -8.190f, 1.176f ) );
-    list.push_back( vaVector3( -0.786f, -8.278f, 1.184f ) );
-    list.push_back( vaVector3( -0.745f, -8.364f, 1.191f ) );
-    list.push_back( vaVector3( -0.701f, -8.454f, 1.199f ) );
-    list.push_back( vaVector3( -0.658f, -8.543f, 1.207f ) );
-    list.push_back( vaVector3( -0.615f, -8.631f, 1.215f ) );
-    list.push_back( vaVector3( -0.572f, -8.719f, 1.223f ) );
-    list.push_back( vaVector3( -0.517f, -8.834f, 1.233f ) );
-    list.push_back( vaVector3( -0.476f, -8.919f, 1.241f ) );
-    list.push_back( vaVector3( -0.421f, -9.032f, 1.251f ) );
-    list.push_back( vaVector3( -0.392f, -9.092f, 1.256f ) );
-    list.push_back( vaVector3( -0.337f, -9.205f, 1.267f ) );
-    list.push_back( vaVector3( -0.294f, -9.293f, 1.274f ) );
-    list.push_back( vaVector3( -0.252f, -9.380f, 1.282f ) );
-    list.push_back( vaVector3( -0.197f, -9.494f, 1.292f ) );
-    list.push_back( vaVector3( -0.155f, -9.580f, 1.300f ) );
-    list.push_back( vaVector3( -0.113f, -9.667f, 1.308f ) );
-    list.push_back( vaVector3( -0.072f, -9.751f, 1.315f ) );
-    list.push_back( vaVector3( -0.031f, -9.836f, 1.323f ) );
-    list.push_back( vaVector3( 0.010f, -9.919f, 1.331f ) );
-    list.push_back( vaVector3( 0.076f, -10.057f, 1.343f ) );
-    list.push_back( vaVector3( 0.117f, -10.141f, 1.350f ) );
-    list.push_back( vaVector3( 0.211f, -10.335f, 1.368f ) );
-    list.push_back( vaVector3( 0.252f, -10.419f, 1.375f ) );
-    list.push_back( vaVector3( 0.280f, -10.477f, 1.381f ) );
-    list.push_back( vaVector3( 0.321f, -10.561f, 1.388f ) );
-    list.push_back( vaVector3( 0.361f, -10.645f, 1.396f ) );
-    list.push_back( vaVector3( 0.401f, -10.727f, 1.403f ) );
-    list.push_back( vaVector3( 0.441f, -10.810f, 1.410f ) );
-    list.push_back( vaVector3( 0.468f, -10.866f, 1.415f ) );
-    list.push_back( vaVector3( 0.509f, -10.950f, 1.423f ) );
-    list.push_back( vaVector3( 0.551f, -11.037f, 1.431f ) );
-    list.push_back( vaVector3( 0.593f, -11.122f, 1.438f ) );
-    list.push_back( vaVector3( 0.634f, -11.207f, 1.446f ) );
-    list.push_back( vaVector3( 0.673f, -11.288f, 1.453f ) );
-    list.push_back( vaVector3( 0.726f, -11.397f, 1.463f ) );
-    list.push_back( vaVector3( 0.766f, -11.480f, 1.470f ) );
-    list.push_back( vaVector3( 0.806f, -11.562f, 1.478f ) );
-    list.push_back( vaVector3( 0.858f, -11.669f, 1.487f ) );
-    list.push_back( vaVector3( 0.897f, -11.751f, 1.495f ) );
-    list.push_back( vaVector3( 0.950f, -11.858f, 1.504f ) );
-    list.push_back( vaVector3( 0.988f, -11.938f, 1.511f ) );
-    list.push_back( vaVector3( 1.028f, -12.020f, 1.519f ) );
-    list.push_back( vaVector3( 1.078f, -12.124f, 1.528f ) );
-    list.push_back( vaVector3( 1.129f, -12.228f, 1.537f ) );
-    list.push_back( vaVector3( 1.181f, -12.335f, 1.547f ) );
-    list.push_back( vaVector3( 1.232f, -12.441f, 1.556f ) );
-    list.push_back( vaVector3( 1.271f, -12.521f, 1.563f ) );
-    list.push_back( vaVector3( 1.369f, -12.724f, 1.582f ) );
-    list.push_back( vaVector3( 1.420f, -12.829f, 1.591f ) );
-    list.push_back( vaVector3( 1.471f, -12.934f, 1.600f ) );
-    list.push_back( vaVector3( 1.535f, -13.066f, 1.612f ) );
+    return lightEntity;
+}
 
-    entt::entity lightsParent = scene.CreateEntity( "TestLights" );
+entt::entity MakeConnectingRod( vaRenderDevice & renderDevice, vaScene & scene, const string & name, const vaVector3 & posFrom, const vaVector3 & posTo, float radius, entt::entity parentEntity )
+{
+    const vaGUID & cylinderMeshID       = renderDevice.GetMeshManager().UnitCylinder(0)->UIDObject_GetUID();
+    vaGUID materialID   = "32f9a23c-6730-411a-86a8-d343aace8784"; // <- xxx_streetlight_metal from Bistro, or just use default // renderDevice.GetMaterialManager().GetDefaultMaterial()->UIDObject_GetUID();
 
-    float lightSize = 0.04f;
-    float intensity = 0.1f;
+    vaVector3 diff = posTo-posFrom;
+    vaMatrix4x4 transform = vaMatrix4x4::Translation(0, 0, 0.5f) * vaMatrix4x4::Scaling( radius, radius, diff.Length() ) * vaMatrix4x4( vaMatrix3x3::RotateFromTo( vaVector3( 0, 0, 1 ), (diff).Normalized() ) );
+    transform = transform * vaMatrix4x4::Translation(posFrom);
 
-    vaRandom rand(0);
+    entt::entity entity = scene.CreateEntity( name, transform, parentEntity, cylinderMeshID, materialID );
 
-    //for( int i = 0; i < list.size(); i++ )
-    for( int i = 0; i < list.size(); i+=2 ) // SKIP EVERY SECOND
-    {
-        entt::entity lightEntity = scene.CreateEntity( vaStringTools::Format("light_%04d", i), vaMatrix4x4::FromScaleRotationTranslation( {lightSize*0.8f, lightSize*0.8f, lightSize*0.8f}, vaMatrix3x3::Identity, list[i] ), lightsParent, 
-            unitSphereMeshID, emissiveMaterial );
-
-        auto & newLight         = scene.Registry().emplace<Scene::LightPoint>( lightEntity );
-        newLight.Color          = vaVector3::RandomNormal(rand).ComponentAbs( );
-        newLight.Intensity      = intensity;
-        newLight.FadeFactor     = 1.0f;
-        newLight.Size           = lightSize;    // add epsilon to ensure emissive material hack works
-        newLight.Range          = 50.0f;
-        newLight.SpotInnerAngle = 0.0f;
-        newLight.SpotOuterAngle = 0.0f;
-        newLight.CastShadows    = false;
-
-        Scene::EmissiveMaterialDriver & emissiveDriver = scene.Registry().emplace<Scene::EmissiveMaterialDriver>( lightEntity );
-        emissiveDriver.EmissiveMultiplier       = {1.0f, 100.0f, 1.0f}; // this will get overridden by ReferenceLightEntity so it's for debugging only
-        emissiveDriver.ReferenceLightEntity     = Scene::EntityReference( scene.Registry(), lightEntity );
-        emissiveDriver.ReferenceLightMultiplier = 30.0f;
-    }
-#endif
+    return entity;
 }
 
 VanillaSample::VanillaSample( vaRenderDevice & renderDevice, vaApplicationBase & applicationBase, bool importerMode ) 
@@ -1183,7 +581,7 @@ void VanillaSample::OnTick( float deltaTime )
                     m_currentScene = nullptr;
                 else
                 {
-                    m_currentScene = std::make_shared<vaScene>( );
+                    m_currentScene = vaScene::Create( );
                     m_currentScene->LoadJSON( vaCore::GetMediaRootDirectoryNarrow( ) + m_scenesInFolder[m_currentSceneIndex] + ".vaScene" );
                 }
             }
@@ -1193,20 +591,13 @@ void VanillaSample::OnTick( float deltaTime )
             m_currentScene = m_assetImporter->GetScene();
         }
 
-
         if( prevScene != m_currentScene )
         {
-#if 1
-            if( m_currentScene->Name() == "AmazonLumberyardBistro" )
-                AddLumberyardTestLights( *m_currentScene, GetRenderDevice().GetMeshManager().UnitSphere()->UIDObject_GetUID(), GetRenderDevice().GetMaterialManager().GetDefaultEmissiveLightMaterial()->UIDObject_GetUID() );
-#endif
-
             m_sceneRenderer->SetScene( m_currentScene );
             m_presetCamerasDirty = true;
-
         }
 
-        SimpleBistroAnimStuff( deltaTime, prevScene != m_currentScene );
+        InteractiveBistroTick( deltaTime, prevScene != m_currentScene );
 
         // LOAD FROM SCENE
 
@@ -1429,18 +820,7 @@ void VanillaSample::UIPanelTick( vaApplicationBase & application )
         }
         m_settings.CurrentSceneName = m_scenesInFolder[currentSceneIndex];
 
-        if( m_simpleBistroAnimAvailable )
-        {
-            if( ImGui::CollapsingHeader( "Bistro animations" ) )
-            {
-                VA_GENERIC_RAII_SCOPE( ImGui::Indent();, ImGui::Unindent(); );
-                ImGui::Checkbox("Anim time advance", &m_simpleBistroAnimAdvanceTime );
-                ImGui::InputDouble( "Anim time", &m_simpleBistroAnimTime );
-                ImGui::Separator();
-                ImGui::Checkbox( "Move some objects", &m_simpleBistroAnimMoveObjs );
-                ImGui::Checkbox( "Swing the big light", &m_simpleBistroAnimSwingLight );
-            }
-        }
+        InteractiveBistroUI( application );
     }
     else
     {
@@ -1520,9 +900,10 @@ namespace Vanilla
 
         string                                  m_statusInfo = "-";
         bool                                    m_shouldStop = false;
+        bool                                    m_divertTracerOutput = false;
 
     public:
-        AutoBenchTool( VanillaSample& parent, vaMiniScriptInterface& scriptInterface, bool ensureVisualDeterminism, bool writeReport );
+        AutoBenchTool( VanillaSample& parent, vaMiniScriptInterface& scriptInterface, bool ensureVisualDeterminism, bool writeReport, bool divertTracerOutput );
         ~AutoBenchTool( );
 
         void                                    ReportAddRowValues( const std::vector<string>& row ) { m_reportCSV.push_back( row ); FlushRowValues( ); }
@@ -1770,7 +1151,7 @@ void VanillaSample::ScriptedAutoBench( vaApplicationBase & application )
         m_miniScript.Start( [ thisPtr = this] (vaMiniScriptInterface & msi)
         {
             // this sets up some globals and also backups all the sample settings
-            AutoBenchTool autobench( *thisPtr, msi, false, true );
+            AutoBenchTool autobench( *thisPtr, msi, false, true, true );
 
             // animation stuff
             const float c_framePerSecond    = 10;
@@ -1803,11 +1184,6 @@ void VanillaSample::ScriptedAutoBench( vaApplicationBase & application )
             }
 
             auto tracerView = std::make_shared<vaTracerView>( );
-
-            //            // testPass: 0: standard pass, 1: gradient filter
-            //            for( int testPass = 0; testPass < 2; testPass++ ) 
-            //            {
-            //                autobench.ReportAddText( vaStringTools::Format( "\r\nPASS %d: ", testPass ) );  
 
             // autobench.ReportAddText( "\r\n" );  
 
@@ -1958,21 +1334,21 @@ void VanillaSample::ScriptedDemo( vaApplicationBase & application )
     //if( !application.IsFullscreen() )
     //    ImGui::TextColored( {1.0f, 0.3f, 0.3f, 1.0f}, "!! app not fullscreen !!" );
 
-    bool effectEnabled = m_sceneMainView->Settings().AOOption == 3;
-    ImGui::Checkbox( "Enable XeGTAO", &effectEnabled );
-    if( effectEnabled )
-        m_sceneMainView->Settings().AOOption = 3;
-    else
-        m_sceneMainView->Settings().AOOption = 0;
+    // bool effectEnabled = m_sceneMainView->Settings().AOOption == 3;
+    // ImGui::Checkbox( "Enable XeGTAO", &effectEnabled );
+    // if( effectEnabled )
+    //     m_sceneMainView->Settings().AOOption = 3;
+    // else
+    //     m_sceneMainView->Settings().AOOption = 0;
 
-    VA_GENERIC_RAII_SCOPE( ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV( (float)vaMath::Frac(application.GetTimeFromStart()*0.3), 0.6f, 0.6f));, ImGui::PopStyleColor(); );
+    //VA_GENERIC_RAII_SCOPE( ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV( (float)vaMath::Frac(application.GetTimeFromStart()*0.3), 0.6f, 0.6f));, ImGui::PopStyleColor(); );
 
     if( ImGui::Button( "RUN FLYTHROUGH ('Esc' to stop)", {-1, 0} ) )
     {
         m_miniScript.Start( [ thisPtr = this, &application ] (vaMiniScriptInterface & msi)
         {
             // this sets up some globals and also backups all the sample settings
-            AutoBenchTool autobench( *thisPtr, msi, false, false );
+            AutoBenchTool autobench( *thisPtr, msi, false, false, false );
 
             // animation stuff
             autobench.SetUIStatusInfo( "Playing flythrough; hit 'F1' to show/hide UI, 'Esc' to stop" );
@@ -2001,6 +1377,83 @@ void VanillaSample::ScriptedDemo( vaApplicationBase & application )
                 // if( warmupPass )
                 //     testFrame += 3;
             }
+        } );        
+    }
+
+    if( ImGui::Button( "Record flythrough at 30fps ('Esc' to stop)", {-1, 0} ) )
+    {
+        m_miniScript.Start( [ thisPtr = this, &application ] (vaMiniScriptInterface & msi)
+        {
+            // this sets up some globals and also backups all the sample settings
+            AutoBenchTool autobench( *thisPtr, msi, true, true, false );
+
+            // animation stuff
+            autobench.SetUIStatusInfo( "Recording flythrough; hit 'F1' to show/hide UI, 'Esc' to stop" );
+
+            //vaUIManager::GetInstance( ).SetVisible( false );
+            application.SetVsync( true );
+
+            const float c_framePerSecond = 30;
+            const float c_frameDeltaTime = 1.0f / (float)c_framePerSecond;
+            const float c_totalTime = thisPtr->GetFlythroughCameraController( )->GetTotalTime( );
+            const int   c_totalFrameCount = (int)( c_totalTime / c_frameDeltaTime );
+
+            thisPtr->SetFlythroughCameraEnabled( true );
+            thisPtr->GetFlythroughCameraController( )->SetPlaySpeed( 0.0f );
+
+            // info
+            autobench.ReportAddText( "\r\nRecording a flythrough with current settings\r\n" );
+
+            // let temporal stuff stabilize
+            for( int frameCounter = 0; frameCounter < 30; frameCounter++ )
+            {
+                autobench.SetUIStatusInfo( "warmup, " + vaStringTools::Format( "%.1f%%", (float)frameCounter/(float)(30-1)*100.0f ) );
+
+                thisPtr->GetFlythroughCameraController( )->SetPlayTime( 0 );
+                if( !msi.YieldExecution( ) || autobench.GetShouldStop() || application.GetInputKeyboard()->IsKeyDown(KK_ESCAPE) ) { vaUIManager::GetInstance( ).SetVisible( true ); return; }
+            }
+
+
+            int width   = thisPtr->CurrentFrameTexture( )->GetWidth( ); // /2;
+            int height  = thisPtr->CurrentFrameTexture( )->GetHeight( ); // /2;
+            shared_ptr<vaTexture> captureTexture = vaTexture::Create2D( thisPtr->GetRenderDevice(), vaResourceFormat::R8G8B8A8_UNORM_SRGB, width, height, 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::RenderTarget );
+
+            for( int frameCounter = 0; frameCounter < c_totalFrameCount; frameCounter++ )
+            {
+                thisPtr->GetFlythroughCameraController( )->SetPlayTime( frameCounter * c_frameDeltaTime );
+
+                autobench.SetUIStatusInfo( "capturing, " + vaStringTools::Format( "%.1f%%", (float)frameCounter/(float)(c_totalFrameCount-1)*100.0f ) );
+
+                if( !msi.YieldExecution( ) || autobench.GetShouldStop() || application.GetInputKeyboard()->IsKeyDown(KK_ESCAPE) ) { vaUIManager::GetInstance( ).SetVisible( true ); return; }
+
+                if( thisPtr->m_sceneMainView->Settings( ).RenderPath == vaRenderType::PathTracing && thisPtr->m_sceneMainView->PathTracer( ) != nullptr )
+                {
+                    while( !thisPtr->m_sceneMainView->PathTracer( )->FullyAccumulated() )
+                    {
+                        if( !msi.YieldExecution( ) || autobench.GetShouldStop() || application.GetInputKeyboard()->IsKeyDown(KK_ESCAPE) ) { vaUIManager::GetInstance( ).SetVisible( true ); return; }
+                    }
+                }
+
+                wstring folderName = autobench.ReportGetDir( );
+                vaFileTools::EnsureDirectoryExists( folderName );
+
+                thisPtr->GetRenderDevice( ).GetMainContext( )->StretchRect( captureTexture, thisPtr->CurrentFrameTexture( ), {0,0,0,0} );
+
+                // thisPtr->CurrentFrameTexture( )->SaveToPNGFile( *thisPtr->GetRenderDevice( ).GetMainContext( ),
+                //     folderName + vaStringTools::Format( L"frame_%05d.png", testFrame ) );
+
+                captureTexture->SaveToPNGFile( *thisPtr->GetRenderDevice( ).GetMainContext( ),
+                    folderName + vaStringTools::Format( L"frame_%05d.png", frameCounter ) );            
+            }
+
+            // for conversion to mpeg one option is to download ffmpeg and then do 
+            string conversionInfo = vaStringTools::Format( "To convert to mpeg download ffmpeg and then do 'ffmpeg -r %d -f image2 -s %dx%d -i frame_%%05d.png -vcodec libx264 -crf 13 -pix_fmt yuv420p outputvideo.mp4' ",
+                (int)c_framePerSecond, width, height );
+
+            autobench.ReportAddText( "\r\n"+ conversionInfo +"\r\n" ); 
+
+            VA_LOG_SUCCESS( conversionInfo );
+
         } );        
     }
 }
@@ -2232,94 +1685,8 @@ void VanillaSample::ScriptedTests( vaApplicationBase & application )
 
 }
 
-void VanillaSample::SimpleBistroAnimStuff( float deltaTime, bool sceneChanged )
-{
-    if( sceneChanged )
-    {
-        m_simpleBistroAnimCeilingFan    = Scene::FindFirstByName( m_currentScene->CRegistry(), "ceiling_fan_1_rotate_pivot", entt::null, true );
-        m_simpleBistroAnimSpaceship     = Scene::FindFirstByName( m_currentScene->CRegistry(), "SpaceFighter_2_animated", entt::null, true );
-        m_simpleBistroAnimSpaceshipLL   = Scene::FindFirstByName( m_currentScene->CRegistry(), "light_left", m_simpleBistroAnimSpaceship, true );
-        m_simpleBistroAnimSpaceshipLR   = Scene::FindFirstByName( m_currentScene->CRegistry(), "light_right", m_simpleBistroAnimSpaceship, true );
-        m_simpleBistroAnimCeilingLight  = Scene::FindFirstByName( m_currentScene->CRegistry(), "ceiling_lamp_03_rotate_pivot", entt::null, true );
-    }
-
-    // very simple bistro anim - if bistro loaded :)
-    if( m_simpleBistroAnimCeilingFan == entt::null && m_simpleBistroAnimSpaceship == entt::null && m_simpleBistroAnimCeilingLight == entt::null )
-    {
-        m_simpleBistroAnimAvailable = false;
-        m_simpleBistroAnimMoveObjs = false;
-        m_simpleBistroAnimSwingLight = false;
-        m_simpleBistroAnimAdvanceTime = false;
-        return;
-    }
-    else
-        m_simpleBistroAnimAvailable = true;
-
-    if( m_simpleBistroAnimAdvanceTime )
-        m_simpleBistroAnimTime += deltaTime;
-
-    entt::registry & registry = m_currentScene->Registry( );
-
-    if( m_simpleBistroAnimMoveObjs )
-    {
-        if( m_simpleBistroAnimCeilingFan != entt::null )
-        {
-            Scene::TransformLocal * trans = registry.try_get<Scene::TransformLocal>( m_simpleBistroAnimCeilingFan );
-            if( trans != nullptr ) 
-            {
-                *trans = vaMatrix4x4::RotationZ( (float)vaMath::Frac(m_simpleBistroAnimTime*0.1f) * VA_PIf * 2.0f );
-                Scene::SetTransformDirtyRecursive( registry, m_simpleBistroAnimCeilingFan );
-            }
-        }
-        if( m_simpleBistroAnimSpaceship != entt::null )
-        {
-            Scene::TransformLocal * trans = registry.try_get<Scene::TransformLocal>( m_simpleBistroAnimSpaceship );
-            if( trans != nullptr ) 
-            {
-                const float stage1 = 6.0f;
-                const float stage2 = 8.0f;
-                const float stage3 = 14.0f;
-                float animTime = (float)fmod( m_simpleBistroAnimTime, stage3 );
-                if( animTime < stage1 )
-                {
-                    float localTime = (animTime)/stage1;
-                    *trans = vaMatrix4x4::Translation( {0, -1500.0f * localTime, 0.0f } );
-                } else if( animTime < stage2 )
-                { 
-                    float localTime = (animTime-stage1) / (stage2-stage1);
-                    *trans = vaMatrix4x4::RotationZ( localTime * VA_PIf ) * vaMatrix4x4::Translation( vaMath::Lerp( vaVector3( 0, -1500.0f, 0.0f ), vaVector3( 230, -1500.0f, -180 ), localTime ) );
-            }else if( animTime < stage3 )
-            { 
-                float localTime = (animTime-stage2) / (stage3-stage2);
-                *trans = vaMatrix4x4::RotationZ( 1.0 * VA_PIf ) * vaMatrix4x4::Translation( vaMath::Lerp( vaVector3( 230, -1500.0f, -180.0f ), vaVector3( 230, 0, -180.0f ), localTime ) );
-            }
-
-            Scene::SetTransformDirtyRecursive( registry, m_simpleBistroAnimSpaceship );
-            }
-        }
-        if( m_simpleBistroAnimSpaceshipLL != entt::null && m_simpleBistroAnimSpaceshipLR != entt::null )
-        {
-            Scene::LightPoint * lightL = registry.try_get<Scene::LightPoint>( m_simpleBistroAnimSpaceshipLL );
-            Scene::LightPoint * lightR = registry.try_get<Scene::LightPoint>( m_simpleBistroAnimSpaceshipLR );
-            if( lightL != nullptr && lightR != nullptr )
-            {
-                lightL->FadeFactor = (fmod( m_simpleBistroAnimTime, 1.0 ) > 0.8f)?(1.0f):(0.0f);
-                lightR->FadeFactor = (fmod( m_simpleBistroAnimTime, 1.0 ) > 0.8f)?(1.0f):(0.0f);
-            }
-        }
-    }
-    if( m_simpleBistroAnimSwingLight && m_simpleBistroAnimCeilingLight != entt::null )
-    {
-        Scene::TransformLocal * trans = registry.try_get<Scene::TransformLocal>( m_simpleBistroAnimCeilingLight );
-        if( trans != nullptr ) 
-        {
-            *trans = vaMatrix4x4::RotationAxis( vaVector3( 0.5f, 0.7f, 0.0f ).Normalized(), sin( (float)vaMath::Frac(m_simpleBistroAnimTime*0.15f) * VA_PIf * 2.0f ) * VA_PIf * 0.4f );
-            Scene::SetTransformDirtyRecursive( registry, m_simpleBistroAnimCeilingLight );
-        }
-    }
-}
-
-AutoBenchTool::AutoBenchTool( VanillaSample & parent, vaMiniScriptInterface & scriptInterface, bool ensureVisualDeterminism, bool writeReport ) : m_parent( parent ), m_scriptInterface( scriptInterface ), m_backupCameraStorage( (int64)0, (int64)1024 ) 
+AutoBenchTool::AutoBenchTool( VanillaSample & parent, vaMiniScriptInterface & scriptInterface, bool ensureVisualDeterminism, bool writeReport, bool divertTracerOutput ) 
+    : m_parent( parent ), m_scriptInterface( scriptInterface ), m_backupCameraStorage( (int64)0, (int64)1024 ), m_divertTracerOutput( divertTracerOutput )
 { 
     // must call this so we can call any stuff allowed only on the main thread
     vaThreading::SetSyncedWithMainThread();
@@ -2338,7 +1705,8 @@ AutoBenchTool::AutoBenchTool( VanillaSample & parent, vaMiniScriptInterface & sc
     m_parent.GetApplication().SetVsync( false );
 
     // disable so we can do our own views
-    vaTracer::SetTracerViewingUIEnabled( false );
+    if( m_divertTracerOutput )
+        vaTracer::SetTracerViewingUIEnabled( false );
 
     // display script UI
     m_scriptInterface.SetUICallback( [&statusInfo = m_statusInfo, &shouldStop = m_shouldStop] 
@@ -2428,7 +1796,8 @@ AutoBenchTool::~AutoBenchTool( )
     m_parent.SetFlythroughCameraEnabled( m_backupFlythroughCameraEnabled );
     m_parent.SetRequireDeterminism( false );
 
-    vaTracer::SetTracerViewingUIEnabled( true );
+    if( m_divertTracerOutput )
+        vaTracer::SetTracerViewingUIEnabled( true );
 
     m_scriptInterface.SetUICallback( nullptr );
 
@@ -2766,6 +2135,262 @@ void AutoTuneTool::AddSearchSetting( const string & name, float * settingAddr, f
     m_settings.push_back( {name, settingAddr, rangeMin, rangeMax} );
 }
 
+struct InteractiveBistroContext
+{
+    vaRenderDevice &                        RenderDevice;       // needed for creating render objects <shrug>
+    bool                                    EnableMoveObjs      = true;
+    bool                                    EnableSwingLight    = true;
+    bool                                    EnableAdvanceTime   = false;
+    double                                  AnimTime            = 0;
+    entt::entity                            CeilingFan          = entt::null;
+    entt::entity                            Spaceship           = entt::null;
+    entt::entity                            SpaceshipLL         = entt::null;
+    entt::entity                            SpaceshipLR         = entt::null;
+    entt::entity                            CeilingLight        = entt::null;
+    entt::entity                            StatueLightParent   = entt::null;
+    
+    entt::entity                            AllLightsParent     = entt::null;
+
+    InteractiveBistroContext( vaRenderDevice & renderDevice ) : RenderDevice(renderDevice)  { }
+};
+
+void VanillaSample::InteractiveBistroUI( vaApplicationBase & application )
+{
+    if( m_interactiveBistroContext == nullptr )
+        return;
+    InteractiveBistroContext & context = *reinterpret_cast<InteractiveBistroContext*>( m_interactiveBistroContext.get() );
+
+    application;
+    int enabledLights = m_sceneRenderer->GetLighting()->GetLastLightCount();
+    if( ImGui::CollapsingHeader( ("Interactive Bistro (" + std::to_string(enabledLights) + ")###Interactive Bistro").c_str() ) )
+    {
+        VA_GENERIC_RAII_SCOPE( ImGui::Indent();, ImGui::Unindent(); );
+        ImGui::Checkbox("Anim time advance", &context.EnableAdvanceTime );
+        ImGui::InputDouble( "Anim time", &context.AnimTime );
+        ImGui::Separator();
+        ImGui::Checkbox( "Move some objects", &context.EnableMoveObjs );
+        ImGui::Checkbox( "Swing the big light", &context.EnableSwingLight );
+        ImGui::Separator();
+        if( context.AllLightsParent != entt::null && ImGui::CollapsingHeader( "Light switches" ) )
+        {
+            ImGui::Text( "Total enabled lights: %d", m_sceneRenderer->GetLighting()->GetLastLightCount() );
+            struct SPBI
+            {
+                string          Name;
+                entt::entity    Entity;
+                bool            Enabled;
+            };
+            std::vector<SPBI> SwitchableLights;
+            Scene::VisitChildren( m_currentScene->CRegistry( ), context.AllLightsParent, [ & ]( entt::entity child )
+            {
+                string nameID   = Scene::GetIDString( m_currentScene->CRegistry( ), child );
+                string name     = Scene::GetName( m_currentScene->CRegistry( ), child );
+                bool switchedOn = !m_currentScene->CRegistry( ).any_of<Scene::DisableLightingRecursiveTag>( child );
+                if( ImGui::Checkbox( ( name + "###" + nameID ).c_str( ), &switchedOn ) )
+                {
+                    if( switchedOn )
+                        m_currentScene->Registry( ).remove<Scene::DisableLightingRecursiveTag>( child );
+                    else
+                        m_currentScene->Registry( ).emplace_or_replace<Scene::DisableLightingRecursiveTag>( child );
+                }
+            } );
+        }
+        //ImGui::Checkbox( "Animate 
+        //ImGui::Separator();
+    }
+}
+
+void VanillaSample::InteractiveBistroTick( float deltaTime, bool sceneChanged )
+{
+    if( sceneChanged )
+    {
+        m_interactiveBistroContext = nullptr;
+
+        entt::entity ceilingFan = Scene::FindFirstByName( m_currentScene->CRegistry(), "ceiling_fan_1_rotate_pivot", entt::null, true );
+        
+        if( ceilingFan == entt::null )
+            return;
+
+        m_interactiveBistroContext = std::make_shared<InteractiveBistroContext>( GetRenderDevice() );
+        InteractiveBistroContext & context = *reinterpret_cast<InteractiveBistroContext*>( m_interactiveBistroContext.get() );
+
+        context.CeilingFan          = ceilingFan;
+        context.StatueLightParent   = Scene::FindFirstByName( m_currentScene->CRegistry(), "InteriorStatueLights", entt::null, true );
+        context.Spaceship           = Scene::FindFirstByName( m_currentScene->CRegistry(), "SpaceFighter_2_animated", entt::null, true );
+        context.SpaceshipLL         = Scene::FindFirstByName( m_currentScene->CRegistry(), "light_left", context.Spaceship, true );
+        context.SpaceshipLR         = Scene::FindFirstByName( m_currentScene->CRegistry(), "light_right", context.Spaceship, true );
+        context.CeilingLight        = Scene::FindFirstByName( m_currentScene->CRegistry(), "ceiling_lamp_03_rotate_pivot", entt::null, true );
+        context.AllLightsParent     = Scene::FindFirstByName( m_currentScene->CRegistry(), "Lights", entt::null, true );
+
+        if( context.StatueLightParent != entt::null )
+        {
+            Scene::TagDestroyChildren( m_currentScene->Registry(), context.StatueLightParent, true );
+            Scene::DestroyTagged(m_currentScene->Registry());
+
+#ifdef VA_GTAO_SAMPLE
+            const int       count = 15;
+            const float     intensity = 0.1f;
+            const float     size   = 0.03f;
+#else
+            const int       count = 500;
+            const float     intensity = 0.02f;
+            const float     size   = 0.012f;
+#endif
+            const float     angleOffset = 0.0f;
+            const float     totalSwirls = 4.0f;
+            const float     radius = 0.32f;
+            const float     height = 1.3f;
+            for( int i = 0; i < count; i++ )
+            {
+                float angle = angleOffset + i/float(count-1)*totalSwirls * 2.0f * VA_PIf;
+
+                vaVector3 pos = { radius * cos(angle), radius * sin(angle), height * i/float(count-1) };
+                vaVector3 col = vaColor::HSV2RGB( { i/float(count-1), 0.95f, 1.0f } );
+                //vaStringTools::Format("light_%04d", i)   // vaVector3::RandomNormal(rand).ComponentAbs( );
+                MakeSphereLight( GetRenderDevice(), *m_currentScene, vaStringTools::Format("l_%04d", i), pos, size, col, intensity, context.StatueLightParent );
+            }
+        }
+
+        m_currentScene->RegisterSimpleScript( "StringLights", m_interactiveBistroContext, [&context] ( vaScene & scene, const string & typeName, entt::entity entity, struct Scene::SimpleScript & script, float deltaTime, int64 )
+        {   deltaTime; script;
+            if( typeName != "StringLights" ) { assert( false ); return; }
+
+            if( Scene::FindFirstByName( scene.CRegistry(), "Generated", entity ) != entt::null )
+                return; // already generated, bug out!
+
+            entt::entity guidesEntity = Scene::FindFirstByName( scene.CRegistry(), "Guides", entity );
+            if( guidesEntity == entt::null )
+                return;
+            entt::entity genEntity = scene.CreateEntity( "Generated", vaMatrix4x4::Identity, entity );
+            scene.Registry().emplace<Scene::SerializationSkipTag>( genEntity );
+
+            typedef std::pair<string, vaVector3> SuspensionPointType;
+            std::vector<SuspensionPointType> suspensionPoints;
+            Scene::VisitChildren( scene.CRegistry(), guidesEntity, [&]( entt::entity entity )
+            { 
+                suspensionPoints.push_back( {Scene::GetName( scene.CRegistry(), entity ), Scene::GetWorldTransform( scene.CRegistry(), entity ).GetTranslation()} );
+            } );
+            std::sort( suspensionPoints.begin( ), suspensionPoints.end( ), [ ]( const SuspensionPointType& left, const SuspensionPointType& right ) { return left.first < right.first; } );
+
+            if( suspensionPoints.size() < 2 )
+            { scene.CreateEntity( "Not enough Guides :)", vaMatrix4x4::Identity, genEntity ); return; }
+
+            int totalLights = -1;
+            if( sscanf( script.Parameters.c_str(), "%d", &totalLights ) != 1)
+                totalLights = -1;
+            if( totalLights <= 0 || totalLights > 65535 )
+            { scene.CreateEntity( "Error parsing params", vaMatrix4x4::Identity, genEntity ); return; }
+
+#ifdef VA_GTAO_SAMPLE
+            totalLights /= 10;
+            const float lightIntensity = 0.015f;
+            const float lightSize   = 0.035f;
+#else
+            const float lightIntensity = 0.0015f;
+            const float lightSize   = 0.025f;
+#endif
+
+            const float ropeSlack = 0.15f;
+            int remainingLights = totalLights;
+            int createdLights = 0;
+
+            const float colorLoops  = 5.0f;
+
+            for( int i = 0; i < suspensionPoints.size( )-1; i++ )
+            {
+                int segmentLights = (int)(remainingLights / (float)(suspensionPoints.size( )-1-i) + 0.5f);
+                vaVector3 posFrom = suspensionPoints[i].second;
+                vaVector3 posTo = suspensionPoints[i+1].second;
+                vaVector3 lightPosPrev;
+                for( int j = 0; j < segmentLights; j++ )
+                {
+                    vaVector3 lightPos = vaVector3::Lerp( posFrom, posTo, (j + 0.5f) / (float)(segmentLights) );
+                    vaVector3 lightCol = vaColor::HSV2RGB( { vaMath::Frac( createdLights/float(totalLights-1) * colorLoops ), 1.0f, 1.0f } );
+                    lightPos.z -= (posTo-posFrom).Length() * ropeSlack * std::sinf( (j + 0.5f) / (float)(segmentLights) * VA_PIf );
+                    //vaStringTools::Format("light_%04d", i)   // vaVector3::RandomNormal(rand).ComponentAbs( );
+                    MakeSphereLight( context.RenderDevice, scene, vaStringTools::Format("l_%02di_%04d", i,j), lightPos, lightSize, lightCol, lightIntensity, genEntity );
+                    if( j == 0 )                MakeConnectingRod( context.RenderDevice, scene, "rb", posFrom, lightPos, lightSize * 0.15f, genEntity );
+                    if( j > 0 )                 MakeConnectingRod( context.RenderDevice, scene, "rc", lightPosPrev, lightPos, lightSize * 0.15f, genEntity );
+                    if( j == segmentLights-1 )  MakeConnectingRod( context.RenderDevice, scene, "re", lightPos, posTo, lightSize * 0.15f, genEntity );
+                    lightPosPrev = lightPos;
+                    createdLights++;
+                    remainingLights--;
+                }
+            }
+        }
+        );
+
+    }
+
+    if( m_interactiveBistroContext == nullptr )
+        return;
+
+    InteractiveBistroContext & context = *reinterpret_cast<InteractiveBistroContext*>( m_interactiveBistroContext.get() );
+
+    if( context.EnableAdvanceTime )
+        context.AnimTime += deltaTime;
+
+    entt::registry & registry = m_currentScene->Registry( );
+
+    if( context.EnableMoveObjs )
+    {
+        if( context.CeilingFan != entt::null )
+        {
+            Scene::TransformLocal * trans = registry.try_get<Scene::TransformLocal>( context.CeilingFan );
+            if( trans != nullptr ) 
+            {
+                *trans = vaMatrix4x4::RotationZ( (float)vaMath::Frac(context.AnimTime*0.1f) * VA_PIf * 2.0f );
+                Scene::SetTransformDirtyRecursive( registry, context.CeilingFan );
+            }
+        }
+        if( context.Spaceship != entt::null )
+        {
+            Scene::TransformLocal * trans = registry.try_get<Scene::TransformLocal>( context.Spaceship );
+            if( trans != nullptr ) 
+            {
+                const float stage1 = 6.0f;
+                const float stage2 = 8.0f;
+                const float stage3 = 14.0f;
+                float animTime = (float)fmod( context.AnimTime, stage3 );
+                if( animTime < stage1 )
+                {
+                    float localTime = (animTime)/stage1;
+                    *trans = vaMatrix4x4::Translation( {0, -1500.0f * localTime, 0.0f } );
+                } else if( animTime < stage2 )
+                { 
+                    float localTime = (animTime-stage1) / (stage2-stage1);
+                    *trans = vaMatrix4x4::RotationZ( localTime * VA_PIf ) * vaMatrix4x4::Translation( vaMath::Lerp( vaVector3( 0, -1500.0f, 0.0f ), vaVector3( 230, -1500.0f, -180 ), localTime ) );
+                }else if( animTime < stage3 )
+                { 
+                    float localTime = (animTime-stage2) / (stage3-stage2);
+                    *trans = vaMatrix4x4::RotationZ( 1.0 * VA_PIf ) * vaMatrix4x4::Translation( vaMath::Lerp( vaVector3( 230, -1500.0f, -180.0f ), vaVector3( 230, 0, -180.0f ), localTime ) );
+                }
+
+                Scene::SetTransformDirtyRecursive( registry, context.Spaceship );
+            }
+        }
+        if( context.SpaceshipLL != entt::null && context.SpaceshipLR != entt::null )
+        {
+            Scene::LightPoint * lightL = registry.try_get<Scene::LightPoint>( context.SpaceshipLL );
+            Scene::LightPoint * lightR = registry.try_get<Scene::LightPoint>( context.SpaceshipLR );
+            if( lightL != nullptr && lightR != nullptr )
+            {
+                lightL->FadeFactor = (fmod( context.AnimTime, 1.0 ) > 0.8f)?(1.0f):(0.0f);
+                lightR->FadeFactor = (fmod( context.AnimTime, 1.0 ) > 0.8f)?(1.0f):(0.0f);
+            }
+        }
+    }
+    if( context.EnableSwingLight && context.CeilingLight != entt::null )
+    {
+        Scene::TransformLocal * trans = registry.try_get<Scene::TransformLocal>( context.CeilingLight );
+        if( trans != nullptr ) 
+        {
+            *trans = vaMatrix4x4::RotationAxis( vaVector3( 0.5f, 0.7f, 0.0f ).Normalized(), sin( (float)vaMath::Frac(context.AnimTime*0.15f) * VA_PIf * 2.0f ) * VA_PIf * 0.4f );
+            Scene::SetTransformDirtyRecursive( registry, context.CeilingLight );
+        }
+    }
+}
+
 
 #define WORKSPACE( name )                                                                                                               \
     void name( vaRenderDevice & renderDevice, vaApplicationBase & application, float deltaTime, vaApplicationState applicationState );  \
@@ -2805,3 +2430,4 @@ void InitWorkspaces( )
     WORKSPACE( VanillaAssetImporter );
 #endif
 };
+

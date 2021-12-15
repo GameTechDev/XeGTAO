@@ -1772,7 +1772,7 @@ void Sample15_BasicScene( vaRenderDevice & renderDevice, vaApplicationBase & app
         globals->MeshPlane  = vaRenderMesh::CreatePlane( renderDevice, vaMatrix4x4::Identity, 500.0f, 500.0f );
         globals->MeshTeapot = vaRenderMesh::CreateTeapot( renderDevice, vaMatrix4x4::Translation( 0, 0, 0.9f ) );
 
-        globals->Scene           = std::make_shared<vaScene>( );
+        globals->Scene           = vaScene::Create( );
         globals->SceneRenderer   = renderDevice.CreateModule<vaSceneRenderer>( );
         globals->SceneMainView   = globals->SceneRenderer->CreateMainView( );
         globals->SceneRenderer->SetScene( globals->Scene );

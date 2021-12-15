@@ -135,8 +135,9 @@ namespace Vanilla
 
         vaDrawResultFlags                           GenerateMotionVectors( vaRenderDeviceContext & renderContext, const vaDrawAttributes & drawAttributes, const shared_ptr<vaTexture> & inputDepth, const shared_ptr<vaTexture> & outMotionVectors, const shared_ptr<vaTexture> & outViewspaceDepth );
 
-        // will convert to R8G8B8A8, 'download' the texture to CPU, 
+        // will convert to R8G8B8A8, 'download' the texture to CPU, <TODO: add callback for editing texture>
         vaDrawResultFlags                           GenericCPUImageProcess( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & inoutTexture );
+
 
     };
 
