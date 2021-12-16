@@ -282,7 +282,7 @@ namespace Vanilla
         double                              m_timeSpanCPUPresent                = 0.0;
         double                              m_timeSpanCPUGPUSyncStalls          = 0.0;          // these are unexpected stalls triggered by running out of transient heap space or etc.
 
-        bool                                m_workersUseBundleCommandLists      = true;
+        bool                                m_workersUseBundleCommandLists      = false;
 
     public:
         vaRenderDeviceDX12( const string & preferredAdapterNameID = "", const std::vector<wstring> & shaderSearchPaths = { vaCore::GetExecutableDirectory( ), vaCore::GetExecutableDirectory( ) + L"../Source/Rendering/Shaders" } );
