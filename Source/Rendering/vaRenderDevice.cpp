@@ -241,8 +241,9 @@ void vaRenderDevice::InitializeBase( )
         m_PPConstants = CreateModule< vaConstantBuffer>( );
         m_PPConstants->Create( sizeof( PostProcessConstants ), "PostProcessConstants", nullptr, true, 0 );
 
-        m_fsVertexShader                = CreateModule< vaVertexShader> ( );
-        m_copyResourcePS                = CreateModule< vaPixelShader > ( );
+        // to allow parallel background compilation but still ensure they're all compiled after this function
+        std::vector<shared_ptr<vaShader>> allShaders;
+
         m_vertexShaderStretchRect       = CreateModule< vaVertexShader> ( );
         m_pixelShaderStretchRectLinear  = CreateModule< vaPixelShader > ( );
         m_pixelShaderStretchRectPoint   = CreateModule< vaPixelShader > ( );
@@ -254,7 +255,7 @@ void vaRenderDevice::InitializeBase( )
         // full screen pass vertex shader
         {
             const char * pVSString = "void main( inout const float4 xPos : SV_Position, inout float2 UV : TEXCOORD0 ) { }";
-            m_fsVertexShader->CompileVSAndILFromBuffer( pVSString, "main", inputElements, vaShaderMacroContaner(), false );
+            allShaders.push_back( m_fsVertexShader = vaVertexShader::CreateVSAndILFromBuffer( *this, pVSString, "main", inputElements, vaShaderMacroContaner(), false ) );
         }
 
         // copy resource shader
@@ -266,12 +267,12 @@ void vaRenderDevice::InitializeBase( )
                 "   return g_source.Load( int3( xPos.xy, 0 ) );                 \n"
                 "}                                                              \n";
 
-            m_copyResourcePS->CompileFromBuffer( shaderCode, "main", vaShaderMacroContaner(), false );
+            allShaders.push_back( m_copyResourcePS = vaPixelShader::CreateFromBuffer( *this, shaderCode, "main", vaShaderMacroContaner(), false ) );
         }
 
-        m_vertexShaderStretchRect->CompileVSAndILFromFile(   "vaPostProcess.hlsl", "VSStretchRect", inputElements, { }, false );
-        m_pixelShaderStretchRectLinear->CompileFromFile(   "vaPostProcess.hlsl", "PSStretchRectLinear", { }, false );
-        m_pixelShaderStretchRectPoint->CompileFromFile(    "vaPostProcess.hlsl", "PSStretchRectPoint", { }, false );
+        allShaders.push_back( m_vertexShaderStretchRect = vaVertexShader::CreateVSAndILFromFile( *this, "vaPostProcess.hlsl", "VSStretchRect", inputElements, { }, false ) );
+        allShaders.push_back( m_pixelShaderStretchRectLinear = vaPixelShader::CreateFromFile( *this,  "vaPostProcess.hlsl", "PSStretchRectLinear", { }, false ) );
+        allShaders.push_back( m_pixelShaderStretchRectPoint = vaPixelShader::CreateFromFile( *this,   "vaPostProcess.hlsl", "PSStretchRectPoint", { }, false ) );
 
         {
             // using one big triangle
@@ -295,12 +296,19 @@ void vaRenderDevice::InitializeBase( )
             m_fsVertexBufferZ1 = vaRenderBuffer::Create<SimpleVertex>( *this, countof( fsVertices ), vaRenderBufferFlags::VertexIndexBuffer, "FSVertexBufferZ1", fsVertices );
         }
 
-        // this still lets all of them compile in parallel, just ensures they're done before leaving the function
-        m_fsVertexShader->WaitFinishIfBackgroundCreateActive( );
-        m_copyResourcePS->WaitFinishIfBackgroundCreateActive( );
-        m_vertexShaderStretchRect->WaitFinishIfBackgroundCreateActive( );
-        m_pixelShaderStretchRectLinear->WaitFinishIfBackgroundCreateActive( );
-        m_pixelShaderStretchRectPoint->WaitFinishIfBackgroundCreateActive( );
+        allShaders.push_back( m_CSClearUAV_Buff_1U  = vaComputeShader::CreateFromFile( *this, "vaPostProcess.hlsl", "CSClearUAV_Buff_1U", { {"VA_POSTPROCESS_CLEAR_UAV_BUFF_1U", ""} }, true ) );
+        allShaders.push_back( m_CSClearUAV_Buff_4U  = vaComputeShader::CreateFromFile( *this, "vaPostProcess.hlsl", "CSClearUAV_Buff_4U", { { "VA_POSTPROCESS_CLEAR_UAV_BUFF_4U", "" } }, true ) );
+        allShaders.push_back( m_CSClearUAV_Tex1D_1F = vaComputeShader::CreateFromFile( *this, "vaPostProcess.hlsl", "CSClearUAV_Tex1D_1F", { {"VA_POSTPROCESS_CLEAR_UAV_TEX1D_1F", ""} }, true ) );
+        allShaders.push_back( m_CSClearUAV_Tex1D_4F = vaComputeShader::CreateFromFile( *this, "vaPostProcess.hlsl", "CSClearUAV_Tex1D_4F", { {"VA_POSTPROCESS_CLEAR_UAV_TEX1D_4F", ""} }, true ) );
+        allShaders.push_back( m_CSClearUAV_Tex1D_1U = vaComputeShader::CreateFromFile( *this, "vaPostProcess.hlsl", "CSClearUAV_Tex1D_1U", { {"VA_POSTPROCESS_CLEAR_UAV_TEX1D_1U", ""} }, true ) );
+        allShaders.push_back( m_CSClearUAV_Tex1D_4U = vaComputeShader::CreateFromFile( *this, "vaPostProcess.hlsl", "CSClearUAV_Tex1D_4U", { {"VA_POSTPROCESS_CLEAR_UAV_TEX1D_4U", ""} }, true ) );
+        allShaders.push_back( m_CSClearUAV_Tex2D_1F = vaComputeShader::CreateFromFile( *this, "vaPostProcess.hlsl", "CSClearUAV_Tex2D_1F", { {"VA_POSTPROCESS_CLEAR_UAV_TEX2D_1F", ""} }, true ) );
+        allShaders.push_back( m_CSClearUAV_Tex2D_4F = vaComputeShader::CreateFromFile( *this, "vaPostProcess.hlsl", "CSClearUAV_Tex2D_4F", { {"VA_POSTPROCESS_CLEAR_UAV_TEX2D_4F", ""} }, true ) );
+        allShaders.push_back( m_CSClearUAV_Tex2D_1U = vaComputeShader::CreateFromFile( *this, "vaPostProcess.hlsl", "CSClearUAV_Tex2D_1U", { {"VA_POSTPROCESS_CLEAR_UAV_TEX2D_1U", ""} }, true ) );
+        allShaders.push_back( m_CSClearUAV_Tex2D_4U = vaComputeShader::CreateFromFile( *this, "vaPostProcess.hlsl", "CSClearUAV_Tex2D_4U", { {"VA_POSTPROCESS_CLEAR_UAV_TEX2D_4U", ""} }, true ) );
+
+        // wait until shaders are compiled! this allows for parallel compilation but ensures all are compiled after this point
+        for( auto sh : allShaders ) sh->WaitFinishIfBackgroundCreateActive();
     }
 }
 
@@ -318,6 +326,16 @@ void vaRenderDevice::DeinitializeBase( )
     m_vertexShaderStretchRect       = nullptr;
     m_pixelShaderStretchRectLinear  = nullptr;
     m_pixelShaderStretchRectPoint   = nullptr;
+    m_CSClearUAV_Buff_1U            = nullptr;
+    m_CSClearUAV_Buff_4U            = nullptr;
+    m_CSClearUAV_Tex1D_1F           = nullptr;
+    m_CSClearUAV_Tex1D_4F           = nullptr;
+    m_CSClearUAV_Tex1D_1U           = nullptr;
+    m_CSClearUAV_Tex1D_4U           = nullptr;
+    m_CSClearUAV_Tex2D_1F           = nullptr;
+    m_CSClearUAV_Tex2D_4F           = nullptr;
+    m_CSClearUAV_Tex2D_1U           = nullptr;
+    m_CSClearUAV_Tex2D_4U           = nullptr;
     m_canvas2D                      = nullptr;
     m_canvas3D                      = nullptr;
     m_assetPackManager              = nullptr;
@@ -645,8 +663,6 @@ vaDrawResultFlags vaRenderDevice::ClearUAV( vaRenderDeviceContext & renderContex
     assert( false ); // codepath never tested/debugged through, sorry - test it and remove assert please :)
     assert( !vaResourceFormatHelpers::IsFloat(buffer->GetResourceFormat()) );
     assert( vaResourceFormatHelpers::GetChannelCount(buffer->GetResourceFormat()) == 4 );
-    if( m_CSClearUAV_Buff_4U == nullptr )
-        m_CSClearUAV_Buff_4U = vaComputeShader::CreateFromFile( *this, "vaPostProcess.hlsl", "CSClearUAV_Buff_4U", { { "VA_POSTPROCESS_CLEAR_UAV_TEX2D_4U", "" } }, true );
     // clear data
     PostProcessConstants consts; reinterpret_cast<vaVector4ui&>(consts.Param1) = clearValue;
     m_PPConstants->Upload( renderContext, &consts, sizeof(consts) );
@@ -662,8 +678,6 @@ vaDrawResultFlags vaRenderDevice::ClearUAV( vaRenderDeviceContext & renderContex
     assert( false ); // codepath never tested/debugged through, sorry - test it and remove assert please :)
     assert( !vaResourceFormatHelpers::IsFloat(buffer->GetResourceFormat()) );
     assert( vaResourceFormatHelpers::GetChannelCount(buffer->GetResourceFormat()) == 1 );
-    if( m_CSClearUAV_Buff_1U == nullptr )
-        m_CSClearUAV_Buff_1U = vaComputeShader::CreateFromFile( *this, "vaPostProcess.hlsl", "CSClearUAV_Buff_1U", { {"VA_POSTPROCESS_CLEAR_UAV_TEX2D_1U", ""} }, true );
     // clear data
     PostProcessConstants consts; reinterpret_cast<vaVector4ui&>(consts.Param1).x = clearValue;
     m_PPConstants->Upload( renderContext, &consts, sizeof(consts) );
@@ -672,4 +686,51 @@ vaDrawResultFlags vaRenderDevice::ClearUAV( vaRenderDeviceContext & renderContex
     computeItem.ComputeShader = m_CSClearUAV_Buff_1U;
     computeItem.SetDispatch( (uint32)(buffer->GetElementCount() + 63) / 64 );
     return renderContext.ExecuteSingleItem( computeItem, vaRenderOutputs::FromUAVs( buffer ), nullptr );
+}
+
+vaDrawResultFlags vaRenderDevice::ClearTextureUAVGeneric( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & texture, const shared_ptr<vaComputeShader> & computeShader, const PostProcessConstants & clearValue )
+{
+    m_PPConstants->Upload( renderContext, &clearValue, sizeof(clearValue) );
+    vaComputeItem computeItem;
+    computeItem.ComputeShader = computeShader;
+    if( texture->GetType() == vaTextureType::Texture1D )
+        computeItem.SetDispatch( (uint32)(texture->GetWidth() + 63) / 64 );
+    else if( texture->GetType() == vaTextureType::Texture2D )
+        computeItem.SetDispatch( (uint32)(texture->GetWidth() + 7) / 8, (uint32)(texture->GetHeight() + 7) / 8 );
+    else 
+    { assert( false ); return vaDrawResultFlags::UnspecifiedError; }
+    return renderContext.ExecuteSingleItem( computeItem, vaRenderOutputs::FromUAVs( texture ), nullptr );
+}
+
+vaDrawResultFlags vaRenderDevice::ClearUAV( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & texture, float clearValue )
+{
+    assert( vaResourceFormatHelpers::IsFloat(texture->GetUAVFormat()) );
+    assert( vaResourceFormatHelpers::GetChannelCount(texture->GetUAVFormat()) == 1 );
+    PostProcessConstants consts; memset( &consts, 0, sizeof(consts) ); consts.Param1.x = clearValue;
+    return ClearTextureUAVGeneric( renderContext, texture, (texture->GetType() == vaTextureType::Texture1D)?m_CSClearUAV_Tex1D_1F:m_CSClearUAV_Tex2D_1F, consts );
+}
+
+vaDrawResultFlags vaRenderDevice::ClearUAV( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & texture, const vaVector4 & clearValue )
+{
+    assert( vaResourceFormatHelpers::IsFloat(texture->GetUAVFormat()) );
+    assert( vaResourceFormatHelpers::GetChannelCount(texture->GetUAVFormat()) == 4 );
+    PostProcessConstants consts; memset( &consts, 0, sizeof(consts) ); consts.Param1 = clearValue;
+    return ClearTextureUAVGeneric( renderContext, texture, (texture->GetType() == vaTextureType::Texture1D)?m_CSClearUAV_Tex1D_4F:m_CSClearUAV_Tex2D_4F, consts );
+}
+
+vaDrawResultFlags vaRenderDevice::ClearUAV( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & texture, uint clearValue )
+{
+    assert( !vaResourceFormatHelpers::IsFloat(texture->GetUAVFormat()) );
+    assert( vaResourceFormatHelpers::GetChannelCount(texture->GetUAVFormat()) == 1 );
+    PostProcessConstants consts; memset( &consts, 0, sizeof(consts) ); reinterpret_cast<vaVector4ui&>(consts.Param1).x = clearValue;
+    return ClearTextureUAVGeneric( renderContext, texture, (texture->GetType() == vaTextureType::Texture1D)?m_CSClearUAV_Tex1D_1U:m_CSClearUAV_Tex2D_1U, consts );
+}
+
+vaDrawResultFlags vaRenderDevice::ClearUAV( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & texture, const vaVector4ui & clearValue )
+{
+    assert( false ); // codepath never tested/debugged through, sorry - test it and remove assert please :)
+    assert( !vaResourceFormatHelpers::IsFloat(texture->GetUAVFormat()) );
+    assert( vaResourceFormatHelpers::GetChannelCount(texture->GetUAVFormat()) == 4 );
+    PostProcessConstants consts; memset( &consts, 0, sizeof(consts) ); reinterpret_cast<vaVector4ui&>(consts.Param1) = clearValue;
+    return ClearTextureUAVGeneric( renderContext, texture, (texture->GetType() == vaTextureType::Texture1D)?m_CSClearUAV_Tex1D_4U:m_CSClearUAV_Tex2D_4U, consts );
 }

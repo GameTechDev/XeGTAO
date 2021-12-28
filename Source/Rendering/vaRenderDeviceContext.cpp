@@ -174,14 +174,41 @@ vaDrawResultFlags vaRenderDeviceContext::ExecuteGraphicsItemsConcurrent( int ite
 // useful for copying individual MIPs, in which case use Views created with vaTexture::CreateView
 vaDrawResultFlags vaRenderDeviceContext::CopySRVToRTV( shared_ptr<vaTexture> destination, shared_ptr<vaTexture> source )
 {
-    assert( m_itemsStarted == vaRenderTypeFlags::None );
-    assert( !IsWorker() );
+    assert( m_itemsStarted == vaRenderTypeFlags::None ); assert( !IsWorker() );
     return GetRenderDevice( ).CopySRVToRTV( *this, destination, source );
 }
-
 vaDrawResultFlags vaRenderDeviceContext::StretchRect( const shared_ptr<vaTexture> & dstTexture, const shared_ptr<vaTexture> & srcTexture, const vaVector4 & _dstRect, const vaVector4 & srcRect, bool linearFilter, vaBlendMode blendMode, const vaVector4 & colorMul, const vaVector4 & colorAdd )
 {
-    assert( m_itemsStarted == vaRenderTypeFlags::None );
-    assert( !IsWorker() );
+    assert( m_itemsStarted == vaRenderTypeFlags::None ); assert( !IsWorker() );
     return GetRenderDevice( ).StretchRect( *this, dstTexture, srcTexture, _dstRect, srcRect, linearFilter, blendMode, colorMul, colorAdd );
+}
+vaDrawResultFlags vaRenderDeviceContext::ClearUAV( const shared_ptr<vaRenderBuffer> & buffer, const vaVector4ui & clearValue )
+{
+    assert( m_itemsStarted == vaRenderTypeFlags::None ); assert( !IsWorker() );
+    return GetRenderDevice( ).ClearUAV( *this, buffer, clearValue );
+}
+vaDrawResultFlags vaRenderDeviceContext::ClearUAV( const shared_ptr<vaRenderBuffer> & buffer, uint32 clearValue )
+{
+    assert( m_itemsStarted == vaRenderTypeFlags::None ); assert( !IsWorker() );
+    return GetRenderDevice( ).ClearUAV( *this, buffer, clearValue );
+}
+vaDrawResultFlags vaRenderDeviceContext::ClearUAV( const shared_ptr<vaTexture> & texture, float clearValue )
+{
+    assert( m_itemsStarted == vaRenderTypeFlags::None ); assert( !IsWorker() );
+    return GetRenderDevice( ).ClearUAV( *this, texture, clearValue );
+}
+vaDrawResultFlags vaRenderDeviceContext::ClearUAV( const shared_ptr<vaTexture> & texture, const vaVector4 & clearValue )
+{
+    assert( m_itemsStarted == vaRenderTypeFlags::None ); assert( !IsWorker() );
+    return GetRenderDevice( ).ClearUAV( *this, texture, clearValue );
+}
+vaDrawResultFlags vaRenderDeviceContext::ClearUAV( const shared_ptr<vaTexture> & texture, uint clearValue )
+{
+    assert( m_itemsStarted == vaRenderTypeFlags::None ); assert( !IsWorker() );
+    return GetRenderDevice( ).ClearUAV( *this, texture, clearValue );
+}
+vaDrawResultFlags vaRenderDeviceContext::ClearUAV( const shared_ptr<vaTexture> & texture, const vaVector4ui & clearValue )
+{
+    assert( m_itemsStarted == vaRenderTypeFlags::None ); assert( !IsWorker() );
+    return GetRenderDevice( ).ClearUAV( *this, texture, clearValue );
 }

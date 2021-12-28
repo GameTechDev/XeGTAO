@@ -1658,7 +1658,8 @@ void Sample14_SSAO( vaRenderDevice & renderDevice, vaApplicationBase & applicati
     {
         shared_ptr<SimpleSampleShared>      SampleShared;
         shared_ptr<vaTexture>               OffscreenRT;
-        shared_ptr<vaTexture>               SSAORT;
+        shared_ptr<vaTexture>               SSAOBuffer;
+        shared_ptr<vaTexture>               SSAOView;
         shared_ptr<vaUISimplePanel>         UIPanel;
 
         bool                                SSAOEnabled = true;
@@ -1703,7 +1704,9 @@ void Sample14_SSAO( vaRenderDevice & renderDevice, vaApplicationBase & applicati
     if( globals->OffscreenRT == nullptr || globals->OffscreenRT->GetSizeX() != backbufferTex->GetSizeX() || globals->OffscreenRT->GetSizeY() != backbufferTex->GetSizeY() )
     {
         globals->OffscreenRT = vaTexture::Create2D( renderDevice, vaResourceFormat::R8G8B8A8_UNORM_SRGB, backbufferTex->GetSizeX(), backbufferTex->GetSizeY(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::RenderTarget );
-        globals->SSAORT = vaTexture::Create2D( renderDevice, vaResourceFormat::R8_UNORM, backbufferTex->GetSizeX(), backbufferTex->GetSizeY(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess );
+        globals->SSAOBuffer = vaTexture::Create2D( renderDevice, vaResourceFormat::R8_TYPELESS, backbufferTex->GetSizeX(), backbufferTex->GetSizeY(), 1, 1, 1, vaResourceBindSupportFlags::ShaderResource | vaResourceBindSupportFlags::UnorderedAccess,
+            vaResourceAccessFlags::Default, vaResourceFormat::R8_UINT, vaResourceFormat::Unknown, vaResourceFormat::Unknown, vaResourceFormat::R8_UINT );
+        globals->SSAOView   = vaTexture::CreateView( globals->SSAOBuffer, vaResourceBindSupportFlags::ShaderResource, vaResourceFormat::R8_UNORM );
     }
 
     globals->SampleShared->Tick( renderDevice, application, deltaTime );
@@ -1722,7 +1725,7 @@ void Sample14_SSAO( vaRenderDevice & renderDevice, vaApplicationBase & applicati
 
     globals->SampleShared->DrawOpaque( mainContext, offscreenOutputs, drawAttributes );
 
-    globals->SSAO->Compute( mainContext, *globals->SampleShared->Camera, false, false, globals->SSAORT, globals->SampleShared->DepthBuffer, nullptr );
+    globals->SSAO->Compute( mainContext, *globals->SampleShared->Camera, false, false, globals->SSAOBuffer, globals->SampleShared->DepthBuffer, nullptr );
 
     // apply SSAO term.. or not
     if( globals->SSAOEnabled )
@@ -1731,7 +1734,7 @@ void Sample14_SSAO( vaRenderDevice & renderDevice, vaApplicationBase & applicati
         if( globals->SSAO->DebugShowEdges() || globals->SSAO->DebugShowNormals() || globals->SSAO->ReferenceRTAOEnabled() )
             pp.MergeTextures( mainContext, backbufferTex, globals->OffscreenRT, globals->SSAO->DebugImage(), nullptr, "float4( srcB.xyz, 1.0 )" );
         else
-            pp.MergeTextures( mainContext, backbufferTex, globals->OffscreenRT, globals->SSAORT, nullptr, "float4( srcA.rgb * srcB.xxx, 1.0 )" );
+            pp.MergeTextures( mainContext, backbufferTex, globals->OffscreenRT, globals->SSAOView, nullptr, "float4( srcA.rgb * srcB.xxx, 1.0 )" );
     }
     else
         renderDevice.GetMainContext()->CopySRVToRTV( backbufferTex, globals->OffscreenRT );

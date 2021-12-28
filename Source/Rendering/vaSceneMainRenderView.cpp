@@ -410,7 +410,7 @@ void vaSceneMainRenderView::RenderTickInternal( vaRenderDeviceContext & renderCo
     {
         // no AA - clear with 'white' - used to set it to nullptr previously but that sped up the rest of the pipeline and made on/off performance comparison for
         // just AO techniques more difficult; so now "no AO" is literally AO with no O :)
-        m_SSAOData->ClearUAV( renderContext, 1.0f );
+        renderContext.ClearUAV( m_SSAOData, 1.0f );
     } 
     else if( m_settings.AOOption == 1 && m_ASSAO != nullptr && hasDepthPrepass )
     {

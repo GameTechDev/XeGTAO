@@ -884,9 +884,9 @@ void vaIrradianceSHCalculator::Reset( )
     m_SHComputed = false;
 }
 
-void vaIrradianceSHCalculator::ComputeSH( vaRenderDeviceContext& renderContext, shared_ptr<vaTexture>& sourceCube )
+void vaIrradianceSHCalculator::ComputeSH( vaRenderDeviceContext & renderContext, shared_ptr<vaTexture>& sourceCube )
 {
-    m_SH->ClearUAV( renderContext, 0u );
+    renderContext.ClearUAV( m_SH, 0u );
 
     const uint32 threadGroupSizeXY = 16;
     int cubeDim = sourceCube->GetSizeX( ); assert( cubeDim == sourceCube->GetSizeY( ) );

@@ -528,48 +528,48 @@ void vaTextureDX12::ClearRTV( vaRenderDeviceContext & context, const vaVector4 &
     AsDX12( context ).ResetCachedOutputs( );
 }
 
-void vaTextureDX12::ClearUAV( vaRenderDeviceContext & context, const vaVector4ui & clearValue )
-{
-    assert( GetRenderDevice( ).IsFrameStarted( ) );
-    // see https://www.gamedev.net/forums/topic/672063-d3d12-clearunorderedaccessviewfloat-fails/ for the reason behind the mess below
-    assert( m_uav.IsCreated() ); if( !m_uav.IsCreated() ) return;   // texture most likely missing vaResourceBindSupportFlags::UnorderedAccess flag!
-    TransitionResource( AsDX12(context), D3D12_RESOURCE_STATE_UNORDERED_ACCESS );
-
-#if 0
-    vaRenderDeviceDX12::TransientGPUDescriptorHeap * allocator = AsDX12( GetRenderDevice() ).GetTransientDescriptorHeap( D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV );
-    assert( allocator != nullptr );
-    int descIndex;
-    allocator->Allocate( 1, descIndex );
-    AsDX12( GetRenderDevice() ).GetPlatformDevice()->CopyDescriptorsSimple( 1, allocator->ComputeCPUHandle( descIndex ), m_uav.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV );
-    AsDX12( context ).GetCommandList()->ClearUnorderedAccessViewUint( allocator->ComputeGPUHandle( descIndex ), m_uav.GetCPUHandle(), m_resource.Get(), &clearValue.x, 0, nullptr );
-#else
-    AsDX12( context ).GetCommandList()->ClearUnorderedAccessViewUint( m_uav.GetCPUReadableGPUHandle(), m_uav.GetCPUReadableCPUHandle(), m_resource.Get(), &clearValue.x, 0, nullptr );
-#endif
-
-    // manually transitioning states below means we might mess up the render target states cache
-    AsDX12( context ).ResetCachedOutputs( );
-}
-
-void vaTextureDX12::ClearUAV( vaRenderDeviceContext & context, const vaVector4 & clearValue )
-{
-    assert( GetRenderDevice( ).IsFrameStarted( ) );
-    // see https://www.gamedev.net/forums/topic/672063-d3d12-clearunorderedaccessviewfloat-fails/ for the reason behind the mess below
-    assert( m_uav.IsCreated() ); if( !m_uav.IsCreated() ) return;
-    TransitionResource( AsDX12(context), D3D12_RESOURCE_STATE_UNORDERED_ACCESS );
-#if 0
-    vaRenderDeviceDX12::TransientGPUDescriptorHeap * allocator = AsDX12( GetRenderDevice() ).GetTransientDescriptorHeap( D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV );
-    assert( allocator != nullptr );
-    int descIndex;
-    allocator->Allocate( 1, descIndex );
-    AsDX12( GetRenderDevice() ).GetPlatformDevice()->CopyDescriptorsSimple( 1, allocator->ComputeCPUHandle( descIndex ), m_uav.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV );
-    AsDX12( context ).GetCommandList()->ClearUnorderedAccessViewFloat( allocator->ComputeGPUHandle( descIndex ), m_uav.GetCPUHandle(), m_resource.Get(), &clearValue.x, 0, nullptr );
-#else
-    AsDX12( context ).GetCommandList( )->ClearUnorderedAccessViewFloat( m_uav.GetCPUReadableGPUHandle(), m_uav.GetCPUReadableCPUHandle(), m_resource.Get( ), &clearValue.x, 0, nullptr );
-#endif
-
-    // manually transitioning states below means we might mess up the render target states cache
-    AsDX12( context ).ResetCachedOutputs( );
-}
+//vaDrawResultFlags vaTextureDX12::ClearUAV( vaRenderDeviceContext & context, const vaVector4ui & clearValue )
+//{
+//    assert( GetRenderDevice( ).IsFrameStarted( ) );
+//    // see https://www.gamedev.net/forums/topic/672063-d3d12-clearunorderedaccessviewfloat-fails/ for the reason behind the mess below
+//    assert( m_uav.IsCreated() ); if( !m_uav.IsCreated() ) return;   // texture most likely missing vaResourceBindSupportFlags::UnorderedAccess flag!
+//    TransitionResource( AsDX12(context), D3D12_RESOURCE_STATE_UNORDERED_ACCESS );
+//
+//#if 0
+//    vaRenderDeviceDX12::TransientGPUDescriptorHeap * allocator = AsDX12( GetRenderDevice() ).GetTransientDescriptorHeap( D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV );
+//    assert( allocator != nullptr );
+//    int descIndex;
+//    allocator->Allocate( 1, descIndex );
+//    AsDX12( GetRenderDevice() ).GetPlatformDevice()->CopyDescriptorsSimple( 1, allocator->ComputeCPUHandle( descIndex ), m_uav.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV );
+//    AsDX12( context ).GetCommandList()->ClearUnorderedAccessViewUint( allocator->ComputeGPUHandle( descIndex ), m_uav.GetCPUHandle(), m_resource.Get(), &clearValue.x, 0, nullptr );
+//#else
+//    AsDX12( context ).GetCommandList()->ClearUnorderedAccessViewUint( m_uav.GetCPUReadableGPUHandle(), m_uav.GetCPUReadableCPUHandle(), m_resource.Get(), &clearValue.x, 0, nullptr );
+//#endif
+//
+//    // manually transitioning states below means we might mess up the render target states cache
+//    AsDX12( context ).ResetCachedOutputs( );
+//}
+//
+//void vaTextureDX12::ClearUAV( vaRenderDeviceContext & context, const vaVector4 & clearValue )
+//{
+//    assert( GetRenderDevice( ).IsFrameStarted( ) );
+//    // see https://www.gamedev.net/forums/topic/672063-d3d12-clearunorderedaccessviewfloat-fails/ for the reason behind the mess below
+//    assert( m_uav.IsCreated() ); if( !m_uav.IsCreated() ) return;
+//    TransitionResource( AsDX12(context), D3D12_RESOURCE_STATE_UNORDERED_ACCESS );
+//#if 0
+//    vaRenderDeviceDX12::TransientGPUDescriptorHeap * allocator = AsDX12( GetRenderDevice() ).GetTransientDescriptorHeap( D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV );
+//    assert( allocator != nullptr );
+//    int descIndex;
+//    allocator->Allocate( 1, descIndex );
+//    AsDX12( GetRenderDevice() ).GetPlatformDevice()->CopyDescriptorsSimple( 1, allocator->ComputeCPUHandle( descIndex ), m_uav.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV );
+//    AsDX12( context ).GetCommandList()->ClearUnorderedAccessViewFloat( allocator->ComputeGPUHandle( descIndex ), m_uav.GetCPUHandle(), m_resource.Get(), &clearValue.x, 0, nullptr );
+//#else
+//    AsDX12( context ).GetCommandList( )->ClearUnorderedAccessViewFloat( m_uav.GetCPUReadableGPUHandle(), m_uav.GetCPUReadableCPUHandle(), m_resource.Get( ), &clearValue.x, 0, nullptr );
+//#endif
+//
+//    // manually transitioning states below means we might mess up the render target states cache
+//    AsDX12( context ).ResetCachedOutputs( );
+//}
 
 void vaTextureDX12::ClearDSV( vaRenderDeviceContext & context, bool clearDepth, float depthValue, bool clearStencil, uint8 stencilValue )
 {

@@ -254,8 +254,9 @@ namespace Vanilla
 
         // all these should maybe go to API context itself to match DX
         virtual void                        ClearRTV( vaRenderDeviceContext & renderContext, const vaVector4 & clearValue )                                                = 0;
-        virtual void                        ClearUAV( vaRenderDeviceContext & renderContext, const vaVector4ui & clearValue )                                              = 0;
-        virtual void                        ClearUAV( vaRenderDeviceContext & renderContext, const vaVector4 & clearValue )                                                = 0;
+        // no longer accessible from here, use vaRenderDevice::ClearUAV
+        // virtual void                        ClearUAV( vaRenderDeviceContext & renderContext, const vaVector4ui & clearValue )                                              = 0;
+        // virtual void                        ClearUAV( vaRenderDeviceContext & renderContext, const vaVector4 & clearValue )                                                = 0;
         virtual void                        ClearDSV( vaRenderDeviceContext & renderContext, bool clearDepth, float depthValue, bool clearStencil, uint8 stencilValue )    = 0;
 
         // these will copy or resolve if copying from multiple sample to 1 sample (hey how about a static version instead of these two?)
@@ -290,10 +291,11 @@ namespace Vanilla
 
     public:
         void                                ClearRTV( vaRenderDeviceContext & renderContext, float clearValue[] )                       { ClearRTV( renderContext, vaVector4(clearValue) ); }
-        void                                ClearUAV( vaRenderDeviceContext & renderContext, uint32 clearValue[] )                      { ClearUAV( renderContext, vaVector4ui(clearValue[0], clearValue[1], clearValue[2], clearValue[3]) ); }
-        void                                ClearUAV( vaRenderDeviceContext & renderContext, float clearValue[] )                       { ClearUAV( renderContext, vaVector4(clearValue) ); }
-        void                                ClearUAV( vaRenderDeviceContext & renderContext, uint32 clearValue )                        { ClearUAV( renderContext, vaVector4ui(clearValue, clearValue, clearValue, clearValue) ); }
-        void                                ClearUAV( vaRenderDeviceContext & renderContext, float clearValue )                         { ClearUAV( renderContext, vaVector4(clearValue,clearValue,clearValue,clearValue) ); }
+        // no longer accessible from here, use vaRenderDevice::ClearUAV
+        // void                                ClearUAV( vaRenderDeviceContext & renderContext, uint32 clearValue[] )                      { ClearUAV( renderContext, vaVector4ui(clearValue[0], clearValue[1], clearValue[2], clearValue[3]) ); }
+        // void                                ClearUAV( vaRenderDeviceContext & renderContext, float clearValue[] )                       { ClearUAV( renderContext, vaVector4(clearValue) ); }
+        // void                                ClearUAV( vaRenderDeviceContext & renderContext, uint32 clearValue )                        { ClearUAV( renderContext, vaVector4ui(clearValue, clearValue, clearValue, clearValue) ); }
+        // void                                ClearUAV( vaRenderDeviceContext & renderContext, float clearValue )                         { ClearUAV( renderContext, vaVector4(clearValue,clearValue,clearValue,clearValue) ); }
 
         // This is for D3D12 fast clears. Does nothing on D3D11. Valid only for the next Create1D / Create2D / Create3D. Format has to match the format of the RTV/DSV. 
         // VA does no validation for this (so test verify using D3D12 validation layer)

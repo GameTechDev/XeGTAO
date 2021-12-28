@@ -299,9 +299,9 @@ vaDrawResultFlags vaGTAO::Compute( vaRenderDeviceContext & renderContext, const 
 
     // when using bent normals, use R32_UINT, otherwise use R8_UINT; these could be anything else as long as the shading side matches
     if( outputBentNormals )
-    { assert( outputAO->GetResourceFormat() == vaResourceFormat::R32_UINT ); }
+    { assert( outputAO->GetUAVFormat() == vaResourceFormat::R32_UINT ); }
     else
-    { assert( outputAO->GetResourceFormat() == vaResourceFormat::R8_UINT ); }
+    { assert( outputAO->GetUAVFormat() == vaResourceFormat::R8_UINT ); }
 
     UpdateTexturesAndShaders( inputDepth->GetSizeX( ), inputDepth->GetSizeY( ) );
 

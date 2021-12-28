@@ -238,8 +238,10 @@ void vaRenderGlobals::UpdateAndSetToGlobals( vaRenderDeviceContext & renderConte
         int currentWriteIndex = GetRenderDevice( ).GetCurrentFrameIndex( ) % _countof( m_genericDataCaptureGPUTextures );
         if( m_genericDataCaptureStarted < GetRenderDevice( ).GetCurrentFrameIndex( ) )
         {
-            // we could just clear the first row that containts the control block but 
-            m_genericDataCaptureGPUTextures[currentWriteIndex]->ClearUAV( renderContext, 0u );
+            // re-think this - can't use ClearUAV because it triggers BeginComputeItems, but we're already in BeginGraphicsItems here and recursion is not allowed
+            // perhaps just m_genericDataCaptureGPUTextures[currentWriteIndex]->UpdateSubresources( ) to 0 ? only counter value needs cleaning anyhow? maybe redesign the whole thing a bit?
+            assert( false );
+            // renderContext.ClearUAV( m_genericDataCaptureGPUTextures[currentWriteIndex], 0u );
             m_genericDataCaptureStarted = GetRenderDevice( ).GetCurrentFrameIndex( );
         }
 

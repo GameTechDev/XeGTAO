@@ -306,6 +306,6 @@ shared_ptr<vaVertexShader> vaVertexShader::CreateVSAndILFromBuffer( vaRenderDevi
 { 
     shared_ptr<vaVertexShader> ret = renderDevice.CreateModule<vaVertexShader>( );
     if( ret == nullptr ) { assert( false ); return ret; }
-    ret->CompileVSAndILFromFile( shaderCode, entryPoint, inputLayoutElements, macros, forceImmediateCompile );
+    ret->CompileVSAndILFromBuffer( shaderCode, entryPoint, inputLayoutElements, macros, forceImmediateCompile );
     return ret;
 }

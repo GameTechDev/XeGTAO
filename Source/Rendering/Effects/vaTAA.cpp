@@ -206,8 +206,8 @@ vaDrawResultFlags vaTAA::Apply( vaRenderDeviceContext & renderContext, const vaC
 
     if( m_resetHistory )
     {
-        m_depthPrevious->ClearUAV( renderContext, vaVector4(0,0,0,0) );
-        m_historyPrevious->ClearUAV( renderContext, vaVector4(0,0,0,0) );
+        renderContext.ClearUAV( m_depthPrevious, 0.0f );
+        renderContext.ClearUAV( m_historyPrevious, vaVector4(0,0,0,0) );
         m_historyPreviousPreExposureMul = 1.0f;
         m_resetHistory = false;
     }

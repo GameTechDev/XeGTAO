@@ -228,8 +228,16 @@ namespace Vanilla
         shared_ptr<vaPixelShader>               m_pixelShaderStretchRectPoint;
         
         // UAV clears workaround - use CSs instead of regular API because of buggy drivers (and, honestly, the API is for this is crap: https://www.gamedev.net/forums/topic/672063-d3d12-clearunorderedaccessviewfloat-fails/)
-        shared_ptr<vaComputeShader>             m_CSClearUAV_Buff_1U;
-        shared_ptr<vaComputeShader>             m_CSClearUAV_Buff_4U;
+        shared_ptr<vaComputeShader>             m_CSClearUAV_Buff_1U ;
+        shared_ptr<vaComputeShader>             m_CSClearUAV_Buff_4U ;
+        shared_ptr<vaComputeShader>             m_CSClearUAV_Tex1D_1F;
+        shared_ptr<vaComputeShader>             m_CSClearUAV_Tex1D_4F;
+        shared_ptr<vaComputeShader>             m_CSClearUAV_Tex1D_1U;
+        shared_ptr<vaComputeShader>             m_CSClearUAV_Tex1D_4U;
+        shared_ptr<vaComputeShader>             m_CSClearUAV_Tex2D_1F;
+        shared_ptr<vaComputeShader>             m_CSClearUAV_Tex2D_4F;
+        shared_ptr<vaComputeShader>             m_CSClearUAV_Tex2D_1U;
+        shared_ptr<vaComputeShader>             m_CSClearUAV_Tex2D_4U;
 
     protected:
 
@@ -433,9 +441,15 @@ namespace Vanilla
         // Copies srcTexture into dstTexture with stretching using requested filter and blend modes. Backups current render target and restores it after.
         virtual vaDrawResultFlags           StretchRect( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & dstTexture, const shared_ptr<vaTexture> & srcTexture, const vaVector4 & dstRect = {0,0,0,0}, const vaVector4 & srcRect = {0,0,0,0}, bool linearFilter = true, vaBlendMode blendMode = vaBlendMode::Opaque, const vaVector4 & colorMul = vaVector4( 1.0f, 1.0f, 1.0f, 1.0f ), const vaVector4 & colorAdd = vaVector4( 0.0f, 0.0f, 0.0f, 0.0f ) );
         //
-        // "Manual" UAV clears
+        // "Manual" UAV clears - INCOMPLETE (please add where needed)
         vaDrawResultFlags                   ClearUAV( vaRenderDeviceContext & renderContext, const shared_ptr<vaRenderBuffer> & buffer, const vaVector4ui & clearValue );
         vaDrawResultFlags                   ClearUAV( vaRenderDeviceContext & renderContext, const shared_ptr<vaRenderBuffer> & buffer, uint32 clearValue );
+        vaDrawResultFlags                   ClearUAV( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & texture, float clearValue );
+        vaDrawResultFlags                   ClearUAV( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & texture, const vaVector4 & clearValue );
+        vaDrawResultFlags                   ClearUAV( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & texture, uint clearValue );
+        vaDrawResultFlags                   ClearUAV( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & texture, const vaVector4ui & clearValue );
+    private:
+        vaDrawResultFlags                   ClearTextureUAVGeneric( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & texture, const shared_ptr<vaComputeShader> & computeShader, const PostProcessConstants & clearValue );
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public:

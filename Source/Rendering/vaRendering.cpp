@@ -60,7 +60,7 @@ void vaShaderItemGlobals::Validate( ) const
     for( int i = 0; i < ConstantBuffers.size(); i++ )
     {  if( ConstantBuffers[i] != nullptr ) assert( (ConstantBuffers[i]->GetBindSupportFlags() & vaResourceBindSupportFlags::ConstantBuffer ) != 0 ); }
     for( int i = 0; i < UnorderedAccessViews.size(); i++ )
-    {  if( UnorderedAccessViews[i] != nullptr ) assert( (UnorderedAccessViews[i]->GetBindSupportFlags() & vaResourceBindSupportFlags::ShaderResource ) != 0 ); }
+    {  if( UnorderedAccessViews[i] != nullptr ) assert( (UnorderedAccessViews[i]->GetBindSupportFlags() & vaResourceBindSupportFlags::UnorderedAccess ) != 0 ); }
     if( RaytracingAcceleationStructSRV != nullptr )
         assert( (RaytracingAcceleationStructSRV->GetBindSupportFlags() & vaResourceBindSupportFlags::RaytracingAccelerationStructure) != 0 );
 #endif

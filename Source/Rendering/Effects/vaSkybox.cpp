@@ -124,8 +124,8 @@ vaDrawResultFlags vaSkybox::Draw( vaRenderDeviceContext & renderContext, const v
 
     renderItem.VertexShader         = m_vertexShader.get();
     renderItem.PixelShader          = m_pixelShader.get();
-    renderItem.DepthEnable          = true;
-    renderItem.DepthWriteEnable     = true;
+    renderItem.DepthEnable          = renderOutputs.DepthStencil != nullptr;
+    renderItem.DepthWriteEnable     = renderOutputs.DepthStencil != nullptr;
     renderItem.DepthFunc            = ( drawAttributes.Camera.GetUseReversedZ() )?( vaComparisonFunc::GreaterEqual ):( vaComparisonFunc::LessEqual );
 
     return renderContext.ExecuteSingleItem( renderItem, renderOutputs, &drawAttributes );

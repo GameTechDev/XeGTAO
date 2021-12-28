@@ -100,8 +100,9 @@ namespace Vanilla
         virtual void                        Unmap( vaRenderDeviceContext & renderContext ) override;
 
         virtual void                        ClearRTV( vaRenderDeviceContext & renderContext, const vaVector4 & clearValue );
-        virtual void                        ClearUAV( vaRenderDeviceContext & renderContext, const vaVector4ui & clearValue );
-        virtual void                        ClearUAV( vaRenderDeviceContext & renderContext, const vaVector4 & clearValue );
+        // no longer accessible from here, use vaRenderDevice::ClearUAV
+        // virtual void                        ClearUAV( vaRenderDeviceContext & renderContext, const vaVector4ui & clearValue );
+        // virtual void                        ClearUAV( vaRenderDeviceContext & renderContext, const vaVector4 & clearValue );
         virtual void                        ClearDSV( vaRenderDeviceContext & renderContext, bool clearDepth, float depthValue, bool clearStencil, uint8 stencilValue );
         virtual void                        CopyFrom( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & srcTexture ) override;
         virtual void                        CopyTo( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & dstTexture ) override;

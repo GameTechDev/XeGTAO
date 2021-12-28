@@ -134,6 +134,13 @@ namespace Vanilla
         //
         // Copies srcTexture into dstTexture with stretching using requested filter and blend modes.
         virtual vaDrawResultFlags           StretchRect( const shared_ptr<vaTexture> & dstTexture, const shared_ptr<vaTexture> & srcTexture, const vaVector4 & dstRect = {0,0,0,0}, const vaVector4 & srcRect = {0,0,0,0}, bool linearFilter = true, vaBlendMode blendMode = vaBlendMode::Opaque, const vaVector4 & colorMul = vaVector4( 1.0f, 1.0f, 1.0f, 1.0f ), const vaVector4 & colorAdd = vaVector4( 0.0f, 0.0f, 0.0f, 0.0f ) );
+        // 
+        vaDrawResultFlags                   ClearUAV( const shared_ptr<vaRenderBuffer> & buffer, const vaVector4ui & clearValue );
+        vaDrawResultFlags                   ClearUAV( const shared_ptr<vaRenderBuffer> & buffer, uint32 clearValue );
+        vaDrawResultFlags                   ClearUAV( const shared_ptr<vaTexture> & texture, float clearValue );
+        vaDrawResultFlags                   ClearUAV( const shared_ptr<vaTexture> & texture, const vaVector4 & clearValue );
+        vaDrawResultFlags                   ClearUAV( const shared_ptr<vaTexture> & texture, uint clearValue );
+        vaDrawResultFlags                   ClearUAV( const shared_ptr<vaTexture> & texture, const vaVector4ui & clearValue );
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     };
