@@ -50,6 +50,7 @@ namespace Vanilla
         vaVector4               Param2;
         vaVector4               Param3;
         vaVector4               Param4;
+        vaVector4ui             Bounds;
     };
 
     // all of this is unused at the moment

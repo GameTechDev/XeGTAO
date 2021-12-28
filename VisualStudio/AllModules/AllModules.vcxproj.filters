@@ -870,6 +870,9 @@
     <ClInclude Include="..\..\Source\Rendering\vaPathTracerDenoisers.h">
       <Filter>Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaMisc.hlsl">
+      <Filter>Rendering\Shaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Source\Core\vaGeometry.inl">

@@ -663,11 +663,14 @@ vaDrawResultFlags vaRenderDevice::ClearUAV( vaRenderDeviceContext & renderContex
     assert( false ); // codepath never tested/debugged through, sorry - test it and remove assert please :)
     assert( !vaResourceFormatHelpers::IsFloat(buffer->GetResourceFormat()) );
     assert( vaResourceFormatHelpers::GetChannelCount(buffer->GetResourceFormat()) == 4 );
+    assert( buffer->GetElementCount() > 0 );
     // clear data
-    PostProcessConstants consts; reinterpret_cast<vaVector4ui&>(consts.Param1) = clearValue;
+    PostProcessConstants consts; memset( &consts, 0, sizeof(consts) ); reinterpret_cast<vaVector4ui&>(consts.Param1) = clearValue;
+    consts.Bounds.x = (int)buffer->GetElementCount()-1;
     m_PPConstants->Upload( renderContext, &consts, sizeof(consts) );
     // setup dispatch
     vaComputeItem computeItem;
+    computeItem.ConstantBuffers[POSTPROCESS_CONSTANTSBUFFERSLOT] = m_PPConstants;
     computeItem.ComputeShader = m_CSClearUAV_Buff_4U;
     computeItem.SetDispatch( (uint32)(buffer->GetElementCount() + 63) / 64 );
     return renderContext.ExecuteSingleItem( computeItem, vaRenderOutputs::FromUAVs( buffer ), nullptr );
@@ -678,20 +681,27 @@ vaDrawResultFlags vaRenderDevice::ClearUAV( vaRenderDeviceContext & renderContex
     assert( false ); // codepath never tested/debugged through, sorry - test it and remove assert please :)
     assert( !vaResourceFormatHelpers::IsFloat(buffer->GetResourceFormat()) );
     assert( vaResourceFormatHelpers::GetChannelCount(buffer->GetResourceFormat()) == 1 );
+    assert( buffer->GetElementCount() > 0 );
     // clear data
-    PostProcessConstants consts; reinterpret_cast<vaVector4ui&>(consts.Param1).x = clearValue;
+    PostProcessConstants consts; memset( &consts, 0, sizeof(consts) ); reinterpret_cast<vaVector4ui&>(consts.Param1).x = clearValue;
+    consts.Bounds.x = (int)buffer->GetElementCount()-1;
     m_PPConstants->Upload( renderContext, &consts, sizeof(consts) );
     // setup dispatch
     vaComputeItem computeItem;
+    computeItem.ConstantBuffers[POSTPROCESS_CONSTANTSBUFFERSLOT] = m_PPConstants;
     computeItem.ComputeShader = m_CSClearUAV_Buff_1U;
     computeItem.SetDispatch( (uint32)(buffer->GetElementCount() + 63) / 64 );
     return renderContext.ExecuteSingleItem( computeItem, vaRenderOutputs::FromUAVs( buffer ), nullptr );
 }
 
-vaDrawResultFlags vaRenderDevice::ClearTextureUAVGeneric( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & texture, const shared_ptr<vaComputeShader> & computeShader, const PostProcessConstants & clearValue )
+vaDrawResultFlags vaRenderDevice::ClearTextureUAVGeneric( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & texture, const shared_ptr<vaComputeShader> & computeShader, PostProcessConstants clearValue )
 {
+    clearValue.Bounds.x = texture->GetWidth()-1;
+    clearValue.Bounds.y = texture->GetHeight()-1;
+
     m_PPConstants->Upload( renderContext, &clearValue, sizeof(clearValue) );
     vaComputeItem computeItem;
+    computeItem.ConstantBuffers[POSTPROCESS_CONSTANTSBUFFERSLOT] = m_PPConstants;
     computeItem.ComputeShader = computeShader;
     if( texture->GetType() == vaTextureType::Texture1D )
         computeItem.SetDispatch( (uint32)(texture->GetWidth() + 63) / 64 );

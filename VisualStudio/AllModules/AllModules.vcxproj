@@ -417,6 +417,11 @@
       <FileType>Document</FileType>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\Rendering\Shaders\vaMisc.hlsl">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{30430E2D-C12E-4537-866E-52B1B49F6410}</ProjectGuid>
     <RootNamespace>Vanilla</RootNamespace>

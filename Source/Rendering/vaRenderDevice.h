@@ -449,7 +449,7 @@ namespace Vanilla
         vaDrawResultFlags                   ClearUAV( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & texture, uint clearValue );
         vaDrawResultFlags                   ClearUAV( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & texture, const vaVector4ui & clearValue );
     private:
-        vaDrawResultFlags                   ClearTextureUAVGeneric( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & texture, const shared_ptr<vaComputeShader> & computeShader, const PostProcessConstants & clearValue );
+        vaDrawResultFlags                   ClearTextureUAVGeneric( vaRenderDeviceContext & renderContext, const shared_ptr<vaTexture> & texture, const shared_ptr<vaComputeShader> & computeShader, PostProcessConstants clearValue );
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public:
